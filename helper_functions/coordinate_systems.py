@@ -6,16 +6,21 @@ import numpy as np
 
 
 def limit_angle(angle):
+    """
+    Limit a radian angle between -pi and pi
+    :param angle: input angle IN RADIANS
+    :return: limited angle IN RADIANS
+    """
     return np.arctan2(np.sin(angle), np.cos(angle))
 
 
 class Cartesian:
     def __init__(self, x: float, y: float, z: float):
         """
-        Class to store a point in cartesian coordinates
-        :param x: Coordinate on the x-axis
-        :param y: Coordinate on the y-axis
-        :param z: Coordinate on the z-axis
+        Class to store a point in CARTESIAN coordinates.
+        :param x: Coordinate on the x-axis.
+        :param y: Coordinate on the y-axis.
+        :param z: Coordinate on the z-axis.
         """
         self.vec = np.array((x, y, z))
 
@@ -43,7 +48,7 @@ class Cartesian:
 
     def to_spherical(self, origin):
         """
-        Convert self to a Spherical coordinate
+        Convert self to a Spherical coordinate.
         """
         x, y, z = (self - origin).vec
         r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
@@ -54,7 +59,7 @@ class Cartesian:
 
     def to_cylindrical(self, origin):
         """
-        Convert self to a Cylindrical coordinate
+        Convert self to a Cylindrical coordinate.
         """
         x, y, z = (self - origin).vec
         r = np.sqrt(x ** 2 + y ** 2)
@@ -66,11 +71,11 @@ class Cartesian:
 class Spherical:
     def __init__(self, r: float, theta: float, phi: float, origin: Cartesian):
         """
-        Class to store a point in spherical coordinates around "origin"
-        :param r: Radial coordinate
-        :param theta: Angle in xy-plane
+        Class to store a point in SPHERICAL coordinates around "origin"
+        :param r: Radial coordinate.
+        :param theta: Angle in xy-plane IN RADIANS.
         :param phi: Angle in the plane; perpendicular to xy-plane, and through origin and point.
-                    Zero when parallel to z-axis.
+                    Zero when parallel to z-axis. IN RADIANS.
         :param origin: Reference point around which these coordinates are determined.
         """
         self.vec = np.array((r, limit_angle(theta), limit_angle(phi)))
@@ -124,7 +129,7 @@ class Spherical:
 
     def to_cartesian(self):
         """
-        Convert self to a Cartesian coordinate
+        Convert self to a Cartesian coordinate.
         """
         r, theta, phi = self.vec
         x = r * np.cos(theta) * np.sin(phi)
@@ -135,7 +140,7 @@ class Spherical:
 
     def to_cylindrical(self, origin: Cartesian = None):
         """
-        Convert self to a Cylindrical coordinate
+        Convert self to a Cylindrical coordinate.
         """
         if origin is None:
             origin = self.origin
@@ -145,6 +150,13 @@ class Spherical:
 
 class Cylindrical:
     def __init__(self, r: float, psi: float, y: float, origin: Cartesian):
+        """
+        Class to store a point in Cylindrical coordinates around "origin"
+        :param r: Radial coordinate.
+        :param psi: Angle in xz-plane IN RADIANS.
+        :param y: Coordinate in the y-axis.
+        :param origin: Reference point around which these coordinates are determined.
+        """
         self.vec = np.array((r, limit_angle(psi), y))
         self.origin = origin
 
@@ -196,7 +208,7 @@ class Cylindrical:
 
     def to_cartesian(self):
         """
-        Convert self to a Cartesian coordinate
+        Convert self to a Cartesian coordinate.
         """
         r, psi, y = self.vec
         x = r * np.cos(psi)
@@ -206,7 +218,7 @@ class Cylindrical:
 
     def to_spherical(self, origin: Cartesian = None):
         """
-        Convert self to a Spherical coordinate
+        Convert self to a Spherical coordinate.
         """
         if origin is None:
             origin = self.origin
