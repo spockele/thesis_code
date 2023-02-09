@@ -1,9 +1,10 @@
 import numpy as np
-import scipy.signal as spsig
 import scipy.io as spio
-import helper_functions.coordinate_systems as cs
 import pyroomacoustics as pra
 import matplotlib.pyplot as plt
+
+import helper_functions.coordinate_systems as cs
+import helper_functions.io as io
 
 
 class CircleMovingSource:
@@ -51,4 +52,6 @@ def wav_and_gla_test():
 
 
 if __name__ == '__main__':
-    print('Hello World!')
+    print(io.read_hawc2_aero_noise('hawc2_out/case10ms_noise_psd_Obs064.out'))
+
+    # print('Hello World!')
