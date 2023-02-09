@@ -17,7 +17,7 @@ def cb(epoch, _, y):
     print(epoch)
 
 
-if __name__ == '__main__':
+def wav_and_gla_test():
     freq, dat = spio.wavfile.read("music_samples/Queen - Bohemian Rhapsody.wav")
 
     # These are the parameters of the STFT
@@ -25,20 +25,20 @@ if __name__ == '__main__':
     hop = fft_size // 4
     win_a = np.hamming(fft_size)
     win_s = pra.transform.stft.compute_synthesis_window(win_a, hop)
-    n_iter = 200
+    n_iter = 32
 
     engine = pra.transform.STFT(
         fft_size, hop=hop, analysis_window=win_a, synthesis_window=win_s
     )
-    X = engine.analysis(dat[:, 0])
-    X_mag = np.abs(X)
+    fxx = engine.analysis(dat[:, 0])
+    x_mag = np.abs(fxx)
 
-    x_0 = pra.phase.gl.griffin_lim(X_mag, hop, win_a, fft_size, n_iter=32, callback=cb, )
+    x_0 = pra.phase.gl.griffin_lim(x_mag, hop, win_a, fft_size, n_iter=n_iter, callback=cb, )
 
-    X = engine.analysis(dat[:, 1])
-    X_mag = np.abs(X)
+    fxx = engine.analysis(dat[:, 1])
+    x_mag = np.abs(fxx)
 
-    x_1 = pra.phase.gl.griffin_lim(X_mag, hop, win_a, fft_size, n_iter=32, callback=cb, )
+    x_1 = pra.phase.gl.griffin_lim(x_mag, hop, win_a, fft_size, n_iter=n_iter, callback=cb, )
 
     new_dat = np.empty(dat.shape)
     new_dat[:, 0] = x_0
@@ -48,3 +48,7 @@ if __name__ == '__main__':
     print(new_dat)
 
     spio.wavfile.write('music_samples/Test.wav', freq, new_dat.astype('float32'))
+
+
+if __name__ == '__main__':
+    print('Hello World!')
