@@ -99,7 +99,7 @@ def wav_and_gla_test_librosa():
 
 
 if __name__ == '__main__':
-    f_s, br_t, br_f, br_fxx0, br_fxx1 = io.wav_to_stft("music_samples/AN-I_Dream_of_Ibiza.wav")
+    f_s, br_t, br_f, br_fxx0, br_fxx1 = io.wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
 
     sp = cs.Cylindrical(100, 0, 0, cs.Cartesian(0, 0, -150))
     source = CircleMovingSource(sp, 1, )
