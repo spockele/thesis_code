@@ -4,4 +4,4 @@ pandas
 matplotlib
 wheel
 tabulate
-pyroomacoustics
+librosa
