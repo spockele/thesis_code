@@ -10,8 +10,24 @@ import helper_functions.io as io
 class CircleMovingSource:
     def __init__(self, start_point: cs.Cylindrical, omega: float):
         self.starting_point = start_point
-        self.pos = start_point
         self.omega = omega
+
+    def motion(self, t: np.array, ):
+        r_0, psi_0, y_0 = self.starting_point.vec
+        origin = self.starting_point.origin
+        psi = psi_0 + self.omega * t
+        return np.array([cs.Cylindrical(r_0, p, y_0, origin) for p in psi])
+
+    def velocities_cartesian(self, t: np.array):
+        motion = self.motion(t)
+        v = np.zeros((motion.size, 3))
+        for it, tt in enumerate(t):
+            pos = motion[it]
+            circle_dot = self.omega * pos.vec[0]
+            v[it, 0] = -circle_dot * np.sin(pos[1])
+            v[it, 2] = -circle_dot * np.cos(pos[1])
+
+        return v
 
 
 def cb(epoch, _, y):
@@ -52,6 +68,6 @@ def wav_and_gla_test():
 
 
 if __name__ == '__main__':
-    print(io.read_hawc2_aero_noise('hawc2_out/case10ms_noise_psd_Obs064.out'))
+
 
     # print('Hello World!')
