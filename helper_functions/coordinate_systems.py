@@ -33,7 +33,7 @@ class Cartesian:
     def __add__(self, other):
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec + other.vec))
-        elif isinstance(other, Spherical):
+        elif isinstance(other, Spherical) or isinstance(other, Cylindrical):
             return Cartesian(*(self.vec + other.to_cartesian().vec))
         else:
             raise TypeError('Cannot add this data type to a Cartesian coordinate.')
@@ -41,7 +41,7 @@ class Cartesian:
     def __sub__(self, other):
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec - other.vec))
-        elif isinstance(other, Spherical):
+        elif isinstance(other, Spherical) or isinstance(other, Cylindrical):
             return Cartesian(*(self.vec - other.to_cartesian().vec))
         else:
             raise TypeError('Cannot subtract this data type from a Cartesian coordinate.')
