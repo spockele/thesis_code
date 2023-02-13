@@ -1,18 +1,12 @@
 import numpy as np
 import scipy.io as spio
-import scipy.signal as spsig
 import librosa
-import matplotlib.pyplot as plt
 
-import helper_functions.coordinate_systems as cs
-import helper_functions.io as io
-
-
-c = 343  # [m/s]
+from . import Cartesian, Cylindrical, Spherical, wav_to_stft, c
 
 
 class CircleMovingSource:
-    def __init__(self, start_point: cs.Cylindrical, omega: float):
+    def __init__(self, start_point: Cylindrical, omega: float):
         self.starting_point = start_point
         self.omega = omega
 
@@ -20,7 +14,7 @@ class CircleMovingSource:
         r_0, psi_0, y_0 = self.starting_point.vec
         origin = self.starting_point.origin
         psi = psi_0 + self.omega * t
-        return np.array([cs.Cylindrical(r_0, p, y_0, origin) for p in psi])
+        return np.array([Cylindrical(r_0, p, y_0, origin) for p in psi])
 
     def velocities_cartesian(self, t: np.array, motion_out: bool = False):
         motion = self.motion(t)
@@ -32,7 +26,7 @@ class CircleMovingSource:
 
         return (v, motion) if motion_out else v
 
-    def observer_time(self, t: np.array, obs: cs.Cartesian, motion_out: bool = False):
+    def observer_time(self, t: np.array, obs: Cartesian, motion_out: bool = False):
         motion = self.motion(t)
         dist = np.empty(motion.shape)
         for ip, pos in enumerate(motion):
@@ -42,7 +36,7 @@ class CircleMovingSource:
         t_obs = t + (1 / c) * dist
         return (t_obs, motion) if motion_out else t_obs
 
-    def emit_sound_to_observer(self, t_sound, f_sound, fxx_sound, obs: cs.Cartesian):
+    def emit_sound_to_observer(self, t_sound, f_sound, fxx_sound, obs: Cartesian):
         t_obs = self.observer_time(t_sound, obs)
         freq_mod = self.doppler(t_sound, t_obs)
         v, motion = self.velocities_cartesian(t_sound, motion_out=True)
@@ -84,7 +78,7 @@ class CircleMovingSource:
 
 
 def wav_and_gla_test_librosa():
-    freq, *_, fxx_0, fxx_1 = io.wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
+    freq, *_, fxx_0, fxx_1 = wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
 
     n_iter = 32
     x_0 = librosa.griffinlim(np.abs(fxx_0), n_iter=n_iter, )
@@ -99,12 +93,12 @@ def wav_and_gla_test_librosa():
 
 
 def bohemian_rotorsody():
-    f_s, br_t, br_f, br_fxx0, br_fxx1 = io.wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
+    f_s, br_t, br_f, br_fxx0, br_fxx1 = wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
 
-    sp = cs.Cylindrical(100, 0, 0, cs.Cartesian(0, 0, -150))
+    sp = Cylindrical(100, 0, 0, Cartesian(0, 0, -150))
     source = CircleMovingSource(sp, 1, )
 
-    observer = cs.Cartesian(0, -50, 0)
+    observer = Cartesian(0, -50, 0)
 
     br_fxx0_emit = source.emit_sound_to_observer(br_t, br_f, br_fxx0, observer)
     br_fxx1_emit = source.emit_sound_to_observer(br_t, br_f, br_fxx1, observer)
