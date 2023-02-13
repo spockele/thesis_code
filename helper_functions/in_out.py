@@ -58,6 +58,7 @@ def read_hawc2_aero_noise(path: str):
     # Strip the lines of the newline
     lines = [line.strip('\n') for line in lines]
 
+    n_freq = int(lines[4].split(' ')[-1])
     # Extract the observer position
     observer_pos = np.array([float(num) for num in lines[5].replace('  ', ' ').split(' ')[-3:]])
     # Prepare the time series DataFrame to be filled
@@ -65,13 +66,10 @@ def read_hawc2_aero_noise(path: str):
     time_series_data.set_index('t', inplace=True)
 
     # Create empty PSD dict
-    psd = {}
-    # Create PSD DataFrame for first time step
-    psd_i = pd.DataFrame(columns=['f_c', 'PSD_All', 'PSD_TI', 'PSD_TE', 'PSD_ST', 'PSD_TP',
-                                  'PSD_All_1', 'PSD_TI_1', 'PSD_TE_1', 'PSD_ST_1', 'PSD_TP_1',
-                                  'PSD_All_2', 'PSD_TI_2', 'PSD_TE_2', 'PSD_ST_2', 'PSD_TP_2',
-                                  'PSD_All_3', 'PSD_TI_3', 'PSD_TE_3', 'PSD_ST_3', 'PSD_TP_3'])
-    psd_i.set_index('f_c', inplace=True)
+    psd = {n: {'All': pd.DataFrame(), 'TI': pd.DataFrame(), 'TE': pd.DataFrame(),
+               'ST': pd.DataFrame(), 'TP': pd.DataFrame()}
+           for n in range(4)
+           }
 
     # Python is STOOOPID
     t = 0
@@ -96,22 +94,16 @@ def read_hawc2_aero_noise(path: str):
 
         # When an empty line is reached
         elif line == ' ':
-            # Save PSD data for the timestep
-            psd[t] = psd_i
             # We have reached the next timestep :)
             nxt = True
-            # Create PSD DataFrame for next timestep
-            psd_i = pd.DataFrame(columns=['f_c', 'PSD_All', 'PSD_TI', 'PSD_TE', 'PSD_ST', 'PSD_TP',
-                                          'PSD_All_1', 'PSD_TI_1', 'PSD_TE_1', 'PSD_ST_1', 'PSD_TP_1',
-                                          'PSD_All_2', 'PSD_TI_2', 'PSD_TE_2', 'PSD_ST_2', 'PSD_TP_2',
-                                          'PSD_All_3', 'PSD_TI_3', 'PSD_TE_3', 'PSD_ST_3', 'PSD_TP_3'])
-            psd_i.set_index('f_c', inplace=True)
 
         # All other lines are considered PSD data (THIS MIGHT BREAK WITH ACTUAL DATA...)
         else:
             # Split the numbers in this line from one another and fill them into the DataFrame of this timestep's PSD
             data = [float(num) for num in line.split('  ')[1:]]
-            psd_i.loc[data[0]] = data[1:]
+            for n in range(4):
+                for m, key in enumerate(psd[n].keys()):
+                    psd[n][key].loc[data[0], t] = data[(5*n + 1) + m]
 
     # Return all the extracted data ;|
     return observer_pos, time_series_data, psd
