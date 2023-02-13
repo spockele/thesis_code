@@ -98,7 +98,7 @@ def wav_and_gla_test_librosa():
     spio.wavfile.write('music_samples/Test_librosa.wav', freq, new_dat.astype('float32'))
 
 
-if __name__ == '__main__':
+def bohemian_rotorsody():
     f_s, br_t, br_f, br_fxx0, br_fxx1 = io.wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
 
     sp = cs.Cylindrical(100, 0, 0, cs.Cartesian(0, 0, -150))
@@ -120,5 +120,6 @@ if __name__ == '__main__':
 
     spio.wavfile.write('music_samples/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
 
-    # wav_and_gla_test_librosa()
-    # print('Hello World!')
+
+if __name__ == '__main__':
+    raise RuntimeError('Thou shalt not run this module on its own!')
