@@ -133,3 +133,6 @@ dmypy.json
 
 # The music samples folder (because the music is that bad)
 music_samples/
+
+# Excluding all wav files, because they big bois
+*.wav
