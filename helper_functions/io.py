@@ -3,11 +3,18 @@ import pandas as pd
 import scipy.io as spio
 import librosa
 
-from coordinate_systems import limit_angle
-
 
 """
 """
+
+
+def limit_angle(angle):
+    """
+    Limit a radian angle between -pi and pi
+    :param angle: input angle IN RADIANS
+    :return: limited angle IN RADIANS
+    """
+    return np.arctan2(np.sin(angle), np.cos(angle))
 
 
 def write_to_file(array, path: str):
