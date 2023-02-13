@@ -1,0 +1,3 @@
+source venv/bin/activate
+python moving_sources.py
+lame music_samples/Bohemian_Rhapsody_Rotor_centre.wav music_samples/Bohemian_Rhapsody_Rotor_centre.mp3
