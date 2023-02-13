@@ -118,7 +118,7 @@ if __name__ == '__main__':
     new_dat = librosa.to_mono(np.array([x_0, x_1]))
     new_dat = new_dat / np.max(np.abs(new_dat))
 
-    spio.wavfile.write('music_samples/Test_moving_br_larger.wav', f_s, new_dat.astype('float32'))
+    spio.wavfile.write('music_samples/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
 
     # wav_and_gla_test_librosa()
     # print('Hello World!')
