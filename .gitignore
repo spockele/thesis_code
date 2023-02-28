@@ -131,8 +131,8 @@ dmypy.json
 # Pycharm
 .idea/
 
-# The music samples folder (because the music is that bad)
-music_samples/
+# The samples folder (because the music is that bad)
+samples/
 
 # Excluding all wav files, because they big bois
 *.wav
