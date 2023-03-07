@@ -38,31 +38,81 @@ def hawc2_sample_testing(n):
 
 
 def directivity(theta, phi, mach):
+    """
+    BPM directivity pattern (Brooks et al. 1989, Equation B1)
+    :param theta: angle in the rotated zy-plane in Brooks et al. 1989, Figure B3
+    :param phi: angle in the yz-plane defined in Brooks et al. 1989, Figure B3
+    :param mach: mach number in the airfoil motion direction
+    :return: the directivity value of BPM at the given angular coordinate and mach number
+    """
+    # Limit the angles to [-pi, pi]
     theta = hf.limit_angle(theta)
     phi = hf.limit_angle(phi)
+    # Determine convective mach number with assumption m_c = .8 M
     mach_conv = .8 * mach
+    # Determine the numerator and denominator of the BPM directivity (Brooks et al. 1989, Equation B1)
     num = 2 * ((np.sin(.5 * theta)) ** 2) * np.sin(phi) ** 2
     den = (1 + mach * np.cos(theta)) * (1 + (mach - mach_conv) * np.cos(theta)) ** 2
-
+    # Return the sh!t out of the directivity value
     return num / den
 
 
+def uniform_spherical_grid(n_points):
+    """
+    Create a uniform grid in spherical coordinates where each point represents an equal fraction of the surface area
+    of the unit sphere. Algorithm by Deserno, 2004.
+    ------------------------------------------------------------------------------------------------
+    !!! NOTE: output is not guaranteed to contain exact number of points input into the function !!!
+    ------------------------------------------------------------------------------------------------
+    :param n_points: desired number of points in the grid
+    :return: the polar and azimuth angles in numpy arrays of length n_count
+    """
+    # Area represented per point of the grid
+    point_area = 4 * np.pi / n_points
+    # Length scale associated with this area
+    dist = np.sqrt(point_area)
+    # number of polar coordinates
+    m_pol = round(np.pi / dist)
+    # Angular distance between points in polar direction
+    d_pol = np.pi / m_pol
+    # Angular distance between points in azimuth direction
+    d_azi = point_area / d_pol
+
+    # Create counter and arrays for output
+    n_count = 0
+    polar, azimuth = np.empty((2, n_points))
+    # Loop in the polar direction
+    for mi in range(m_pol):
+        # Determine polar angle
+        pol = np.pi * (mi + .5) / m_pol
+        # Determine number of azimuthal coordinates
+        m_azi = round(2 * np.pi * np.sin(pol) / d_azi)
+        # Loop over azimuth angles
+        for ni in range(m_azi):
+            # Add polar angle to output array
+            polar[n_count] = pol
+            # Determine azimuth angle and add to output array
+            azimuth[n_count] = 2 * np.pi * ni / m_azi
+            # Up the counter by 1
+            n_count += 1
+
+    # Output the output arrays, shortened to actual number of generated points
+    return polar[:n_count + 1], azimuth[:n_count + 1]
+
+
 if __name__ == '__main__':
-    # hawc2_sample_testing(0)
-    th = np.linspace(0, 1, 500) * 2 * np.pi
-    ph = np.linspace(0, 1, 500) * 2 * np.pi
+    # phg, thg = uniform_spherical_grid(20000)
+    #
+    # d = directivity(phg, thg, .9)
+    #
+    # y = np.sin(phg) * np.cos(thg)
+    # z = np.sin(phg) * np.sin(thg)
+    # x = np.cos(phg)
+    #
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    #
+    # ax.scatter(x, y, z, c=d, cmap='jet', )
+    # plt.show()
 
-    thg, phg = np.meshgrid(th, ph)
-
-    m = 300 / hf.c
-    d = directivity(thg, phg, m) / directivity(np.pi / 2, np.pi / 2, m)
-
-    x = d * np.cos(thg)
-    y = d * np.sin(thg) * np.cos(phg)
-    z = d * np.sin(thg) * np.sin(phg)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-
-    ax.plot_surface(x, y, z)
-    plt.show()
+    hf.bohemian_rotorsody()
