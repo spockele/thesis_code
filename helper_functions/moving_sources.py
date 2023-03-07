@@ -2,7 +2,7 @@ import numpy as np
 import scipy.io as spio
 import librosa
 
-from . import Cartesian, Cylindrical, Spherical, wav_to_stft, c
+from . import Cartesian, Cylindrical, Spherical, wav_to_stft, wav_to_stft_mono, c
 
 
 class CircleMovingSource:
@@ -93,7 +93,8 @@ def wav_and_gla_test_librosa():
 
 
 def bohemian_rotorsody():
-    f_s, br_t, br_f, br_fxx0, br_fxx1 = wav_to_stft("music_samples/Queen - Bohemian Rhapsody.wav")
+    f_s, br_t, br_f, br_fxx0, br_fxx1 = wav_to_stft("samples/Music/Queen - Bohemian Rhapsody.wav")
+    # f_s, br_t, br_f, br_fxx0 = wav_to_stft_mono("samples/EMPA/CalibrationTone_Leq80dB.wav")
 
     sp = Cylindrical(100, 0, 0, Cartesian(0, 0, -150))
     source = CircleMovingSource(sp, 1, )
@@ -111,8 +112,10 @@ def bohemian_rotorsody():
 
     new_dat = librosa.to_mono(np.array([x_0, x_1]))
     new_dat = new_dat / np.max(np.abs(new_dat))
+    # new_dat = x_0 / np.max(np.abs(x_0))
 
-    spio.wavfile.write('music_samples/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
+    spio.wavfile.write('samples/Music/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
+    # spio.wavfile.write('samples/Tone_moving_around.wav', f_s, new_dat.astype('float32'))
 
 
 if __name__ == '__main__':

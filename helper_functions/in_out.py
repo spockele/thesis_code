@@ -131,5 +131,25 @@ def wav_to_stft(path):
     return freq, t_fxx, f_fxx, fxx_0, fxx_1
 
 
+def wav_to_stft_mono(path):
+    """
+    Read a WAV file and output the STFT and its attributes
+    :param path: path of the WAV file as a str
+    :return:    The sampling frequency as a float
+                The timesteps of the STFT as a 1D np array
+                The frequency bins of the STFT as a 1D np array
+                The STFT of the channel as a 2D np array
+    """
+    # Load the WAV fie with scipy io
+    freq, dat = spio.wavfile.read(path)
+    # Use librosa to determine the stft
+    fxx_0 = np.abs(librosa.stft(dat / np.max(np.abs(dat))))
+    # Determine the time and frequencies of the STFT
+    t_fxx = librosa.frames_to_time(np.arange(0, fxx_0.shape[1], dtype=int), sr=freq)
+    f_fxx = librosa.fft_frequencies(sr=freq)
+
+    return freq, t_fxx, f_fxx, fxx_0
+
+
 if __name__ == '__main__':
     raise RuntimeError("Do not run this file, it has no use.")
