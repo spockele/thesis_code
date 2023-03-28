@@ -128,8 +128,6 @@ if __name__ == '__main__':
     #     ax.plot([xbb], [ybb], [zbb], 'w')
     # plt.show()
 
-    # hf.bohemian_rotorsody()
-
     (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')
     # Sampling period
     t_sampling = 1 / f_sampling
