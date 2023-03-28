@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.io as spio
 import librosa
+import matplotlib.pyplot as plt
 
 from . import Cartesian, Cylindrical, Spherical, wav_to_stft, wav_to_stft_mono, c
 
@@ -93,8 +94,19 @@ def wav_and_gla_test_librosa():
 
 
 def bohemian_rotorsody():
-    f_s, br_t, br_f, br_fxx0, br_fxx1 = wav_to_stft("samples/Music/Queen - Bohemian Rhapsody.wav")
-    # f_s, br_t, br_f, br_fxx0 = wav_to_stft_mono("samples/EMPA/CalibrationTone_Leq80dB.wav")
+    # f_s, br_t, br_f, br_fxx0, br_fxx1 = wav_to_stft("samples/Music/Queen - Bohemian Rhapsody.wav")
+    f_s, br_t, br_f, br_fxx0 = wav_to_stft_mono("samples/EMPA/CalibrationTone_Leq80dB.wav")
+
+    time_grd, freq_grd = np.meshgrid(np.append(br_t, br_t[-1] + br_t[1] - br_t[0]),
+                                     np.append(br_f, br_f[-1] + br_f[1] - br_f[0]))
+
+    plt.figure(1)
+    vmin, vmax = .1, .6
+    # Create the spectogram and its colorbar
+    spectrogram = plt.pcolormesh(time_grd, freq_grd / 1e3, br_fxx0, cmap='jet')#, vmin=vmin, vmax=vmax)
+    cbar = plt.colorbar(spectrogram)
+    plt.xlabel('$t$ (s)')
+    plt.ylabel('$f$ (kHz)')
 
     sp = Cylindrical(100, 0, 0, Cartesian(0, 0, -150))
     source = CircleMovingSource(sp, 1, )
@@ -102,19 +114,33 @@ def bohemian_rotorsody():
     observer = Cartesian(0, -50, 0)
 
     br_fxx0_emit = source.emit_sound_to_observer(br_t, br_f, br_fxx0, observer)
-    br_fxx1_emit = source.emit_sound_to_observer(br_t, br_f, br_fxx1, observer)
+    # br_fxx1_emit = source.emit_sound_to_observer(br_t, br_f, br_fxx1, observer)
+
+    dt = br_t[1] - br_t[0]
+    t = np.arange(0, br_fxx0_emit.shape[1] * dt, dt)
+    time_grd, freq_grd = np.meshgrid(np.append(t, t[-1] + t[1] - t[0]),
+                                     np.append(br_f, br_f[-1] + br_f[1] - br_f[0]))
+
+    plt.figure(2)
+    vmin, vmax = .1, .6
+    # Create the spectogram and its colorbar
+    spectrogram = plt.pcolormesh(time_grd, freq_grd / 1e3, br_fxx0_emit, cmap='jet')#, vmin=vmin, vmax=vmax)
+    cbar = plt.colorbar(spectrogram)
+    plt.xlabel('$t$ (s)')
+    plt.ylabel('$f$ (kHz)')
+    plt.show()
 
     print('Emission done!')
 
-    n_iter = 5
-    x_0 = librosa.griffinlim(br_fxx0_emit, n_iter=n_iter, )
-    x_1 = librosa.griffinlim(br_fxx1_emit, n_iter=n_iter, )
+    # n_iter = 5
+    # x_0 = librosa.griffinlim(br_fxx0_emit, n_iter=n_iter, )
+    # x_1 = librosa.griffinlim(br_fxx1_emit, n_iter=n_iter, )
 
-    new_dat = librosa.to_mono(np.array([x_0, x_1]))
-    new_dat = new_dat / np.max(np.abs(new_dat))
+    # new_dat = librosa.to_mono(np.array([x_0, x_1]))
+    # new_dat = new_dat / np.max(np.abs(new_dat))
     # new_dat = x_0 / np.max(np.abs(x_0))
 
-    spio.wavfile.write('samples/Music/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
+    # spio.wavfile.write('samples/Music/Bohemian_Rhapsody_Rotor.wav', f_s, new_dat.astype('float32'))
     # spio.wavfile.write('samples/Tone_moving_around.wav', f_s, new_dat.astype('float32'))
 
 
