@@ -140,7 +140,7 @@ def wav_to_stft_mono(path):
                 The frequency bins of the STFT as a 1D np array
                 The STFT of the channel as a 2D np array
     """
-    # Load the WAV fie with scipy io
+    # Load the WAV file with scipy io
     freq, dat = spio.wavfile.read(path)
     # Use librosa to determine the stft
     fxx_0 = np.abs(librosa.stft(dat / np.max(np.abs(dat))))
@@ -149,6 +149,28 @@ def wav_to_stft_mono(path):
     f_fxx = librosa.fft_frequencies(sr=freq)
 
     return freq, t_fxx, f_fxx, fxx_0
+
+
+def read_ntk_data(path, calib_path):
+    """
+    Read the binary files from the 2015 NTK 500/41 turbine measurements
+    :param path: path of the time series binary file
+    :param calib_path: path of the file "calib.txt" with the calibration parameters
+    :return: (number of sensors: int, sampling frequency: float, number of samples: int),
+            data from the binary file in np.arrray with shape (n_samples, n_sensors)
+    """
+    # Read out the calibration file to get output parameters and calibration factors
+    with open(calib_path) as f:
+        lines = f.readlines()
+        n_sensor, f_sampling, n_samples, _ = [int(float(num)) for num in lines[1].replace('d', 'e').split(' ')]
+        calib = [float(num) for num in lines[3].strip('\n').replace('d', 'e').split(' ')[:-1]]
+
+    # Read the binary files with the time series
+    data = np.fromfile(path, dtype=np.float32)
+    # Reshape the data and calibrate the values
+    data = data.reshape(n_samples, n_sensor) / calib
+
+    return (n_sensor, f_sampling, n_samples), data
 
 
 if __name__ == '__main__':
