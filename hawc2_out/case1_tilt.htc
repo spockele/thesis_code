@@ -1,0 +1,650 @@
+; Helge Aagaard Madsen 1-12-2007
+; 2MW NM80 Turbine for simulationes to EWEC2008 wake paper
+;
+begin Simulation;    
+  time_stop    70 ;
+  solvertype   1 ;    (newmark)
+;  animation    ./logfiles_iec/DLC11_ntm_8_s6_pturb_m12_D3.anim;
+ logfile       ./log/case1_yaw0deg.log;
+;  on_no_convergence  continue;
+;
+  begin newmark;
+    beta      0.27;
+    gamma     0.51;  
+    deltat    0.05;
+    bdynamic  1.0 ;
+  end newmark;
+end simulation;
+;
+begin new_htc_structure;
+  beam_output_file_name   ./logfiles_iec/beam_master_iec.txt ;
+  body_output_file_name   ./logfiles_iec/body_DLC11_ntm_8_s6_pturb_m12_D3.txt ;
+;  body_eigenanalysis_file_name ./logfiles_iec/eigen_DLC11_ntm_8_s6_pturb_m12_D3.txt;
+;  structure_eigenanalysis_file_name ./logfiles_iec/eigenall_DLC11_ntm_8_s6_pturb_m12_D3.txt;
+;
+  begin main_body;          tower
+    name        tower ;      
+    type        timoschenko ;
+    nbodies     1 ;
+    node_distribution     c2_def ;
+    damping   0.01  0.01  0.01   0.001   0.001  0.001 ;
+    begin timoschenko_input;
+      filename ./data/hawc2_st-radius4004.nm80 ;
+      set 4 1;  set subset
+    end timoschenko_input;
+    begin c2_def;							
+	nsec	10	;				
+ 	sec  1   0   0   0.000 0.00; Ground BC element start
+	sec  2  0   0  -0.050 0.00; Ground BC element end
+	sec  3  0   0  -3.000 0.00; Foundation top
+	sec  4  0   0  -3.875 0.00; Lower flange
+	sec  5  0   0 -13.020 0.00;
+	sec  6  0   0 -25.000 0.00; Mid flange
+	sec  7  0   0 -37.040 0.00;
+	sec  8  0   0 -49.000 0.00;
+	sec  9  0   0 -57.878 0.00; Nacelle element start
+	sec 10  0   0 -59.890 0.00; Tower top						
+    end c2_def;	
+ end main_body;
+;
+  begin main_body;
+    name        shaft ;       
+    type        timoschenko ;
+    nbodies     1 ;
+    node_distribution     c2_def ;
+    damping   0.09  0.09  0.09   0.003   0.003  0.003 ;
+    begin timoschenko_input;
+      filename ./data/hawc2_st-radius4004.nm80  ;
+      set 3 1 ;              
+    end timoschenko_input;
+    begin c2_def;							
+	nsec	5	;				
+  	sec 1    0.0	0.0    0.000   0.0 ; Tower top
+  	sec 2   0.0	0.0    0.100   0.0 ; Generator end
+  	sec 3   0.0	0.0    1.840   0.0 ; Main bearing
+  	sec 4   0.0	0.0    2.582   0.0 ; Hub start
+  	sec 5   0.0	0.0    4.030   0.0 ; Rotor center
+    end c2_def;							
+  end main_body;
+;
+  begin main_body;
+    name        hub1 ;       
+    type        timoschenko ;
+    nbodies     1 ;
+    node_distribution     c2_def ;
+    damping   0.01  0.01  0.01   0.001   0.001  0.001 ;
+    begin timoschenko_input;
+      filename ./data/hawc2_st-radius4004.nm80  ;
+      set 2 1 ;              
+    end timoschenko_input;
+    begin c2_def;							
+	nsec	4	;				
+  	sec 1    0.0	0.0    0.000   0.0 ; Rotor center
+  	sec 2   0.0	0.0    0.000500   0.0 ; 
+  	sec 3   0.0	0.0    0.001   0.0 ; 
+  	sec 4   0.0	0.0    0.00124   0.0 ; Hub start
+    end c2_def;							
+  end main_body;
+;
+  begin main_body;
+    name           hub2 ;
+    copy_main_body hub1;
+  end main_body;
+;
+  begin main_body;
+    name           hub3 ;
+    copy_main_body hub1;
+  end main_body;
+;
+  begin main_body;
+    name        blade1 ;        
+    type        timoschenko ;
+    nbodies     22;
+    node_distribution     c2_def ;
+    damping   0.084 0.126 0.028 0.00023 0.0002 0.0002 ;
+    begin timoschenko_input;
+      filename ./data/hawc2_st-radius4004.nm80 ;
+      set 1 1 ;                set subset 
+    end timoschenko_input;
+	begin	c2_def	;					
+		nsec	23	;	
+	sec	1	-2.88000E-03	0.00000E+00	0.00000E+00	 0.00000E+00 ;
+	sec	2	-3.39242E-02	2.07000E-02	3.12000E+00	-5.37000E+00 ;
+	sec	3	-8.72207E-02	2.41000E-01	5.24000E+00	-6.69000E+00 ;
+	sec	4	-1.65350E-01	5.70000E-02	7.24000E+00	-7.90000E+00 ;
+	sec	5	-2.46400E-01	8.12000E-02	9.24000E+00	-9.11000E+00 ;
+	sec	6	-2.80688E-01	1.22000E-01	1.12400E+01	-1.01000E+01 ;
+	sec	7	-2.32909E-01	1.82000E-01	1.32400E+01	-9.39000E+00 ;
+	sec	8	-2.47518E-01	1.40000E-01	1.52400E+01	-7.16000E+00 ;
+	sec	9	-2.29939E-01	6.07000E-02	1.72400E+01	-5.45000E+00 ;
+	sec	10	-2.44913E-01	-2.59000E-02	1.92400E+01	-4.34000E+00 ;
+	sec	11	-2.57431E-01	-6.03000E-02	2.04400E+01	-3.84000E+00 ;
+	sec	12	-2.41689E-01	-2.13000E-01	2.32400E+01	-2.86000E+00 ;
+	sec	13	-2.27492E-01	-3.09000E-01	2.52400E+01	-2.31000E+00 ;
+	sec	14	-1.95951E-01	-3.96000E-01	2.72400E+01	-1.77000E+00 ;
+	sec	15	-1.72140E-01	-4.84000E-01	2.92400E+01	-1.28000E+00 ;
+	sec	16	-1.49786E-01	-5.73000E-01	3.12400E+01	-9.00000E-01 ;
+	sec	17	-1.14414E-01	-7.01000E-01	3.32400E+01	-5.50000E-01 ;
+	sec	18	-7.69085E-02	-7.99000E-01	3.52400E+01	-2.30000E-01 ;
+	sec	19	-1.66439E-02	-1.20000E+00	3.72400E+01	-3.00000E-02 ;
+	sec	20	-4.74816E-02	-1.30000E+00	3.82400E+01	-2.00000E-02 ;
+	sec	21	-1.83106E-02	-1.40000E+00	3.92400E+01	-9.30000E-01 ;
+	sec	22	-2.65718E-02	-1.41000E+00	3.96400E+01	-2.32000E+00 ;
+	sec	23	4.25913E-02	-1.42000E+00	4.00400E+01	-6.13000E+00 ;
+	end	c2_def	;					
+  end main_body;
+; radius changed from 38.8 to 40.04 on May 20 2008
+;
+  begin main_body;
+    name           blade2 ;
+    copy_main_body blade1;
+  end main_body;
+;
+  begin main_body;
+    name           blade3 ;
+    copy_main_body blade1 ;
+  end main_body;
+;
+  begin orientation;
+    begin base;
+      body   tower;
+      inipos        0.0 0.0 0.0 ;         initial position of node 1
+      body_eulerang 0.0 0.0 0.0;          
+    end base;
+;
+    begin relative;
+      body1  tower last;         indtil videre antages der internt i programmet at der altid kobles mellen sidste knude body1 og første knude body 2
+      body2  shaft 1;
+      body2_eulerang 90.0 0.0 0.0;   drejet op vinkeltret på tårn
+;FRBA      body2_eulerang 5.0 0.0 0.0;    5 graders tilt
+      body2_eulerang 25.0 0.0 0.0;    25 graders tilt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+;      body2_ini_rotvec_d1 0.0 0.0 -1.0 1.2881 ; body initial rotation velocity x,y,z,angle velocity[rad/s]
+      body2_ini_rotvec_d1 0.0 0.0 -1.0 1.7600 ;@10m/s body initial rotation velocity
+;                                             ;  x,y,z,angle velocity[rad/s] (body 2 coordinates)
+    end relative;
+;
+    begin relative;
+      body1  shaft last;         
+      body2  hub1 1;
+      body2_eulerang -90.0 0.0 0.0;    
+      body2_eulerang 0.0 180.0 0.0;    
+      body2_eulerang 2.5   0.0 0.0;      2.5deg cone angle
+    end relative;
+;
+    begin relative;
+      body1  shaft last;         
+      body2  hub2 1;
+      body2_eulerang -90.0 0.0 0.0;    
+      body2_eulerang 0.0  60.0 0.0;   
+      body2_eulerang 2.5   0.0 0.0;      2.5deg cone angle
+    end relative;
+;
+    begin relative;
+      body1  shaft last;         
+      body2  hub3 1;
+      body2_eulerang -90.0 0.0 0.0;    
+      body2_eulerang 0.0 -60.0 0.0;    
+      body2_eulerang 2.5   0.0 0.0;      2.5deg cone angle
+    end relative;
+;
+    begin relative;
+      body1  hub1 last;         
+      body2  blade1 1;
+      body2_eulerang 0.0 0.0 -0.15;     Pitch deg ~0. at 10m/s
+    end relative;
+;
+    begin relative;
+      body1  hub2 last;         
+      body2  blade2 1;
+      body2_eulerang 0.0 0.0 -0.15;
+    end relative;
+;
+    begin relative;
+      body1  hub3 last;         
+      body2  blade3 1;
+      body2_eulerang 0.0 0.0 -0.15;    
+    end relative;
+  end orientation;
+;
+  begin constraint;
+    begin fix0;  fixed to ground in translation and rotation of node 1
+      body tower;
+    end fix0;
+;
+;    begin bearing1;                       free bearing
+;      name  shaft_rot ;
+;      body1 tower last;
+;      body2 shaft 1;
+;      bearing_vector 2 0.0 0.0 -1.0;        x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+;    end bearing1;  
+;
+    begin bearing3;                       free bearing
+      name  shaft_rot ;
+      body1 tower last;
+      body2 shaft 1;
+      bearing_vector 2 0.0 0.0 -1.0;        x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+;      omegas 1.2881 ;
+      omegas 1.7600 ; @10m/s
+    end bearing3;  
+;
+    begin fix1 ;
+      body1 shaft last ;
+      body2 hub1 1;
+    end fix1;
+;
+    begin fix1 ;
+      body1 shaft last ;
+      body2 hub2 1;
+    end fix1;
+;
+    begin fix1 ;
+      body1 shaft last ;
+      body2 hub3 1;
+    end fix1;
+;
+         begin fix1;
+            body1 hub1 last;
+            body2 blade1 1;
+		 end fix1;          
+;     
+     begin fix1;
+            body1 hub2 last;
+            body2 blade2 1;
+		 end fix1;     
+;     
+     begin fix1;
+            body1 hub3 last;
+            body2 blade3 1;
+     end fix1;   
+;    begin bearing2;                       forced bearing
+;      name pitch1;
+;      body1 hub1 last;
+;      body2 blade1 1;
+;      bearing_vector 2 0.0 0.0 -1.0;        x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+;    end bearing2;  
+;;
+;    begin bearing2;                       forced bearing
+;      name pitch2;
+;      body1 hub2 last;
+;      body2 blade2 1;
+;      bearing_vector 2 0.0 0.0 -1.0;        x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+;    end bearing2;  
+;;
+;    begin bearing2;                       forced bearing
+;      name pitch3;
+;      body1 hub3 last;
+;      body2 blade3 1;
+;      bearing_vector 2 0.0 0.0 -1.0;        x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+;    end bearing2;  
+  end constraint;
+;   
+end new_htc_structure;
+;
+; begin dll;
+;   begin hawc_dll;
+;     filename  ./control/basic_3ba_ct7nl.dll ;
+;     dll_subroutine regulation ;
+;     arraysizes  15 15 ;
+; ;    deltat  0.02;    
+;     begin output;
+;       general time ;
+;       constraint bearing1 shaft_rot 1 only 2;
+;       constraint bearing2 pitch1 1 only 1;
+;       constraint bearing2 pitch2 1 only 1;
+;       constraint bearing2 pitch3 1 only 1;
+;       wind free_wind 1 0.0 0.0 -60.0; coordsys (1:glo, 2:ikkerot rotor), 3 sensorer udskrives
+;       general constant 1.5 ; 4.12; Kp pitch
+;       general constant 1.0 ;2.70; Ki   pitch
+;       general constant 0.00 ; Kd   pitch
+;       general constant 8.6E6 ; 2.701E+07  ;  Kp   torque   (test value)
+;       general constant 3.86E6  ; 2.121E+07  ;  Ki   torque   (test value)
+;       general constant 0.0        ;  Kd   torque
+;     end output;
+;   end hawc_dll;
+; ;
+;   begin hawc_dll;
+;     filename  ./control/basic_3ba_ct7nl.dll ;
+;     dll_subroutine generator ;
+;     arraysizes  15 15 ;
+; ;    deltat    0.02 ;
+;     begin output;
+;       general time ;
+;       dll inpvec 1 1; input til h2, dll no 1, plads no 1
+;       general constant 0.0;
+;       constraint bearing1 shaft_rot 1 only 2;
+;     end output;
+; ;
+;     begin actions;    
+;       mbdy moment_int shaft 1 -3 shaft tower 10 ;   generator torque slow
+; ;      kinematics mgen 1.0;
+;     end actions;
+;   end hawc_dll;
+; ;
+;   begin hawc_dll;
+;     filename  ./control/basic_3ba_ct7nl.dll ;
+;     dll_subroutine pitchservo ;
+;     arraysizes  15 15 ;
+; ;    deltat    0.02 ;
+;     begin output;
+;       general time ;
+;       dll inpvec 1 2;
+;       dll inpvec 1 3;
+;       dll inpvec 1 4;
+;       constraint bearing2 pitch1 1 only 1;
+;       constraint bearing2 pitch2 1 only 1;
+;       constraint bearing2 pitch3 1 only 1;
+;     end output;
+; ;
+;     begin actions;    
+;       body bearing_angle pitch1;
+;       body bearing_angle pitch2;
+;       body bearing_angle pitch3;
+;     end actions;
+;   end hawc_dll;
+; end dll;
+;
+;
+; WIND DATA INPUT
+; WIND DATA INPUT
+; WIND DATA INPUT
+;
+begin wind ;
+  density                 1.231 ;
+  wsp                     10.0  ; -> Rot.Speed=1.76rad/s -> T=3.57s
+;frba  wsp                     6.1  ; 6.1 m/s 0.deg pitch  1.2881rad/s
+  horizontal_input        1     ;
+  windfield_rotations     0  0.0  0.0 ;
+  center_pos0             0.0 0.0 -59.89 ;  hub_height
+;  shear_format            3 0.2;
+ shear_format            3 0.025;
+  turb_format             0 ; 0: no turbulence, 1:mann, 2:flex
+  tower_shadow_method     1     ; 
+;   tower_shadow_method     0     ;  
+  tint                    0.0 ; 0.1 ; no turbulence?
+;  scale_time_start        100 ;
+;  wind_ramp_factor 0.0 100.0 0.8 1.0;
+;  wind_ramp_abs  50 650 0 20;
+;  iec_gust           ;
+;
+  begin mann;
+    filename_u    .\turb\nm80_iec_1006u.bin ;      
+    filename_v    .\turb\nm80_iec_1006v.bin ;        
+    filename_w    .\turb\nm80_iec_1006w.bin ;      
+    box_dim_u   16384 1.031494 ;
+    box_dim_v     32 2.8125 ;
+    box_dim_w     32 2.8125 ;          
+    std_scaling   1.0 0.8 0.5 ;
+  end mann;
+;
+  begin tower_shadow_potential;
+    tower_offset 0.0 ;
+    nsec  2;
+    radius      0.0 2.1 ;
+    radius    -60.0 1.25 ;
+  end tower_shadow_potential;
+;
+end wind;
+;
+;
+; AEROLOAD DATA INPUT
+; AEROLOAD DATA INPUT
+; AEROLOAD DATA INPUT
+;
+begin aero ;
+  nblades  3;
+  hub_vec shaft -3 ;          vector from hub (normal to rotor plane) directed towards tower top
+  link 1 mbdy_c2_def blade1;
+  link 2 mbdy_c2_def blade2;
+  link 3 mbdy_c2_def blade3;
+  ae_filename        ./data/hawc_ae.001 ;
+  pc_filename        ./data/hawc_pc.388 ;
+  induction_method   1 ;     0=none, 1=normal
+  aerocalc_method    1 ;     0=ingen aerodynamic, 1=med aerodynamic
+  aerosections       50 ;
+  ae_sets            1 1 1;
+  tiploss_method     1 ;     0=none, 1=normal
+  dynstall_method    2 ;     0=none, 1=stig øye method,2=mhh method
+;
+;
+; NOISE INPUT
+; NOISE INPUT
+; NOISE INPUT
+;
+  begin aero_noise ;
+    noise_mode  4 ; 1=Interactive, 2=Store data(for later post-processing)
+;                 ; 3=Post-process stored data, 4=Post-process averaged data(Much faster) (Dflt:0)
+    output_filename   aeroload  ;
+    noise_start_end_time  60.0 63.58 ; 1rot T=3.57s  2rot=57.14s  (Dflt: Noise calculation at all time)
+    noise_deltat    0.05 ; [s]  (Dflt: Noise calculation at each HAWC2 time-step)
+    noise_azimuth_sectors  32 ; (Dflt: 16)
+    atmospheric_pressure  101325.0 ; [Pa]          (Dflt:101325=1bar or atm..?)
+    temperature           15.0     ; [^o Celsius]  (Dflt: 20)
+   octave_bandwidth       3 ; 0=No noise calculation, 1=1Hz, 3-12-24=octave band widths  (Dflt:3)
+   turbulent_inflow_noise 1 ; 0=none, 1= Amiet+VK, 2=Amiet+Mann
+   turbulent_inflow_thickness_correction  1 ; 0=none, 1=Moriarty's thickness model
+   inflow_turbulence_intensity  08.0 ; [%] (Dflt: 8.0)
+;   mann_turbulence_parameters  29.4 1.0 3.7 ; Lintsl, Alpha.Epsilon^2/3, Gamma (if<0 calculated auto.)
+;                                            ; (Dflt: 29.4 1.0 3.7)
+;   surface_roughness   0.10 ; [m] (Dflt: 0.05)
+   trailing_edge_noise  31 ; 31 ; 0=none, >0: see model_TE_TNO_Amiet.f90 (5: TNO_frba, 31: Amiet_frba, 41: TNO_asfi)
+   bldata_filename ./data/nm80_bldata_xf_Ncrit3.dat ;
+   stall_noise            1 ; 0=none, 1=Amiet, 2=Full
+   tip_noise              0 ; 0=none, 1=BPM , 10=Moreau
+;  xyz_observer ; Observer location in reference frame ; from WT_yaw=300.7??
+;  xyz_observer  X(=+E) Y(=-N) Z(=-alt) for Mic.no... at 10 rotor radius
+ xyz_observer     -6.0686     99.6198    733.5100  ; Drct./Obs.no.1
+ xyz_observer   -172.1259      4.5959    721.0100  ; Drct./Obs.no.2
+ xyz_observer    -25.2374   -219.9693    708.5100  ; Drct./Obs.no.3
+ xyz_observer    255.6394    -52.2918    696.0100  ; Drct./Obs.no.4
+ xyz_observer     84.0686    282.4330    683.5100  ; Drct./Obs.no.5
+ xyz_observer   -301.6915    119.3970    671.0100  ; Drct./Obs.no.6
+ xyz_observer   -157.3284   -314.0799    658.5100  ; Drct./Obs.no.7
+ xyz_observer    319.9844   -197.0302    646.0100  ; Drct./Obs.no.8
+ xyz_observer    237.7404    319.6724    633.5100  ; Drct./Obs.no.9
+ xyz_observer   -313.3672    278.7462    621.0100  ; Drct./Obs.no.10
+ xyz_observer   -319.3740   -301.2867    608.5100  ; Drct./Obs.no.11
+ xyz_observer    283.6644   -358.9853    596.0100  ; Drct./Obs.no.12
+ xyz_observer    396.9755    260.7612    583.5100  ; Drct./Obs.no.13
+ xyz_observer   -232.8712    432.7753    571.0100  ; Drct./Obs.no.14
+ xyz_observer   -465.8521   -200.3254    558.5100  ; Drct./Obs.no.15
+ xyz_observer    163.4915   -495.7131    546.0100  ; Drct./Obs.no.16
+ xyz_observer    521.9076    122.7736    533.5100  ; Drct./Obs.no.17
+ xyz_observer    -78.6098    544.0303    521.0100  ; Drct./Obs.no.18
+ xyz_observer   -561.7233    -31.4694    508.5100  ; Drct./Obs.no.19
+ xyz_observer    -18.1504   -574.6795    496.0100  ; Drct./Obs.no.20
+ xyz_observer    582.6438    -69.7290    483.5100  ; Drct./Obs.no.21
+ xyz_observer    122.7269    585.4157    471.0100  ; Drct./Obs.no.22
+ xyz_observer   -582.8502    176.5900    458.5100  ; Drct./Obs.no.23
+ xyz_observer   -230.7553   -574.8591    446.0100  ; Drct./Obs.no.24
+ xyz_observer    561.4109   -284.6554    433.5100  ; Drct./Obs.no.25
+ xyz_observer    337.7246    542.5316    421.0100  ; Drct./Obs.no.26
+ xyz_observer   -518.3033    389.4035    408.5100  ; Drct./Obs.no.27
+ xyz_observer   -439.1445   -488.8640    396.0100  ; Drct./Obs.no.28
+ xyz_observer    454.4054   -486.4172    383.5100  ; Drct./Obs.no.29
+ xyz_observer    530.7129    415.1714    371.0100  ; Drct./Obs.no.30
+ xyz_observer   -371.4553    571.5500    358.5100  ; Drct./Obs.no.31
+ xyz_observer   -608.4783   -323.5972    346.0100  ; Drct./Obs.no.32
+ xyz_observer    271.9802   -641.0832    333.5100  ; Drct./Obs.no.33
+ xyz_observer    668.9900    217.0274    321.0100  ; Drct./Obs.no.34
+ xyz_observer   -159.1970    691.8669    308.5100  ; Drct./Obs.no.35
+ xyz_observer   -709.4288    -98.9784    296.0100  ; Drct./Obs.no.36
+ xyz_observer     36.8877   -721.4397    283.5100  ; Drct./Obs.no.37
+ xyz_observer    727.7150    -26.5379    271.0100  ; Drct./Obs.no.38
+ xyz_observer     90.7446    728.1235    258.5100  ; Drct./Obs.no.39
+ xyz_observer   -722.5884    155.1676    246.0100  ; Drct./Obs.no.40
+ xyz_observer   -219.2361   -711.0882    233.5100  ; Drct./Obs.no.41
+ xyz_observer    693.6573   -282.3791    221.0100  ; Drct./Obs.no.42
+ xyz_observer    344.0306    670.3852    208.5100  ; Drct./Obs.no.43
+ xyz_observer   -641.4162    403.6349    196.0100  ; Drct./Obs.no.44
+ xyz_observer   -460.6519   -606.9479    183.5100  ; Drct./Obs.no.45
+ xyz_observer    567.2295   -514.5620    171.0100  ; Drct./Obs.no.46
+ xyz_observer    564.8716    522.5596    158.5100  ; Drct./Obs.no.47
+ xyz_observer   -473.2833    611.1169    146.0100  ; Drct./Obs.no.48
+ xyz_observer   -652.8689   -419.7894    133.5100  ; Drct./Obs.no.49
+ xyz_observer    362.5066   -689.7372    121.0100  ; Drct./Obs.no.50
+ xyz_observer    721.3737    301.8996    108.5100  ; Drct./Obs.no.51
+ xyz_observer   -238.4652    747.4759     96.0100  ; Drct./Obs.no.52
+ xyz_observer   -767.7898   -172.7272     83.5100  ; Drct./Obs.no.53
+ xyz_observer    105.2321   -782.1123     71.0100  ; Drct./Obs.no.54
+ xyz_observer    790.2930     36.5438     58.5100  ; Drct./Obs.no.55
+ xyz_observer     32.7614    792.2358     46.0100  ; Drct./Obs.no.56
+ xyz_observer   -787.9001    102.1002     33.5100  ; Drct./Obs.no.57
+ xyz_observer   -170.8873   -777.3004     21.0100  ; Drct./Obs.no.58
+ xyz_observer    760.5074   -238.5413      8.5100  ; Drct./Obs.no.59
+ xyz_observer    304.4896    737.6463     -3.9900  ; Drct./Obs.no.60
+ xyz_observer   -708.8963    368.1738    -16.4900  ; Drct./Obs.no.61
+ xyz_observer   -429.0547   -674.4891    -28.9900  ; Drct./Obs.no.62
+ xyz_observer    634.7062   -486.6174    -41.4900  ; Drct./Obs.no.63
+ xyz_observer    540.3757    589.8771    -53.9900  ; Drct./Obs.no.64
+ xyz_observer   -540.3757    589.8771    -66.4900  ; Drct./Obs.no.65
+ xyz_observer   -634.7062   -486.6174    -78.9900  ; Drct./Obs.no.66
+ xyz_observer    429.0547   -674.4891    -91.4900  ; Drct./Obs.no.67
+ xyz_observer    708.8963    368.1738   -103.9900  ; Drct./Obs.no.68
+ xyz_observer   -304.4896    737.6463   -116.4900  ; Drct./Obs.no.69
+ xyz_observer   -760.5074   -238.5413   -128.9900  ; Drct./Obs.no.70
+ xyz_observer    170.8873   -777.3004   -141.4900  ; Drct./Obs.no.71
+ xyz_observer    787.9001    102.1002   -153.9900  ; Drct./Obs.no.72
+ xyz_observer    -32.7614    792.2358   -166.4900  ; Drct./Obs.no.73
+ xyz_observer   -790.2930     36.5438   -178.9900  ; Drct./Obs.no.74
+ xyz_observer   -105.2321   -782.1123   -191.4900  ; Drct./Obs.no.75
+ xyz_observer    767.7898   -172.7272   -203.9900  ; Drct./Obs.no.76
+ xyz_observer    238.4652    747.4759   -216.4900  ; Drct./Obs.no.77
+ xyz_observer   -721.3737    301.8996   -228.9900  ; Drct./Obs.no.78
+ xyz_observer   -362.5066   -689.7372   -241.4900  ; Drct./Obs.no.79
+ xyz_observer    652.8689   -419.7894   -253.9900  ; Drct./Obs.no.80
+ xyz_observer    473.2833    611.1169   -266.4900  ; Drct./Obs.no.81
+ xyz_observer   -564.8716    522.5596   -278.9900  ; Drct./Obs.no.82
+ xyz_observer   -567.2295   -514.5620   -291.4900  ; Drct./Obs.no.83
+ xyz_observer    460.6519   -606.9479   -303.9900  ; Drct./Obs.no.84
+ xyz_observer    641.4162    403.6349   -316.4900  ; Drct./Obs.no.85
+ xyz_observer   -344.0306    670.3852   -328.9900  ; Drct./Obs.no.86
+ xyz_observer   -693.6573   -282.3791   -341.4900  ; Drct./Obs.no.87
+ xyz_observer    219.2361   -711.0882   -353.9900  ; Drct./Obs.no.88
+ xyz_observer    722.5884    155.1676   -366.4900  ; Drct./Obs.no.89
+ xyz_observer    -90.7446    728.1235   -378.9900  ; Drct./Obs.no.90
+ xyz_observer   -727.7150    -26.5379   -391.4900  ; Drct./Obs.no.91
+ xyz_observer    -36.8877   -721.4397   -403.9900  ; Drct./Obs.no.92
+ xyz_observer    709.4288    -98.9784   -416.4900  ; Drct./Obs.no.93
+ xyz_observer    159.1970    691.8669   -428.9900  ; Drct./Obs.no.94
+ xyz_observer   -668.9900    217.0274   -441.4900  ; Drct./Obs.no.95
+ xyz_observer   -271.9802   -641.0832   -453.9900  ; Drct./Obs.no.96
+ xyz_observer    608.4783   -323.5972   -466.4900  ; Drct./Obs.no.97
+ xyz_observer    371.4553    571.5500   -478.9900  ; Drct./Obs.no.98
+ xyz_observer   -530.7129    415.1714   -491.4900  ; Drct./Obs.no.99
+ xyz_observer   -454.4054   -486.4172   -503.9900  ; Drct./Obs.no.100
+ xyz_observer    439.1445   -488.8640   -516.4900  ; Drct./Obs.no.101
+ xyz_observer    518.3033    389.4035   -528.9900  ; Drct./Obs.no.102
+ xyz_observer   -337.7246    542.5316   -541.4900  ; Drct./Obs.no.103
+ xyz_observer   -561.4109   -284.6554   -553.9900  ; Drct./Obs.no.104
+ xyz_observer    230.7553   -574.8591   -566.4900  ; Drct./Obs.no.105
+ xyz_observer    582.8502    176.5900   -578.9900  ; Drct./Obs.no.106
+ xyz_observer   -122.7269    585.4157   -591.4900  ; Drct./Obs.no.107
+ xyz_observer   -582.6438    -69.7290   -603.9900  ; Drct./Obs.no.108
+ xyz_observer     18.1504   -574.6795   -616.4900  ; Drct./Obs.no.109
+ xyz_observer    561.7233    -31.4694   -628.9900  ; Drct./Obs.no.110
+ xyz_observer     78.6098    544.0303   -641.4900  ; Drct./Obs.no.111
+ xyz_observer   -521.9076    122.7736   -653.9900  ; Drct./Obs.no.112
+ xyz_observer   -163.4915   -495.7131   -666.4900  ; Drct./Obs.no.113
+ xyz_observer    465.8521   -200.3254   -678.9900  ; Drct./Obs.no.114
+ xyz_observer    232.8712    432.7753   -691.4900  ; Drct./Obs.no.115
+ xyz_observer   -396.9755    260.7612   -703.9900  ; Drct./Obs.no.116
+ xyz_observer   -283.6644   -358.9853   -716.4900  ; Drct./Obs.no.117
+ xyz_observer    319.3740   -301.2867   -728.9900  ; Drct./Obs.no.118
+ xyz_observer    313.3672    278.7462   -741.4900  ; Drct./Obs.no.119
+ xyz_observer   -237.7404    319.6724   -753.9900  ; Drct./Obs.no.120
+ xyz_observer   -319.9844   -197.0302   -766.4900  ; Drct./Obs.no.121
+ xyz_observer    157.3284   -314.0799   -778.9900  ; Drct./Obs.no.122
+ xyz_observer    301.6915    119.3970   -791.4900  ; Drct./Obs.no.123
+ xyz_observer    -84.0686    282.4330   -803.9900  ; Drct./Obs.no.124
+ xyz_observer   -255.6394    -52.2918   -816.4900  ; Drct./Obs.no.125
+ xyz_observer     25.2374   -219.9693   -828.9900  ; Drct./Obs.no.126
+ xyz_observer    172.1259      4.5959   -841.4900  ; Drct./Obs.no.127
+ xyz_observer      6.0686     99.6198   -853.9900  ; Drct./Obs.no.128
+  end aero_noise ;
+;
+end aero ;
+;
+begin output;
+  filename ./res/case1_yaw0deg ;
+;  data_format hawc_binary;
+  time 50.0 70.;
+  buffer 1 ;  Udskriftsfrekvens 
+;
+  general time;
+  aero azimuth 1;
+  aero omega ;
+  aero thrust ;
+  aero torque;
+  aero power;
+  wind free_wind 1 0.0 0.0 -60.0;
+;  constraint bearing1 shaft_rot 2;
+;  constraint bearing1 shaft_rot 1;
+  aero alfa 1 13.04 ;
+  aero cl   1 13.04 ;
+  aero vrel 1 13.04 ;
+  aero secforce 1 1 13.04;
+  aero secforce 1 2 13.04;
+  aero alfa 1 19.04 ;
+  aero cl   1 19.04 ;
+  aero vrel 1 19.04 ;
+  aero secforce 1 1 19.04;
+  aero secforce 1 2 19.04;
+  aero alfa 1 30.04 ;
+  aero cl   1 30.04 ;
+  aero vrel 1 30.04 ;
+  aero secforce 1 1 30.04;
+  aero secforce 1 2 30.04;
+  aero alfa 1 37.04 ;
+  aero cl   1 37.04 ;
+  aero vrel 1 37.04 ;
+  aero secforce 1 1 37.04;
+  aero secforce 1 2 37.04;
+  aero alfa 2 37.04 ;
+  aero alfa 3 37.04 ;
+  aero vrel 1 31 ;
+  aero vrel 1 36 ;
+;;  wind_wake wake_pos 1 ;
+;  mbdy momentvec tower 1 1 tower  # Tower bottom;
+;  mbdy forcevec  tower 1 1 tower  # Tower botttom;
+;  mbdy momentvec tower 9 2 tower # Tower top (yaw bearing);
+;  mbdy forcevec  tower 9 2 tower # Tower top (yaw bearing);
+;  mbdy momentvec shaft 3 1 shaft  # Shaft (1st main bearing);
+;  mbdy forcevec  shaft 3 1 shaft  # Shaft (1st main bearing);
+;;  mbdy forcevec  blade1 1 1 hub1  # Blade1 (root non-rot);
+;;  mbdy momentvec blade1 1 1 hub1  # Blade1 (root non-rot);
+;  mbdy forcevec  blade1 1 1 blade1  # Blade1 (root pitching);
+;  mbdy momentvec blade1 1 1 blade1  # Blade1 (root pitching);
+;  mbdy momentvec blade1 4 1 blade1  # Blade1 (SG pos 3.08);
+;  mbdy momentvec blade1 12 1 blade1  # Blade1 (rad 50%);
+;  mbdy momentvec blade3 1 1 blade3  # Blade3 (root);
+;  mbdy state pos tower 1 0.0 global # Position tower bottom;
+;  mbdy state pos tower 9 1.0 global # Position tower top;
+;  mbdy state pos blade1  14 1.0 blade1 # blade 1 midt pos ;
+;  mbdy state pos blade1  22 1.0 blade1 # blade 1 tip pos ;
+;  mbdy state pos blade2  22 1.0 blade2 # blade 2 tip pos ;
+;  mbdy state pos blade3  22 1.0 blade3 # blade 3 tip pos ;
+;  mbdy state vel tower 9 1.0 global # Velocity tower top;
+;  mbdy state acc tower 9 1.0 global # Acceleration tower top;
+;  mbdy state_rot omega shaft 1 0.0 global;
+  ; dll inpvec 1 1 # Pe;
+  ; dll inpvec 1 2 # theta1 ;
+  ; dll inpvec 1 3  # theta2;
+  ; dll inpvec 1 4 # theta3;
+  ; dll inpvec 1 5 # mgen;
+  ; dll inpvec 1 6 # pitang_com;
+  ; dll inpvec 1 7 # pit_limit;
+  ; dll inpvec 1 8 #switch1;
+  ; dll inpvec 1 9 # switch2;
+  ; dll inpvec 1 10 # outmin;
+  ; dll inpvec 1 11 # Tref;
+  ; dll inpvec 1 12 # omegafilt;
+  ; dll inpvec 2 1 ;
+  ; dll inpvec 3 1 ;
+  ; dll inpvec 3 2 ;
+  ; dll inpvec 3 3 ;
+  ; dll inpvec 3 4 ;
+  ; dll inpvec 3 5 ;
+  ; dll inpvec 3 6 ;
+end output;
+;
+exit ;
