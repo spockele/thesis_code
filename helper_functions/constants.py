@@ -1,1 +1,0 @@
-c = 343  # Speed of Sound [m/s]
