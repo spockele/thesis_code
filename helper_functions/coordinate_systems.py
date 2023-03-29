@@ -5,7 +5,19 @@ from . import limit_angle
 """
 
 
-class Cartesian:
+class Coordinates:
+    def __init__(self, vec):
+        """
+        Super class for all coordinate systems to universally type set them.
+        :param vec: the coordinate vector as determined in the child class.
+        """
+        self.vec = vec
+
+    def __str__(self):
+        return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
+
+
+class Cartesian(Coordinates):
     def __init__(self, x: float, y: float, z: float):
         """
         Class to store a point in CARTESIAN coordinates.
@@ -13,10 +25,7 @@ class Cartesian:
         :param y: Coordinate on the y-axis.
         :param z: Coordinate on the z-axis.
         """
-        self.vec = np.array((x, y, z))
-
-    def __str__(self):
-        return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
+        super().__init__(np.array((x, y, z)))
 
     def __repr__(self):
         return f'<Cartesian: {str(self)}>'
@@ -24,7 +33,7 @@ class Cartesian:
     def __add__(self, other):
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec + other.vec))
-        elif isinstance(other, Spherical) or isinstance(other, Cylindrical):
+        elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec + other.to_cartesian().vec))
         else:
             raise TypeError('Cannot add this data type to a Cartesian coordinate.')
@@ -32,7 +41,7 @@ class Cartesian:
     def __sub__(self, other):
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec - other.vec))
-        elif isinstance(other, Spherical) or isinstance(other, Cylindrical):
+        elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec - other.to_cartesian().vec))
         else:
             raise TypeError('Cannot subtract this data type from a Cartesian coordinate.')
@@ -74,7 +83,7 @@ class Cartesian:
         return HeadRelatedSpherical(r, azimuth, polar, origin, rotation)
 
 
-class NonCartesian:
+class NonCartesian(Coordinates):
     def __init__(self, vec: np.array, origin: Cartesian):
         """
         Super class for the non-Cartesian coordinate systems containing all their conversions
@@ -82,11 +91,8 @@ class NonCartesian:
         :param vec: the coordinate vector as determined in the child class.
         :param origin: Reference point around which these coordinates are determined.
         """
-        self.vec = vec
+        super().__init__(vec)
         self.origin = origin
-
-    def __str__(self):
-        return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
     def __add__(self, other):
         """

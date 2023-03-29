@@ -27,9 +27,9 @@ def limit_angle(angle):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Import modules
+# Import package functions
 # ----------------------------------------------------------------------------------------------------------------------
-from .coordinate_systems import Cartesian, Cylindrical, Spherical
+from .coordinate_systems import Coordinates, Cartesian, Cylindrical, Spherical, HeadRelatedSpherical
 from .in_out import wav_to_stft, read_from_file, read_hawc2_aero_noise, write_to_file, wav_to_stft_mono, read_ntk_data
 from .data_structures import Heap
 from .isa import Atmosphere
