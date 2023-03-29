@@ -74,30 +74,25 @@ class Cartesian:
         return HeadRelatedSpherical(r, azimuth, polar, origin, rotation)
 
 
-class Spherical:
-    def __init__(self, r: float, theta: float, phi: float, origin: Cartesian):
+class NonCartesian:
+    def __init__(self, vec: np.array, origin: Cartesian):
         """
-        Class to store a point in SPHERICAL coordinates around "origin"
-        :param r: Radial coordinate.
-        :param theta: Angle in xy-plane IN RADIANS.
-        :param phi: Angle in the plane; perpendicular to xy-plane, and through origin and point.
-                    Zero when parallel to z-axis. IN RADIANS.
+        Super class for the non-Cartesian coordinate systems containing all their conversions
+        ONLY THE _to_cartesian() FUNCTION IS TO BE OVERWRITTEN, AS WELL AS THE __init__().
+        :param vec: the coordinate vector as determined in the child class.
         :param origin: Reference point around which these coordinates are determined.
         """
-        self.vec = np.array((r, limit_angle(theta), limit_angle(phi)))
+        self.vec = vec
         self.origin = origin
 
     def __str__(self):
         return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
-    def __repr__(self):
-        return f'<Spherical: {str(self)}, around {str(self.origin)}>'
-
     def __add__(self, other):
         """
         Addition of other to self, which is then referred to self.origin.
         """
-        if isinstance(other, type(self)):
+        if issubclass(type(other), NonCartesian):
             cart1 = self.to_cartesian()
             cart2 = other.to_cartesian()
             cart = cart1 + cart2
@@ -117,7 +112,7 @@ class Spherical:
         """
         Subtraction of other from self, which is then referred to self.origin.
         """
-        if isinstance(other, type(self)):
+        if issubclass(type(other), NonCartesian):
             cart1 = self.to_cartesian()
             cart2 = other.to_cartesian()
             cart = cart1 - cart2
@@ -133,16 +128,29 @@ class Spherical:
         else:
             raise TypeError('Cannot subtract this data type from a Spherical coordinate.')
 
+    def _to_cartesian(self):
+        """
+        TO BE OVERWRITTEN: Convert self to local Cartesian coordinate.
+        :return: (x, y, z) as unpackable array of floats
+        """
+        return self.vec
+
     def to_cartesian(self):
         """
         Convert self to a Cartesian coordinate.
         """
-        r, theta, phi = self.vec
-        x = r * np.cos(theta) * np.cos(phi)
-        y = r * np.sin(theta) * np.cos(phi)
-        z = r * np.sin(phi)
-
+        x, y, z = self._to_cartesian()
         return Cartesian(x, y, z) + self.origin
+
+    def to_spherical(self, origin: Cartesian = None):
+        """
+        Convert self to a Spherical coordinate.
+        :param origin: origin point around which to set the spherical coordinates. If None: around own origin point.
+        """
+        if origin is None:
+            origin = self.origin
+
+        return self.to_cartesian().to_spherical(origin)
 
     def to_cylindrical(self, origin: Cartesian = None):
         """
@@ -169,7 +177,34 @@ class Spherical:
         return self.to_cartesian().to_hr_spherical(origin, rotation)
 
 
-class Cylindrical:
+class Spherical(NonCartesian):
+    def __init__(self, r: float, theta: float, phi: float, origin: Cartesian):
+        """
+        Class to store a point in SPHERICAL coordinates around "origin"
+        :param r: Radial coordinate.
+        :param theta: Angle in xy-plane IN RADIANS.
+        :param phi: Angle in the plane; perpendicular to xy-plane, and through origin and point.
+                    Zero when parallel to z-axis. IN RADIANS.
+        :param origin: Reference point around which these coordinates are determined.
+        """
+        super().__init__(np.array((r, limit_angle(theta), limit_angle(phi))), origin)
+
+    def __repr__(self):
+        return f'<Spherical: {str(self)}, around {str(self.origin)}>'
+
+    def _to_cartesian(self):
+        """
+        Convert self to a local Cartesian coordinate.
+        """
+        r, theta, phi = self.vec
+        x = r * np.cos(theta) * np.cos(phi)
+        y = r * np.sin(theta) * np.cos(phi)
+        z = r * np.sin(phi)
+
+        return x, y, z
+
+
+class Cylindrical(NonCartesian):
     def __init__(self, r: float, psi: float, y: float, origin: Cartesian):
         """
         Class to store a point in Cylindrical coordinates around "origin"
@@ -178,91 +213,23 @@ class Cylindrical:
         :param y: Coordinate in the y-axis.
         :param origin: Reference point around which these coordinates are determined.
         """
-        self.vec = np.array((r, limit_angle(psi), y))
-        self.origin = origin
+        super().__init__(np.array((r, limit_angle(psi), y)), origin)
 
     def __str__(self):
         return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
-    def __repr__(self):
-        return f'<Cylindrical: {str(self)}, around {str(self.origin)}>'
-
-    def __add__(self, other):
+    def _to_cartesian(self):
         """
-        Addition of other to self, which is then referred to self.origin.
-        """
-        if isinstance(other, type(self)) or isinstance(other, Spherical):
-            cart1 = self.to_cartesian()
-            cart2 = other.to_cartesian()
-            cart = cart1 + cart2
-
-            return cart.to_cylindrical(self.origin)
-
-        elif isinstance(other, Cartesian):
-            cart1 = self.to_cartesian()
-            cart = cart1 + other
-
-            return cart.to_cylindrical(self.origin)
-
-        else:
-            raise TypeError('Cannot add this data type to a Cylindrical coordinate.')
-
-    def __sub__(self, other):
-        """
-        Subtraction of other from self, which is then referred to self.origin.
-        """
-        if isinstance(other, type(self)) or isinstance(other, Spherical):
-            cart1 = self.to_cartesian()
-            cart2 = other.to_cartesian()
-            cart = cart1 - cart2
-
-            return cart.to_cylindrical(self.origin)
-
-        elif isinstance(other, Cartesian):
-            cart1 = self.to_cartesian()
-            cart = cart1 - other
-
-            return cart.to_cylindrical(self.origin)
-
-        else:
-            raise TypeError('Cannot subtract this data type from a Cylindrical coordinate.')
-
-    def to_cartesian(self):
-        """
-        Convert self to a Cartesian coordinate.
+        Convert self to a local Cartesian coordinate.
         """
         r, psi, y = self.vec
         x = r * np.cos(psi)
         z = - r * np.sin(psi)
 
-        return Cartesian(x, y, z) + self.origin
-
-    def to_spherical(self, origin: Cartesian = None):
-        """
-        Convert self to a Spherical coordinate.
-        :param origin: origin point around which to set the spherical coordinates. If None: around own origin point.
-        """
-        if origin is None:
-            origin = self.origin
-
-        return self.to_cartesian().to_spherical(origin)
-
-    def to_hr_spherical(self, origin: Cartesian = None, rotation: float = None):
-        """
-        Convert self to a head-related spherical coordinate.
-        :param origin: origin point around which to set the spherical coordinates.
-        :param rotation: Rotation of the head in the azimuth angle. IN RADIANS.
-        """
-        if origin is None:
-            origin = self.origin
-
-        if rotation is None:
-            rotation = 0.
-
-        return self.to_cartesian().to_hr_spherical(origin, rotation)
+        return x, y, z
 
 
-class HeadRelatedSpherical:
+class HeadRelatedSpherical(NonCartesian):
     def __init__(self, r, azimuth, polar, origin, rotation):
         """
         Class to store a point in Head-Related SPHERICAL coordinates around "origin"
@@ -273,17 +240,13 @@ class HeadRelatedSpherical:
         :param origin: Reference point around which these coordinates are determined.
         :param rotation: Rotation of the head in the azimuth angle. IN RADIANS.
         """
-        self.vec = np.array((r, limit_angle(azimuth), limit_angle(polar)))
-        self.origin = origin
+        super().__init__(np.array((r, limit_angle(azimuth), limit_angle(polar))), origin)
         self.rotation = limit_angle(rotation)
-
-    def __str__(self):
-        return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
     def __repr__(self):
         return f'<HR-Spherical: {str(self)}, around {str(self.origin)} with rotation {self.rotation}>'
 
-    def to_cartesian(self):
+    def _to_cartesian(self):
         """
         Convert self to a Cartesian coordinate.
         """
@@ -292,27 +255,7 @@ class HeadRelatedSpherical:
         y = r * np.cos(az + self.rotation) * np.cos(po)
         z = - r * np.sin(po)
 
-        return Cartesian(x, y, z) + self.origin
-
-    def to_spherical(self, origin: Cartesian = None):
-        """
-        Convert self to a Spherical coordinate.
-        :param origin: origin point around which to set the spherical coordinates. If None: around own origin point.
-        """
-        if origin is None:
-            origin = self.origin
-
-        return self.to_cartesian().to_spherical(origin)
-
-    def to_cylindrical(self, origin: Cartesian = None):
-        """
-        Convert self to a Cylindrical coordinate.
-        :param origin: origin point around which to set the cylindrical coordinates. If None: around own origin point.
-        """
-        if origin is None:
-            origin = self.origin
-
-        return self.to_cartesian().to_cylindrical(origin)
+        return x, y, z
 
 
 if __name__ == '__main__':
