@@ -26,6 +26,15 @@ def limit_angle(angle):
     return np.arctan2(np.sin(angle), np.cos(angle))
 
 
+def a_weighting(f):
+    """
+    A-weighting function Delta L_A
+    :param f: frequency array
+    :return: Array with corresponding values of Delta L_A
+    """
+    return -145.528 + 98.262 * np.log10(f) - 19.509 * np.log10(f) ** 2 + 0.975 * np.log10(f) ** 3
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Import package functions
 # ----------------------------------------------------------------------------------------------------------------------
@@ -33,3 +42,4 @@ from .coordinate_systems import Coordinates, Cartesian, Cylindrical, Spherical, 
 from .in_out import wav_to_stft, read_from_file, read_hawc2_aero_noise, write_to_file, wav_to_stft_mono, read_ntk_data
 from .data_structures import Heap
 from .isa import Atmosphere
+from .hrtf import MitHrtf
