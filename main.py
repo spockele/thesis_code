@@ -204,9 +204,12 @@ if __name__ == '__main__':
     # plt.close()
 
 
-    hf.Atmosphere(generate=True)
-    atmosphere = hf.Atmosphere()
-    # h = random.uniform(atmosphere.alt[0], atmosphere.alt[-1])
-    h = np.linspace(0, 1000, 5)
-    print(h, atmosphere.conditions(h)[-1])
-    atmosphere.plot()
+    # hf.Atmosphere(generate=True)
+    # atmosphere = hf.Atmosphere(50, 10)
+    # # h = random.uniform(atmosphere.alt[0], atmosphere.alt[-1])
+    # h = np.linspace(0, 1000, 5)
+    # print(h, atmosphere.conditions(h)[-1])
+    # atmosphere.plot()
+
+    hrtf = hf.MitHrtf()
+    hrtf.plot_horizontal()
