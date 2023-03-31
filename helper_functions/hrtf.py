@@ -37,14 +37,18 @@ class MitHrtf:
             self.hrtf_r[pi] = spfft.fft(hrir_r)[:n // 2]
 
     def get_hrtf(self):
-        raise NotImplementedError("HAHA, f you")
+        raise NotImplementedError("HAHA, f*** you")
 
     def plot_horizontal(self):
+        """
+        Plot the HRTF for all azimuth angles in the horizontal plane in dB
+        """
+        # Create some empty lists to temp store the plots
         x_l_lst = []
         x_r_lst = []
         f_lst = []
         th_lst = []
-
+        # Collect the HRTFs on the horizontal plane
         for pi, pos in enumerate(self.pos):
             if pos[1] == 0.:
                 th_lst.append(pos[0] * np.ones(self.f.size))
@@ -52,13 +56,15 @@ class MitHrtf:
                 x_l_lst.append(20 * np.log10(2 * np.abs(self.hrtf_l[pi])))
                 x_r_lst.append(20 * np.log10(2 * np.abs(self.hrtf_r[pi])))
 
+        # Convert all this stuff to numpy arrays for reasons only known to god at this point
         x_l_lst = np.array(x_l_lst)
         x_r_lst = np.array(x_r_lst)
         f_lst = np.array(f_lst)
         th_lst = np.degrees(np.array(th_lst))
 
+        # Define the lowest value for the colorbar
         vmin = -40
-
+        # Plot for the left ear
         plt.figure(1)
         cmesh = plt.pcolormesh(f_lst, th_lst, x_l_lst, vmin=vmin, )
         cbar = plt.colorbar(cmesh)
@@ -68,8 +74,8 @@ class MitHrtf:
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_l_lst), 10), np.max(x_l_lst)))
         plt.yticks((0, 60, 120, 180, 240, 300, 360))
-        # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/HRTF_left.pdf')
-
+        plt.savefig('./plots/HRTF_left.png')
+        # Plot for the right ear
         plt.figure(2)
         cmesh = plt.pcolormesh(f_lst, th_lst, x_r_lst, vmin=vmin, )
         cbar = plt.colorbar(cmesh)
@@ -79,7 +85,7 @@ class MitHrtf:
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)))
         plt.yticks((0, 60, 120, 180, 240, 300, 360))
-        # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/HRTF_right.pdf')
+        plt.savefig('./plots/HRTF_right.png')
 
         plt.show()
 
