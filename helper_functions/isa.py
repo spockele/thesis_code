@@ -5,14 +5,26 @@ from . import t_0, r_air, g, gamma_air, write_to_file, read_from_file
 
 
 class Atmosphere:
-    def __init__(self, generate=False):
+    def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None):
+        """
+        Class containing the ISO Standard Atmosphere (ISO, 1975) and a logarithmic wind profile.
+        :param z_0: Reference height for the wind profile
+        :param ws_0: Wind speed at reference height z_0
+        :param wind_z0: Roughness height for the wind profile
+        :param delta_h: Float indicating the delta altitude for generation. ISA will not generate if None
+        """
         # Define the layer top altitudes and the temperature gradients per layer
         self.a = (-0.0065, 0.0000, 0.0010, 0.0028, 0.0000, -0.0028, -0.0020)
         self.h = (11000., 20000., 32000., 47000., 51000., 71000., 86000.)
 
-        if generate:
+        # Load the ISA
+        if delta_h is None:
+            isa = read_from_file('./helper_functions/isa.dat')
+            self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound = isa
+        # Generate the ISA
+        else:
             # Predefine the values per metre
-            self.alt = np.arange(0, self.h[-1] + 1, 1)
+            self.alt = np.arange(0, self.h[-1] + delta_h, delta_h)
             self.temperature = np.zeros(self.alt.shape)
             self.pressure = np.zeros(self.alt.shape)
             self.density = np.zeros(self.alt.shape)
@@ -39,50 +51,122 @@ class Atmosphere:
             stack = np.vstack((self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound))
             write_to_file(stack, './helper_functions/isa.dat')
 
+        # Set the wind profile references
+        if wind_z0 is None:
+            self.z0 = .03
         else:
-            isa = read_from_file('./helper_functions/isa.dat')
-            self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound = isa
+            self.z0 = wind_z0
 
-    def conditions(self, altitude):
-        temperature = np.interp(altitude, self.alt, self.temperature)
-        pressure = np.interp(altitude, self.alt, self.pressure)
-        density = np.interp(altitude, self.alt, self.density)
-        speed_of_sound = np.interp(altitude, self.alt, self.speed_of_sound)
+        self.ws_z0 = ws_0 / np.log(z_0 / self.z0)
 
-        return temperature, pressure, density, speed_of_sound
+    def get_temperature(self, altitude):
+        """
+        Interpolate temperature from table
+        :param altitude: Altitude(s) to interpolate at
+        :return: The temperature(s)
+        """
+        return np.interp(altitude, self.alt, self.temperature)
+
+    def get_pressure(self, altitude):
+        """
+        Interpolate pressure from table
+        :param altitude: Altitude(s) to interpolate at
+        :return: The pressure(s)
+        """
+        return np.interp(altitude, self.alt, self.pressure)
+
+    def get_density(self, altitude):
+        """
+        Interpolate density from table
+        :param altitude: Altitude(s) to interpolate at
+        :return: The density(s)
+        """
+        return np.interp(altitude, self.alt, self.density)
+
+    def get_speed_of_sound(self, altitude):
+        """
+        Interpolate speed of sound from table
+        :param altitude: Altitude(s) to interpolate at
+        :return: The speed(s) of sound
+        """
+        return np.interp(altitude, self.alt, self.speed_of_sound)
+
+    def get_wind_speed(self, altitude):
+        """
+        Get the wind speed from the logarithmic profile
+        :param altitude: Altitude(s) at which to determine the wind speed
+        :return: The wind speed(s)
+        """
+        return self.ws_z0 * np.log(altitude / self.z0)
+
+    def get_conditions(self, altitude):
+        """
+        Obtain all atmospheric conditions
+        :param altitude: Altitude(s) to obtain conditions at
+        :return: The condition(s)
+        """
+        temperature = self.get_temperature(altitude)
+        pressure = self.get_pressure(altitude)
+        density = self.get_density(altitude)
+        speed_of_sound = self.get_speed_of_sound(altitude)
+        wind_speed = self.get_speed_of_sound(altitude)
+
+        return temperature, pressure, density, speed_of_sound, wind_speed
 
     def plot(self):
-        fig1, (ax1, ax3) = plt.subplots(1, 2, sharey='all')
-        ax2 = ax1.twiny()
-
-        ax4 = ax3.twiny()
-
-        p1, = ax1.plot(self.temperature, self.alt / 1e3, color='k', label="Temperature")
-        p11, = ax1.plot([t_0, t_0], [-5, 90], linestyle=":", color='0.5', label="$0^{\\circ}C$")
-        p2, = ax2.plot(self.pressure / 1e5, self.alt / 1e3, color='k', linestyle="--", label="Pressure")
-        p4, = ax4.plot(self.density, self.alt / 1e3, color='k', linestyle="--", label="Density")
-        p3, = ax3.plot(self.speed_of_sound, self.alt / 1e3, color='k', label="Speed of sound")
-
-        ax1.set(xlabel="Temperature (K)", ylabel="Altitude (km)")
-        ax2.set(xlabel="Pressure (hPa)")
-        ax4.set(xlabel="Density (kg/m$^3$)")
-        ax3.set(xlabel="Speed of Sound (m/s)")
-
-        ax1.set_xlim(150, 290)
-        ax1.set_ylim(-5, 90)
-        ax1.set_yticks(np.arange(0, 90, 5))
-        ax2.set_xlim(-.1, 1.3)
-
-        ax4.set_xlim(-.1, 1.32)
-        ax3.set_xlim(270, 341)
-
+        """
+        Create plots of all atmospheric parameters
+        """
+        plt.figure(1)
+        plt.plot(self.temperature, self.alt / 1e3, color='k', label="ISA")
+        plt.xlabel("Temperature (K)")
+        plt.ylabel("Altitude (km)")
+        plt.xlim(180, 300)
+        plt.ylim(0, 87)
+        plt.grid()
         plt.tight_layout()
+        plt.savefig('./plots/isa_temperature.pdf')
 
-        ax1.legend(handles=[p1, p11, p2, ], loc=1)
-        ax1.grid()
-        ax3.legend(handles=[p3, p4, ], loc=1)
-        ax3.grid()
-        ax4.grid()
+        plt.figure(2)
+        plt.plot(self.pressure / 1e5, self.alt / 1e3, color='k', label="ISA")
+        plt.xlabel("Pressure (hPa)")
+        plt.ylabel("Altitude (km)")
+        plt.xlim(-.05, 1.05)
+        plt.ylim(0, 87)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig('./plots/isa_pressure.pdf')
+
+        plt.figure(3)
+        plt.plot(self.density, self.alt / 1e3, color='k', label="ISA")
+        plt.xlabel("Density (kg/m$^3$)")
+        plt.ylabel("Altitude (km)")
+        plt.xlim(-.05, 1.25)
+        plt.ylim(0, 87)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig('./plots/isa_density.pdf')
+
+        plt.figure(4)
+        plt.plot(self.speed_of_sound, self.alt / 1e3, color='k',)
+        plt.xlabel("Speed of Sound (m/s)")
+        plt.ylabel("Altitude (km)")
+        plt.xlim(270, 350)
+        plt.ylim(0, 87)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig('./plots/isa_speed_of_sound.pdf')
+
+        plt.figure(5)
+        plt.plot(self.get_wind_speed(self.alt[self.alt > 0]), self.alt[self.alt > 0] / 1e3, color='k')
+        plt.xlabel('Wind Speed (m/s)')
+        plt.ylabel('Altitude (km)')
+        plt.xlim(4, 18)
+        plt.ylim(0, 11)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig('./plots/isa_wind_speed.pdf')
+
         plt.show()
 
 
