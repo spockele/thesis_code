@@ -2,6 +2,7 @@ import numpy as np
 from . import limit_angle
 
 """
+Definitions of the used coordinate systems
 """
 
 

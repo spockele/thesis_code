@@ -4,10 +4,15 @@ import matplotlib.pyplot as plt
 from . import t_0, r_air, g, gamma_air, write_to_file, read_from_file
 
 
+"""
+Definition of the ISO standard atmosphere (*ISO 2533-1975*)
+"""
+
+
 class Atmosphere:
     def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None):
         """
-        Class containing the ISO Standard Atmosphere (ISO, 1975) and a logarithmic wind profile.
+        Class containing the ISO Standard Atmosphere (ISO 2533-1975) and a logarithmic wind profile.
         :param z_0: Reference height for the wind profile
         :param ws_0: Wind speed at reference height z_0
         :param wind_z0: Roughness height for the wind profile
@@ -19,7 +24,7 @@ class Atmosphere:
 
         # Load the ISA
         if delta_h is None:
-            isa = read_from_file('./helper_functions/isa.dat')
+            isa = read_from_file('./helper_functions/data/isa.dat')
             self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound = isa
         # Generate the ISA
         else:
@@ -49,7 +54,7 @@ class Atmosphere:
             self.speed_of_sound = np.sqrt(gamma_air * r_air * self.temperature)
 
             stack = np.vstack((self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound))
-            write_to_file(stack, './helper_functions/isa.dat')
+            write_to_file(stack, './helper_functions/data/isa.dat')
 
         # Set the wind profile references
         if wind_z0 is None:

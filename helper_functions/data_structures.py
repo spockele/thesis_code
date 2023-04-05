@@ -1,3 +1,8 @@
+"""
+Definitions of special datastructures to be used
+"""
+
+
 class Heap(list):
     """
     zero-indexed list-based min-or-max heap class

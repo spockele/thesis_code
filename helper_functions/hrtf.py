@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import scipy.fft as spfft
 
 
+"""
+Definition of the MIT measured HRTF function
+"""
+
+
 class MitHrtf:
     def __init__(self, large=False):
         """
@@ -12,7 +17,7 @@ class MitHrtf:
         """
         # Read the SOFA file with pysofaconventions
         size = "large" if large else "normal"
-        file = sofa.SOFAFile(f'./helper_functions/hrtf/mit_kemar_{size}_pinna.sofa', 'r')
+        file = sofa.SOFAFile(f'./helper_functions/data/mit_kemar_{size}_pinna.sofa', 'r')
         # Extract the list of positions
         self.pos = file.getVariableValue('SourcePosition')
         # Get the sampling frequency and number of samples of the HRIRs
