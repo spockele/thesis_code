@@ -19,7 +19,7 @@ class Atmosphere:
         :param delta_h: Float indicating the delta altitude for generation. ISA will not generate if None
         """
         # Define the layer top altitudes and the temperature gradients per layer
-        self.a = (-0.0065, 0.0000, 0.0010, 0.0028, 0.0000, -0.0028, -0.0020)
+        self.a = (-6.5e-3, 0., 1.0e-3, 2.8e-3, 0., -2.8e-3, -2.0e-3)
         self.h = (11000., 20000., 32000., 47000., 51000., 71000., 86000.)
 
         # Load the ISA
@@ -118,9 +118,10 @@ class Atmosphere:
 
         return temperature, pressure, density, speed_of_sound, wind_speed
 
-    def plot(self):
+    def plot(self, to_file=True):
         """
         Create plots of all atmospheric parameters
+        :param to_file: Boolean to set outputting the plots to pdf files
         """
         plt.figure(1)
         plt.plot(self.temperature, self.alt / 1e3, color='k', label="ISA")
@@ -130,7 +131,6 @@ class Atmosphere:
         plt.ylim(0, 87)
         plt.grid()
         plt.tight_layout()
-        plt.savefig('./plots/isa_temperature.pdf')
 
         plt.figure(2)
         plt.plot(self.pressure / 1e5, self.alt / 1e3, color='k', label="ISA")
@@ -140,7 +140,6 @@ class Atmosphere:
         plt.ylim(0, 87)
         plt.grid()
         plt.tight_layout()
-        plt.savefig('./plots/isa_pressure.pdf')
 
         plt.figure(3)
         plt.plot(self.density, self.alt / 1e3, color='k', label="ISA")
@@ -150,7 +149,6 @@ class Atmosphere:
         plt.ylim(0, 87)
         plt.grid()
         plt.tight_layout()
-        plt.savefig('./plots/isa_density.pdf')
 
         plt.figure(4)
         plt.plot(self.speed_of_sound, self.alt / 1e3, color='k',)
@@ -160,7 +158,6 @@ class Atmosphere:
         plt.ylim(0, 87)
         plt.grid()
         plt.tight_layout()
-        plt.savefig('./plots/isa_speed_of_sound.pdf')
 
         plt.figure(5)
         plt.plot(self.get_wind_speed(self.alt[self.alt > 0]), self.alt[self.alt > 0] / 1e3, color='k')
@@ -170,7 +167,18 @@ class Atmosphere:
         plt.ylim(0, 11)
         plt.grid()
         plt.tight_layout()
-        plt.savefig('./plots/isa_wind_speed.pdf')
+
+        if to_file:
+            plt.figure(1)
+            plt.savefig('./plots/isa_temperature.pdf')
+            plt.figure(2)
+            plt.savefig('./plots/isa_pressure.pdf')
+            plt.figure(3)
+            plt.savefig('./plots/isa_density.pdf')
+            plt.figure(4)
+            plt.savefig('./plots/isa_speed_of_sound.pdf')
+            plt.figure(5)
+            plt.savefig('./plots/isa_wind_speed.pdf')
 
         plt.show()
 
