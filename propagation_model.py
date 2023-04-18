@@ -119,6 +119,40 @@ class SoundRay:
         # If all else fails: this ray has not yet passed, probably
         return False
 
+    def gaussian_reception(self, frequency: np.array, receiver: hf.Cartesian):
+        """
+
+        :param frequency:
+        :param receiver:
+        :return:
+        """
+        plane = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
+        dist1 = plane.distance_to_point(receiver)
+        dist2 = (receiver - self.pos[-2]).len()
+
+        n_sq = dist2**2 - dist1**2
+
+        s = self.s[-1]
+
+        return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
+
+    def propagate(self, delta_t: float, receiver: hf.Cartesian):
+        """
+
+        :param delta_t:
+        :param receiver:
+        :return:
+        """
+        received = False
+        kill = False
+
+        while not (received or kill):
+            vel, direction, pos, delta_s = self.ray_step(delta_t)
+            received = self.check_reception(receiver, delta_s)
+
+            if self.t[-1] > .25:
+                kill = True
+
     def pos_array(self) -> np.array:
         """
         Convert awful position history to an easily readable array of shape (self.pos.size, 3)
@@ -132,41 +166,48 @@ class SoundRay:
 
 
 if __name__ == '__main__':
-    # atm = hf.Atmosphere(35.5, 10.5, )
-    # phi, theta, fail = hf.uniform_spherical_grid(29)
-    #
-    # x = np.cos(theta) * np.sin(phi)
-    # y = np.sin(theta) * np.sin(phi)
-    # z = np.cos(phi)
-    #
-    # offset = hf.Cartesian(0, 0, -35.5)
-    #
-    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    # startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
-    #
-    # for p_init in startpt:
-    #     c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
-    #     soundray = SoundRay(p_init + offset, c_init, 0, 0, 0, atm)
-    #
-    #     while soundray.t[-1] < 1:
-    #         soundray.ray_step(1e-3)
-    #
-    #     pos_arr = soundray.pos_array()
-    #
-    #     ax.plot(pos_arr[:, 0], pos_arr[:, 1], pos_arr[:, 2])
-    #     ax.set_xlabel('x (m)')
-    #     ax.set_ylabel('y (m)')
-    #     ax.set_zlabel('z (m)')
-    # plt.show()
+    atm = hf.Atmosphere(35.5, 10.5, )
+    phi, theta, fail, pd = hf.uniform_spherical_grid(32)
 
-    atm = hf.Atmosphere(1, 0, )
-    c = atm.get_speed_of_sound(0)
-    p_init = hf.Cartesian(0, 0, 0)
-    c_init = c * hf.Cartesian(1, 0, 0)
-    soundray = SoundRay(p_init, c_init, 0, 0, 0, atm)
+    x = 20.5 * np.cos(theta) * np.sin(phi)
+    y = 20.5 * np.sin(theta) * np.sin(phi)
+    z = 20.5 * np.cos(phi)
 
-    *_, ds = soundray.ray_step(.01)
-    print(soundray.check_reception(hf.Cartesian(2, 0, 0), ds))
+    offset = hf.Cartesian(0, 0, -35.5)
+    rec = hf.Cartesian(0, -35.5 - 20.5, -1.7)
+    # rec = hf.Cartesian(0, -500, -1.7)
 
-    *_, ds = soundray.ray_step(.01)
-    print(soundray.check_reception(hf.Cartesian(2, 0, 0), ds))
+    f = np.linspace(1, 44.1e3, 512)
+    spec = np.empty((len(x), 512))
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
+
+    for pi, p_init in enumerate(startpt):
+        c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
+        soundray = SoundRay(p_init + offset, c_init, 0, 0, pd, atm)
+
+        soundray.propagate(.01, rec, )
+        spec[pi] = soundray.gaussian_reception(f, rec,)
+
+        pos_arr = soundray.pos_array()
+
+        ax.plot(pos_arr[:, 0], pos_arr[:, 1], pos_arr[:, 2])
+        ax.set_xlabel('x (m)')
+        ax.set_ylabel('y (m)')
+        ax.set_zlabel('z (m)')
+
+    ax.scatter(*rec.vec)
+    plt.show()
+
+    plt.plot(f, spec.T)
+    plt.show()
+
+    # atm = hf.Atmosphere(1, 0, )
+    # c = atm.get_speed_of_sound(0)
+    # p_init = hf.Cartesian(0, 0, -10)
+    # c_init = c * hf.Cartesian(1, 1, 0) / hf.Cartesian(1, 1, 0).len()
+    # soundray = SoundRay(p_init, c_init, 0, 0, 0, atm)
+    #
+    # soundray.propagate(.01, hf.Cartesian(200, 0, 0))
+    # print(soundray.pos[-1])

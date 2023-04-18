@@ -22,7 +22,7 @@ class PerpendicularPlane3D:
 
         diff_vector = point - self.p2
 
-        return (normal_vector * diff_vector).len()
+        return sum((normal_vector * diff_vector).vec)
 
 
 if __name__ == '__main__':

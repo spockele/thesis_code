@@ -85,6 +85,6 @@ def uniform_spherical_grid(n_points: int):
         fail = True
 
     # Output the output arrays, shortened to actual number of generated points
-    return polar[:n_count + 1], azimuth[:n_count + 1], fail
+    return polar[:n_count + 1], azimuth[:n_count + 1], fail, dist
 
 
