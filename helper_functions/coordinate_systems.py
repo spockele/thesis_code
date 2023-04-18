@@ -158,7 +158,7 @@ class Cartesian(Coordinates):
         x, y, z = (self - origin).vec
         r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
         azimuth = np.arctan2(x, y) - rotation
-        polar = np.arctan2(np.sqrt(x ** 2 + y ** 2), -z)
+        polar = np.arctan2(-z, np.sqrt(x ** 2 + y ** 2))
 
         return HeadRelatedSpherical(r, azimuth, polar, origin, rotation)
 
