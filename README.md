@@ -40,6 +40,8 @@ pip install -r python_310_reqs
 >   - Definitions of special datastructures to be used.
 > - *funcs.py*
 >   - Fun little module with homeless functions and the list of constants.
+> - *geometry.py*
+>   - A module for geometrical definitions and operations.
 > - *hrtf.py*  
 >   - Definition of the MIT measured HRTF function.
 > - *in_out.py*  
