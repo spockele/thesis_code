@@ -6,6 +6,7 @@ Uncategorised functions needed for other modules in this package
 # Import python modules for functions in this file
 # ----------------------------------------------------------------------------------------------------------------------
 import numpy as np
+import warnings
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Definition of constants
@@ -63,27 +64,25 @@ def uniform_spherical_grid(n_points: int):
     # Create fail indicator if grid wants to make too many points
     fail = False
     # Loop in the polar direction
-    for mi in range(m_pol):
-        # Determine polar angle
-        pol = np.pi * (mi + .5) / m_pol
-        # Determine number of azimuthal coordinates
-        m_azi = round(2 * np.pi * np.sin(pol) / d_azi)
-        # Loop over azimuth angles
-        for ni in range(m_azi):
-            # Add polar angle to output array
-            polar[n_count] = pol
-            # Determine azimuth angle and add to output array
-            azimuth[n_count] = 2 * np.pi * ni / m_azi
-            # Up the counter by 1
-            n_count += 1
+    try:
+        for mi in range(m_pol):
+            # Determine polar angle
+            pol = np.pi * (mi + .5) / m_pol
+            # Determine number of azimuthal coordinates
+            m_azi = round(2 * np.pi * np.sin(pol) / d_azi)
+            # Loop over azimuth angles
+            for ni in range(m_azi):
+                # Add polar angle to output array
+                polar[n_count] = pol
+                # Determine azimuth angle and add to output array
+                azimuth[n_count] = 2 * np.pi * ni / m_azi
+                # Up the counter by 1
+                n_count += 1
 
-            if n_count == n_points:
-                fail = True
-                break
-
-        if n_count == n_points:
-            fail = True
-            break
+    except IndexError:
+        warnings.warn("Uniform spherical grid attempted to generate too many points. No grid is output. fail = True",
+                      RuntimeWarning)
+        fail = True
 
     # Output the output arrays, shortened to actual number of generated points
     return polar[:n_count + 1], azimuth[:n_count + 1], fail
