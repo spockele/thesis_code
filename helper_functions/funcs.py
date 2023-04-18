@@ -60,6 +60,8 @@ def uniform_spherical_grid(n_points: int):
     # Create counter and arrays for output
     n_count = 0
     polar, azimuth = np.empty((2, n_points))
+    # Create fail indicator if grid wants to make too many points
+    fail = False
     # Loop in the polar direction
     for mi in range(m_pol):
         # Determine polar angle
@@ -75,7 +77,15 @@ def uniform_spherical_grid(n_points: int):
             # Up the counter by 1
             n_count += 1
 
+            if n_count == n_points:
+                fail = True
+                break
+
+        if n_count == n_points:
+            fail = True
+            break
+
     # Output the output arrays, shortened to actual number of generated points
-    return polar[:n_count + 1], azimuth[:n_count + 1]
+    return polar[:n_count + 1], azimuth[:n_count + 1], fail
 
 
