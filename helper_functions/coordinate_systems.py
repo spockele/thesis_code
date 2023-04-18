@@ -14,6 +14,18 @@ class Coordinates:
         """
         self.vec = vec
 
+    def __getitem__(self, item):
+        if 0 >= item or item > 2:
+            raise IndexError('Coordinate vector only has 3 elements: 0 <= index <= 2')
+
+        return self.vec[item]
+
+    def __setitem__(self, key, value):
+        if 0 >= key or key > 2:
+            raise IndexError('Coordinate vector only has 3 elements: 0 <= key <= 2')
+
+        self.vec[key] = value
+
     def __str__(self):
         return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
@@ -32,6 +44,9 @@ class Cartesian(Coordinates):
         return f'<Cartesian: {str(self)}>'
 
     def __add__(self, other):
+        """
+        Addition of other to self
+        """
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec + other.vec))
         elif issubclass(type(other), NonCartesian):
@@ -40,12 +55,46 @@ class Cartesian(Coordinates):
             raise TypeError('Cannot add this data type to a Cartesian coordinate.')
 
     def __sub__(self, other):
+        """
+        Subtraction of other from self
+        """
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec - other.vec))
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec - other.to_cartesian().vec))
         else:
             raise TypeError('Cannot subtract this data type from a Cartesian coordinate.')
+
+    def __mul__(self, other):
+        """
+        Multiplication of other with self. Coordinates are multiplied elementwise.
+        """
+        if isinstance(other, Cartesian):
+            return Cartesian(*(self.vec * other.vec))
+        elif issubclass(type(other), NonCartesian):
+            return Cartesian(*(self.vec * other.to_cartesian().vec))
+        else:
+            return Cartesian(*(self.vec * other))
+
+    def __truediv__(self, other):
+        """
+        Division of other with self. Coordinates are divided elementwise.
+        """
+        if isinstance(other, Cartesian):
+            return Cartesian(*(self.vec / other.vec))
+        elif issubclass(type(other), NonCartesian):
+            return Cartesian(*(self.vec / other.to_cartesian().vec))
+        else:
+            return Cartesian(*(self.vec / other))
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __rtruediv__(self, other):
+        return self.__rtruediv__(other)
+
+    def len(self):
+        return np.sqrt(np.sum(self.vec ** 2))
 
     def to_spherical(self, origin):
         """
@@ -55,7 +104,7 @@ class Cartesian(Coordinates):
         x, y, z = (self - origin).vec
         r = np.sqrt(x ** 2 + y ** 2 + z ** 2)
         theta = np.arctan2(y, x)
-        phi = np.arctan2(np.sqrt(x ** 2 + y ** 2), z)
+        phi = np.arctan2(z, np.sqrt(x ** 2 + y ** 2))
 
         return Spherical(r, theta, phi, origin)
 
@@ -134,6 +183,49 @@ class NonCartesian(Coordinates):
 
         else:
             raise TypeError('Cannot subtract this data type from a Spherical coordinate.')
+
+    def __mul__(self, other):
+        """
+        Multiplication of other with self. Coordinates are multiplied elementwise in Cartesian form.
+        """
+        if issubclass(type(other), NonCartesian):
+            cart1 = self.to_cartesian()
+            cart2 = other.to_cartesian()
+            cart = cart1 * cart2
+
+            return cart.to_spherical(self.origin)
+
+        else:
+            cart1 = self.to_cartesian()
+            cart = cart1 * other
+
+            return cart.to_spherical(self.origin)
+
+    def __truediv__(self, other):
+        """
+        Division of other with self. Coordinates are Divided elementwise in Cartesian form.
+        """
+        if issubclass(type(other), NonCartesian):
+            cart1 = self.to_cartesian()
+            cart2 = other.to_cartesian()
+            cart = cart1 / cart2
+
+            return cart.to_spherical(self.origin)
+
+        else:
+            cart1 = self.to_cartesian()
+            cart = cart1 / other
+
+            return cart.to_spherical(self.origin)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __rtruediv__(self, other):
+        return self.__rtruediv__(other)
+
+    def len(self):
+        return self.to_cartesian().len()
 
     def _to_cartesian(self):
         """
@@ -222,8 +314,8 @@ class Cylindrical(NonCartesian):
         """
         super().__init__(np.array((r, limit_angle(psi), y)), origin)
 
-    def __str__(self):
-        return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
+    def __repr__(self):
+        return f'<Cylindrical: {str(self)}, around {str(self.origin)}>'
 
     def _to_cartesian(self):
         """
