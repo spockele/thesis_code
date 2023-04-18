@@ -96,6 +96,29 @@ class SoundRay:
 
         return vel, direction, pos, delta_s
 
+    def check_reception(self, receiver: hf.Cartesian, delta_s: float):
+        """
+        Check if the ray went past a receiver point.
+        :param receiver: the receiver point in Cartesian coordinates (m, m, m).
+        :param delta_s: the last ray path step (m).
+        :return: boolean indicating whether the receiver has been passed.
+        """
+        # Cannot check if less than two points
+        if self.pos.size < 2:
+            return False
+        # Determine perpendicular planes at last 2 points
+        plane1 = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
+        plane2 = hf.PerpendicularPlane3D(self.pos[-2], self.pos[-1])
+        # Determine distances between planes and receiver point
+        dist1 = plane1.distance_to_point(receiver)
+        dist2 = plane2.distance_to_point(receiver)
+        # Check condition for point being between planes
+        if dist1 <= delta_s and dist2 <= delta_s:
+            # If yes, the ray has passed the receiver: SUCCESS!!!
+            return True
+        # If all else fails: this ray has not yet passed, probably
+        return False
+
     def pos_array(self) -> np.array:
         """
         Convert awful position history to an easily readable array of shape (self.pos.size, 3)
@@ -109,29 +132,41 @@ class SoundRay:
 
 
 if __name__ == '__main__':
-    atm = hf.Atmosphere(35.5, 10.5, )
-    phi, theta, fail = hf.uniform_spherical_grid(29)
+    # atm = hf.Atmosphere(35.5, 10.5, )
+    # phi, theta, fail = hf.uniform_spherical_grid(29)
+    #
+    # x = np.cos(theta) * np.sin(phi)
+    # y = np.sin(theta) * np.sin(phi)
+    # z = np.cos(phi)
+    #
+    # offset = hf.Cartesian(0, 0, -35.5)
+    #
+    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    # startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
+    #
+    # for p_init in startpt:
+    #     c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
+    #     soundray = SoundRay(p_init + offset, c_init, 0, 0, 0, atm)
+    #
+    #     while soundray.t[-1] < 1:
+    #         soundray.ray_step(1e-3)
+    #
+    #     pos_arr = soundray.pos_array()
+    #
+    #     ax.plot(pos_arr[:, 0], pos_arr[:, 1], pos_arr[:, 2])
+    #     ax.set_xlabel('x (m)')
+    #     ax.set_ylabel('y (m)')
+    #     ax.set_zlabel('z (m)')
+    # plt.show()
 
-    x = np.cos(theta) * np.sin(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(phi)
+    atm = hf.Atmosphere(1, 0, )
+    c = atm.get_speed_of_sound(0)
+    p_init = hf.Cartesian(0, 0, 0)
+    c_init = c * hf.Cartesian(1, 0, 0)
+    soundray = SoundRay(p_init, c_init, 0, 0, 0, atm)
 
-    offset = hf.Cartesian(0, 0, -35.5)
+    *_, ds = soundray.ray_step(.01)
+    print(soundray.check_reception(hf.Cartesian(2, 0, 0), ds))
 
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
-
-    for p_init in startpt:
-        c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
-        soundray = SoundRay(p_init + offset, c_init, 0, 0, 0, atm)
-
-        while soundray.t[-1] < 1:
-            soundray.ray_step(1e-3)
-
-        pos_arr = soundray.pos_array()
-
-        ax.plot(pos_arr[:, 0], pos_arr[:, 1], pos_arr[:, 2])
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        ax.set_zlabel('z (m)')
-    plt.show()
+    *_, ds = soundray.ray_step(.01)
+    print(soundray.check_reception(hf.Cartesian(2, 0, 0), ds))
