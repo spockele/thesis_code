@@ -1,11 +1,10 @@
-# Auralisation of Realistic Synthetic Wind Turbine Noise for Psychoacoustic Listening Experiments
+# Auralisation of Modelled Wind Turbine Noise for Psychoacoustic Listening Experiments
 
 ---
 ### Code repository for the MSc. thesis by Josephine Siebert Pockelé.
 
 ---
-To obtain the degree of Master of Science at the *Delft University of Technology*  
-and the *Technical University of Denmark*.  
+To obtain the degree of Master of Science at the *Delft University of Technology* and the *Technical University of Denmark*.  
 ~~An electronic version of the report is available at <https://repository.tudelft.nl/>.~~
 
 ### Supervisors
@@ -20,29 +19,39 @@ and the *Technical University of Denmark*.
 ---
 ### Requirements
 - [Python](https://www.python.org/) [3.10.10](https://www.python.org/downloads/release/python-31010/)
-- Required external modules in *./python_310_reqs*
+- Required modules can be installed through:
 ```
 pip install -r python_310_reqs
 ```
 
-### Structure
+### Code Structure
 - *main.py*  
-  - ~~Runs the auralisation tool~~ A mess at this point
+  - ~~Runs the auralisation tool~~ A mess, at this point :(
+
+- *propagation_model.py*
+  - Module containing the *ray-tracing / Gaussian beam*  sound propagation model.
+
 - *helper_functions/*  
-  - Contains all functions required by the main code:
+  - Package containing all functions required by the main code, but not directly related to the main code:
+
 > - *coordinate_systems.py*  
->   - Definitions of the used coordinate systems
+>   - Definitions of the used coordinate systems.
 > - *data_structures.py*  
->   - Definitions of special datastructures to be used
+>   - Definitions of special datastructures to be used.
+> - *funcs.py*
+>   - Fun little module with homeless functions and the list of constants.
 > - *hrtf.py*  
->   - Definition of the MIT measured HRTF function
+>   - Definition of the MIT measured HRTF function.
 > - *in_out.py*  
->   - Specialised I/O functions for data files used in this code
+>   - Specialised I/O functions for data files used in this code.
 > - *isa.py*  
->   - Definition of the ISO standard atmosphere (*ISO 2533-1975*)
+>   - Definition of the ISO standard atmosphere (*ISO 2533-1975*).
 > - *data/*  
->   - Folder with all data files used by the helper functions
+>   - Folder with all data files used by the helper functions.
+
 - *hawc2_out/*  
-  - Contains the HAWC2 output files used for the report
+  - Contains the HAWC2 output files used for the report.
+
 - *plots/*
-  - Plots generated from the helper functions for the report
+  - Plots generated from the helper functions for the report.
+
