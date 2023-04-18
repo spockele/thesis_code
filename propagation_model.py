@@ -1,11 +1,90 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+import sys
+import threading
+import queue
 
 import helper_functions as hf
 
 """
 The very cool propagation model of this thesis :)
 """
+
+
+class ProgressThread(threading.Thread):
+    """
+    Subclass of threading.Thread to print the progress of a program in steps
+    """
+    def __init__(self, total: int):
+        super().__init__(name='ProgressThread')
+        self.step = 1
+        self.total = total
+        self.work = True
+        self.t0 = time.time()
+
+    def run(self) -> None:
+        """
+        Override of threading.Thread.run(self) for the printing
+        """
+        i = 0
+        print(f'Starting process')
+        while self.work and threading.main_thread().is_alive():
+            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total}        ')
+            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total} {i*"."}')
+            sys.stdout.flush()
+            i %= 5
+            i += 1
+            time.sleep(0.25)
+
+        if not threading.main_thread().is_alive() and self.work:
+            print(f'Stopped {self} after Interupt of MainThread')
+
+    def stop(self) -> None:
+        """
+        Function to stop the thread when it is not needed anymore
+        """
+        sys.stdout.write(f'\rDone after {round(time.time()- self.t0, 2)}s\n')
+        sys.stdout.flush()
+        self.work = False
+
+    def update(self):
+        """
+        Update the step counter by one
+        """
+        self.step += 1
+
+
+class PropagationThread(threading.Thread):
+    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
+                 progress: ProgressThread = None) -> None:
+        """
+
+        :param in_queue:
+        :param delta_t:
+        """
+        super().__init__()
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+
+        self.delta_t = delta_t
+        self.receiver = receiver
+
+        if progress is None:
+            self.p_thread = ProgressThread(1)
+        else:
+            self.p_thread = progress
+
+    def run(self) -> None:
+        while not self.in_queue.empty():
+            ray: SoundRay = self.in_queue.get()
+            ray.propagate(self.delta_t, self.receiver)
+            self.out_queue.put(ray)
+
+            self.p_thread.update()
+            if not threading.main_thread().is_alive():
+                print(f'Stopped {self} after Interupt of MainThread')
+                break
 
 
 class SoundRay:
@@ -167,7 +246,7 @@ class SoundRay:
 
 if __name__ == '__main__':
     atm = hf.Atmosphere(35.5, 10.5, )
-    phi, theta, fail, pd = hf.uniform_spherical_grid(32)
+    phi, theta, fail, pd = hf.uniform_spherical_grid(2048)
 
     x = 20.5 * np.cos(theta) * np.sin(phi)
     y = 20.5 * np.sin(theta) * np.sin(phi)
@@ -183,12 +262,30 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
     startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
 
+    prop_queue = queue.Queue()
+    prop_done = queue.Queue()
+
     for pi, p_init in enumerate(startpt):
         c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
         soundray = SoundRay(p_init + offset, c_init, 0, 0, pd, atm)
 
-        soundray.propagate(.01, rec, )
-        spec[pi] = soundray.gaussian_reception(f, rec,)
+        prop_queue.put(soundray)
+
+    p_thread = ProgressThread(prop_queue.qsize())
+    p_thread.start()
+    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread) for i in range(64))
+    [thread.start() for thread in threads]
+    while threading.active_count() > 2:
+        pass
+
+    p_thread.stop()
+
+    i = 0
+    while not prop_done.empty():
+        soundray = prop_done.get()
+
+        spec[i] = soundray.gaussian_reception(f, rec)
+        i += 1
 
         pos_arr = soundray.pos_array()
 
