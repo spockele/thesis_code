@@ -96,12 +96,24 @@ class Atmosphere:
         """
         return np.interp(altitude, self.alt, self.speed_of_sound)
 
+    def get_speed_of_sound_gradient(self, altitude: float):
+        """
+        Determine the gradient of c at altitude
+        :param altitude: Altitude to determine gradient at
+        :return: The speed of sound gradient
+        """
+        idx = np.argwhere(self.alt <= altitude)[-1], np.argwhere(self.alt > altitude)[0]
+        return self.speed_of_sound[idx[1]][0] - self.speed_of_sound[idx[0]][0]
+
     def get_wind_speed(self, altitude):
         """
         Get the wind speed from the logarithmic profile
         :param altitude: Altitude(s) at which to determine the wind speed
         :return: The wind speed(s)
         """
+        if altitude < self.z0:
+            return 0
+
         return self.ws_z0 * np.log(altitude / self.z0)
 
     def get_conditions(self, altitude):
