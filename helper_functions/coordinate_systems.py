@@ -2,31 +2,54 @@ import numpy as np
 from . import limit_angle
 
 """
+========================================================================================================================
 Definitions of the used coordinate systems
+========================================================================================================================
+> Coordinates -> common class for all these systems, mainly for type-setting purposes.
+
+>> Cartesian -> direct child of Coordinates to store Cartesian coordinates.
+    Contains conversions to all others
+
+>> NonCartesian -> the common class for all systems that are not Cartesian.
+    Contains the operator and conversion logic for all its child classes
+    CHILD CLASSES SHOULD OVERWRITE INTERNAL _to_cartesian(self) FUNCTION TO GENERATE LOCAL X,Y,Z VALUES
+
+>>> Spherical -> child of NonCartesian to define project spherical system
+
+>>> Cylindrical -> child of NonCartesian to define project cylindrical system
+
+>>> HeadRelatedSpherical -> child of NonCartesian to define Head-Related Spherical system
+     Biggest difference to Spherical is different definition of polar and azimuth angles
+     and a direction for the head to point in
 """
 
 
 class Coordinates:
-    def __init__(self, vec):
+    def __init__(self, vec: np.array) -> None:
         """
-        Super class for all coordinate systems to universally type set them.
+        Super class for all coordinate systems to universally type-set them.
         :param vec: the coordinate vector as determined in the child class.
         """
         self.vec = vec
 
-    def __getitem__(self, item):
-        if 0 >= item or item > 2:
+    def __getitem__(self, idx: int) -> float:
+        # Get the coordinate at idx
+        # Check that idx is in the vector
+        if 0 >= idx or idx > 2:
             raise IndexError('Coordinate vector only has 3 elements: 0 <= index <= 2')
+        # Return the coordinate
+        return self.vec[idx]
 
-        return self.vec[item]
-
-    def __setitem__(self, key, value):
-        if 0 >= key or key > 2:
+    def __setitem__(self, idx: int, value: float) -> None:
+        # Set the coordinate at idx to value
+        # Check that idx is in the vector
+        if 0 >= idx or idx > 2:
             raise IndexError('Coordinate vector only has 3 elements: 0 <= key <= 2')
+        # Set the coordinate
+        self.vec[idx] = value
 
-        self.vec[key] = value
-
-    def __str__(self):
+    def __str__(self) -> str:
+        # String representation of the coordinate vector
         return f'[{self.vec[0]}, {self.vec[1]}, {self.vec[2]}]'
 
 
@@ -34,18 +57,19 @@ class Cartesian(Coordinates):
     def __init__(self, x: float, y: float, z: float):
         """
         Class to store a point in CARTESIAN coordinates.
-        :param x: Coordinate on the x-axis.
-        :param y: Coordinate on the y-axis.
-        :param z: Coordinate on the z-axis.
+        :param x: Coordinate on the x-axis (m).
+        :param y: Coordinate on the y-axis (m).
+        :param z: Coordinate on the z-axis (m).
         """
         super().__init__(np.array((x, y, z)))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        # Nice class representation here :)
         return f'<Cartesian: {str(self)}>'
 
     def __add__(self, other):
         """
-        Addition of other to self
+        Addition of other to self.
         """
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec + other.vec))
@@ -56,7 +80,7 @@ class Cartesian(Coordinates):
 
     def __sub__(self, other):
         """
-        Subtraction of other from self
+        Subtraction of other from self.
         """
         if isinstance(other, type(self)):
             return Cartesian(*(self.vec - other.vec))
@@ -88,15 +112,21 @@ class Cartesian(Coordinates):
             return Cartesian(*(self.vec / other))
 
     def __rmul__(self, other):
+        # Multiplication is commutative when not defined above.
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
+        # Division is commutative when not defined above.
         return self.__rtruediv__(other)
 
-    def len(self):
+    def len(self) -> float:
+        """
+        Determine the vector length of this coordinate
+        :return: the vector length (m)
+        """
         return np.sqrt(np.sum(self.vec ** 2))
 
-    def to_spherical(self, origin):
+    def to_spherical(self, origin) -> Coordinates:
         """
         Convert self to a Spherical coordinate.
         :param origin: origin point around which to set the spherical coordinates.
@@ -108,7 +138,7 @@ class Cartesian(Coordinates):
 
         return Spherical(r, theta, phi, origin)
 
-    def to_cylindrical(self, origin):
+    def to_cylindrical(self, origin) -> Coordinates:
         """
         Convert self to a Cylindrical coordinate.
         :param origin: origin point around which to set the cylindrical coordinates.
@@ -119,7 +149,7 @@ class Cartesian(Coordinates):
 
         return Cylindrical(r, psi, y, origin)
 
-    def to_hr_spherical(self, origin, rotation):
+    def to_hr_spherical(self, origin, rotation: float) -> Coordinates:
         """
         Convert self to a head-related spherical coordinate.
         :param origin: origin point around which to set the spherical coordinates.
@@ -134,7 +164,7 @@ class Cartesian(Coordinates):
 
 
 class NonCartesian(Coordinates):
-    def __init__(self, vec: np.array, origin: Cartesian):
+    def __init__(self, vec: np.array, origin: Cartesian) -> None:
         """
         Super class for the non-Cartesian coordinate systems containing all their conversions
         ONLY THE _to_cartesian() FUNCTION IS TO BE OVERWRITTEN, AS WELL AS THE __init__().
@@ -224,10 +254,14 @@ class NonCartesian(Coordinates):
     def __rtruediv__(self, other):
         return self.__rtruediv__(other)
 
-    def len(self):
+    def len(self) -> float:
+        """
+        Determine the CARTESIAN vector length of this coordinate
+        :return: the vector length (m)
+        """
         return self.to_cartesian().len()
 
-    def _to_cartesian(self):
+    def _to_cartesian(self) -> np.array:
         """
         TO BE OVERWRITTEN: Convert self to local Cartesian coordinate.
         :return: (x, y, z) as unpackable array of floats
@@ -264,8 +298,8 @@ class NonCartesian(Coordinates):
     def to_hr_spherical(self, origin: Cartesian = None, rotation: float = None):
         """
         Convert self to a head-related spherical coordinate.
-        :param origin: origin point around which to set the spherical coordinates.
-        :param rotation: Rotation of the head in the azimuth angle. IN RADIANS.
+        :param origin: Origin point around which to set the cylindrical coordinates.  If None: around own origin point.
+        :param rotation: Rotation of the head in the azimuth angle. IN RADIANS. If None: no head rotation is added
         """
         if origin is None:
             origin = self.origin
@@ -277,7 +311,7 @@ class NonCartesian(Coordinates):
 
 
 class Spherical(NonCartesian):
-    def __init__(self, r: float, theta: float, phi: float, origin: Cartesian):
+    def __init__(self, r: float, theta: float, phi: float, origin: Cartesian) -> None:
         """
         Class to store a point in SPHERICAL coordinates around "origin"
         :param r: Radial coordinate.
@@ -288,10 +322,11 @@ class Spherical(NonCartesian):
         """
         super().__init__(np.array((r, limit_angle(theta), limit_angle(phi))), origin)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        # Nice class representation here :)
         return f'<Spherical: {str(self)}, around {str(self.origin)}>'
 
-    def _to_cartesian(self):
+    def _to_cartesian(self) -> (float, float, float):
         """
         Convert self to a local Cartesian coordinate.
         """
@@ -315,9 +350,10 @@ class Cylindrical(NonCartesian):
         super().__init__(np.array((r, limit_angle(psi), y)), origin)
 
     def __repr__(self):
+        # Nice class representation here :)
         return f'<Cylindrical: {str(self)}, around {str(self.origin)}>'
 
-    def _to_cartesian(self):
+    def _to_cartesian(self) -> (float, float, float):
         """
         Convert self to a local Cartesian coordinate.
         """
@@ -343,9 +379,10 @@ class HeadRelatedSpherical(NonCartesian):
         self.rotation = limit_angle(rotation)
 
     def __repr__(self):
+        # Nice class representation here :)
         return f'<HR-Spherical: {str(self)}, around {str(self.origin)} with rotation {self.rotation}>'
 
-    def _to_cartesian(self):
+    def _to_cartesian(self) -> (float, float, float):
         """
         Convert self to a Cartesian coordinate.
         """
