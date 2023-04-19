@@ -35,16 +35,16 @@ class Coordinates:
     def __getitem__(self, idx: int) -> float:
         # Get the coordinate at idx
         # Check that idx is in the vector
-        if 0 >= idx or idx > 2:
-            raise IndexError('Coordinate vector only has 3 elements: 0 <= index <= 2')
+        if 0 > idx or idx > 2:
+            raise IndexError(f'Coordinate vector only has 3 elements: 0 <= index <= 2, {idx}')
         # Return the coordinate
         return self.vec[idx]
 
     def __setitem__(self, idx: int, value: float) -> None:
         # Set the coordinate at idx to value
         # Check that idx is in the vector
-        if 0 >= idx or idx > 2:
-            raise IndexError('Coordinate vector only has 3 elements: 0 <= key <= 2')
+        if 0 > idx or idx > 2:
+            raise IndexError(f'Coordinate vector only has 3 elements: 0 <= key <= 2, {idx}')
         # Set the coordinate
         self.vec[idx] = value
 
@@ -76,7 +76,7 @@ class Cartesian(Coordinates):
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec + other.to_cartesian().vec))
         else:
-            raise TypeError('Cannot add this data type to a Cartesian coordinate.')
+            return Cartesian(*(self.vec + other))
 
     def __sub__(self, other):
         """
@@ -87,7 +87,7 @@ class Cartesian(Coordinates):
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec - other.to_cartesian().vec))
         else:
-            raise TypeError('Cannot subtract this data type from a Cartesian coordinate.')
+            return Cartesian(*(self.vec - other))
 
     def __mul__(self, other):
         """
@@ -102,7 +102,7 @@ class Cartesian(Coordinates):
 
     def __truediv__(self, other):
         """
-        Division of other with self. Coordinates are divided elementwise.
+        Division of self by other. Coordinates are divided elementwise.
         """
         if isinstance(other, Cartesian):
             return Cartesian(*(self.vec / other.vec))
@@ -116,8 +116,15 @@ class Cartesian(Coordinates):
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        # Division is commutative when not defined above.
-        return self.__rtruediv__(other)
+        """
+        Division of other by self. Coordinates are divided elementwise.
+        """
+        if isinstance(other, Cartesian):
+            return Cartesian(*(other.vec / self.vec))
+        elif issubclass(type(other), NonCartesian):
+            return Cartesian(*(other.to_cartesian().vec / self.vec))
+        else:
+            return Cartesian(*(other / self.vec))
 
     def len(self) -> float:
         """
