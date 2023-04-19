@@ -225,6 +225,16 @@ class NonCartesian(Coordinates):
 
             return cart.to_spherical(self.origin)
 
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __rsub__(self, other):
+        if not issubclass(type(other), NonCartesian):
+            cart1 = self.to_cartesian()
+            cart = other - cart1
+
+            return cart.to_spherical(self.origin)
+
     def __mul__(self, other):
         """
         Multiplication of other with self. Coordinates are multiplied elementwise in Cartesian form.
@@ -244,7 +254,7 @@ class NonCartesian(Coordinates):
 
     def __truediv__(self, other):
         """
-        Division of other with self. Coordinates are Divided elementwise in Cartesian form.
+        Division of self by other. Coordinates are Divided elementwise in Cartesian form.
         """
         if issubclass(type(other), NonCartesian):
             cart1 = self.to_cartesian()
@@ -263,7 +273,14 @@ class NonCartesian(Coordinates):
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        return self.__rtruediv__(other)
+        """
+        Division of other by self. Coordinates are Divided elementwise in Cartesian form.
+        """
+        if not issubclass(type(other), NonCartesian):
+            cart1 = self.to_cartesian()
+            cart = other / cart1
+
+            return cart.to_spherical(self.origin)
 
     def len(self) -> float:
         """
