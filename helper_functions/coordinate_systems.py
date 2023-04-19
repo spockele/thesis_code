@@ -130,11 +130,7 @@ class Cartesian(Coordinates):
         """
         Division of other by self. Coordinates are divided elementwise.
         """
-        if isinstance(other, Cartesian):
-            return Cartesian(*(other.vec / self.vec))
-        elif issubclass(type(other), NonCartesian):
-            return Cartesian(*(other.to_cartesian().vec / self.vec))
-        else:
+        if not (isinstance(other, Cartesian) or issubclass(type(other), NonCartesian)):
             return Cartesian(*(other / self.vec))
 
     def len(self) -> float:
