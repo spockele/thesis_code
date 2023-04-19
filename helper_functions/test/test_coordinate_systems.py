@@ -1,6 +1,4 @@
 import unittest
-from unittest.mock import patch
-
 import numpy as np
 
 from .. import coordinate_systems as cs
@@ -76,6 +74,11 @@ class TestCartesian(unittest.TestCase):
         self.assertEqual((self.cartesian_2 - self.non_cartesian)[0], 1.)
         self.assertEqual((self.cartesian_2 - self.non_cartesian)[1], 1.)
         self.assertEqual((self.cartesian_2 - self.non_cartesian)[2], 1.)
+
+        self.assertEqual((1- self.cartesian_2)[0], -1.)
+        self.assertEqual((1- self.cartesian_2)[1], -1.)
+        self.assertEqual((1- self.cartesian_2)[2], -1.)
+
         # Test __add__
         self.assertEqual((self.cartesian_2 + self.cartesian_1)[0], 3.)
         self.assertEqual((self.cartesian_2 + self.cartesian_1)[1], 3.)
@@ -84,6 +87,10 @@ class TestCartesian(unittest.TestCase):
         self.assertEqual((self.cartesian_2 + 1)[0], 3.)
         self.assertEqual((self.cartesian_2 + 1)[1], 3.)
         self.assertEqual((self.cartesian_2 + 1)[2], 3.)
+
+        self.assertEqual((1 + self.cartesian_2)[0], 3.)
+        self.assertEqual((1 + self.cartesian_2)[1], 3.)
+        self.assertEqual((1 + self.cartesian_2)[2], 3.)
 
         self.assertEqual((self.cartesian_2 + self.non_cartesian)[0], 3.)
         self.assertEqual((self.cartesian_2 + self.non_cartesian)[1], 3.)
@@ -185,6 +192,12 @@ class TestCartesian(unittest.TestCase):
         self.assertEqual(round(sph2[0], 3), round(2 * r1, 3))
         self.assertEqual(round(sph2[1], 4), th1)
         self.assertEqual(round(sph2[2], 4), ph1)
+
+
+class TestNonCartesian(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
 
 
 if __name__ == '__main__':

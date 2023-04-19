@@ -89,6 +89,16 @@ class Cartesian(Coordinates):
         else:
             return Cartesian(*(self.vec - other))
 
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __rsub__(self, other):
+        """
+        Subtraction of self from other.
+        """
+        if not (isinstance(other, type(self)) or issubclass(type(other), NonCartesian)):
+            return Cartesian(*(other - self.vec))
+
     def __mul__(self, other):
         """
         Multiplication of other with self. Coordinates are multiplied elementwise.
@@ -192,14 +202,11 @@ class NonCartesian(Coordinates):
 
             return cart.to_spherical(self.origin)
 
-        elif isinstance(other, Cartesian):
+        else:
             cart1 = self.to_cartesian()
             cart = cart1 + other
 
             return cart.to_spherical(self.origin)
-
-        else:
-            raise TypeError('Cannot add this data type to a Spherical coordinate.')
 
     def __sub__(self, other):
         """
@@ -212,14 +219,11 @@ class NonCartesian(Coordinates):
 
             return cart.to_spherical(self.origin)
 
-        elif isinstance(other, Cartesian):
+        else:
             cart1 = self.to_cartesian()
             cart = cart1 - other
 
             return cart.to_spherical(self.origin)
-
-        else:
-            raise TypeError('Cannot subtract this data type from a Spherical coordinate.')
 
     def __mul__(self, other):
         """
