@@ -90,6 +90,7 @@ class Cartesian(Coordinates):
             return Cartesian(*(self.vec - other))
 
     def __radd__(self, other):
+        # Addition is commutative when not defined above.
         return self.__add__(other)
 
     def __rsub__(self, other):
@@ -226,9 +227,13 @@ class NonCartesian(Coordinates):
             return cart.to_spherical(self.origin)
 
     def __radd__(self, other):
+        # Addition is commutative when not defined above.
         return self.__add__(other)
 
     def __rsub__(self, other):
+        """
+        Subtraction of self from other, which is then referred to self.origin.
+        """
         if not issubclass(type(other), NonCartesian):
             cart1 = self.to_cartesian()
             cart = other - cart1
@@ -270,6 +275,7 @@ class NonCartesian(Coordinates):
             return cart.to_spherical(self.origin)
 
     def __rmul__(self, other):
+        # Multiplication is commutative when not defined above.
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
