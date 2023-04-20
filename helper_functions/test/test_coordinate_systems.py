@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from .. import coordinate_systems as cs
+from helper_functions import coordinate_systems as cs
 
 
 class TestCoordinates(unittest.TestCase):
@@ -220,67 +220,67 @@ class TestNonCartesian(unittest.TestCase):
         Test the operators: __add__ __sub__
         """
         # Test __sub__
-        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1).to_cartesian()[0]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1).to_cartesian()[1]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1).to_cartesian()[2]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - 1).to_cartesian()[0]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - 1).to_cartesian()[1]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - 1).to_cartesian()[2]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - self.cartesian).to_cartesian()[0]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - self.cartesian).to_cartesian()[1]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 - self.cartesian).to_cartesian()[2]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1)[0]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1)[1]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.non_cartesian_1)[2]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - 1)[0]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - 1)[1]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - 1)[2]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.cartesian)[0]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.cartesian)[1]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 - self.cartesian)[2]), 1.)
         # Test __radd__
         self.assertEqual(round((1 - self.non_cartesian_2).to_cartesian()[0]), -1.)
         self.assertEqual(round((1 - self.non_cartesian_2).to_cartesian()[1]), -1.)
         self.assertEqual(round((1 - self.non_cartesian_2).to_cartesian()[2]), -1.)
 
         # Test __add__
-        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1).to_cartesian()[0]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1).to_cartesian()[1]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1).to_cartesian()[2]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + 1).to_cartesian()[0]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + 1).to_cartesian()[1]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + 1).to_cartesian()[2]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + self.cartesian).to_cartesian()[0]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + self.cartesian).to_cartesian()[1]), 3.)
-        self.assertEqual(round((self.non_cartesian_2 + self.cartesian).to_cartesian()[2]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1)[0]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1)[1]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.non_cartesian_1)[2]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + 1)[0]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + 1)[1]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + 1)[2]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.cartesian)[0]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.cartesian)[1]), 3.)
+        self.assertEqual(round((self.non_cartesian_2 + self.cartesian)[2]), 3.)
         # Test __rsub__
-        self.assertEqual(round((1 + self.non_cartesian_2).to_cartesian()[0]), 3.)
-        self.assertEqual(round((1 + self.non_cartesian_2).to_cartesian()[1]), 3.)
-        self.assertEqual(round((1 + self.non_cartesian_2).to_cartesian()[2]), 3.)
+        self.assertEqual(round((1 + self.non_cartesian_2)[0]), 3.)
+        self.assertEqual(round((1 + self.non_cartesian_2)[1]), 3.)
+        self.assertEqual(round((1 + self.non_cartesian_2)[2]), 3.)
 
     def test_mul_truediv(self):
         """
         Test the operators: __mul__ __truediv__ __rmul__ __rtruediv__
         """
         # Test __mul__
-        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1).to_cartesian()[0]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1).to_cartesian()[1]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1).to_cartesian()[2]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * self.cartesian).to_cartesian()[0]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * self.cartesian).to_cartesian()[1]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * self.cartesian).to_cartesian()[2]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 * 2).to_cartesian()[0]), 4.)
-        self.assertEqual(round((self.non_cartesian_2 * 2).to_cartesian()[1]), 4.)
-        self.assertEqual(round((self.non_cartesian_2 * 2).to_cartesian()[2]), 4.)
+        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1)[0]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1)[1]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * self.non_cartesian_1)[2]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * self.cartesian)[0]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * self.cartesian)[1]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * self.cartesian)[2]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 * 2)[0]), 4.)
+        self.assertEqual(round((self.non_cartesian_2 * 2)[1]), 4.)
+        self.assertEqual(round((self.non_cartesian_2 * 2)[2]), 4.)
         # Test __truediv__
-        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1).to_cartesian()[0]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1).to_cartesian()[1]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1).to_cartesian()[2]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / self.cartesian).to_cartesian()[0]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / self.cartesian).to_cartesian()[1]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / self.cartesian).to_cartesian()[2]), 2.)
-        self.assertEqual(round((self.non_cartesian_2 / 2).to_cartesian()[0]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 / 2).to_cartesian()[1]), 1.)
-        self.assertEqual(round((self.non_cartesian_2 / 2).to_cartesian()[2]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1)[0]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1)[1]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / self.non_cartesian_1)[2]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / self.cartesian)[0]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / self.cartesian)[1]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / self.cartesian)[2]), 2.)
+        self.assertEqual(round((self.non_cartesian_2 / 2)[0]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 / 2)[1]), 1.)
+        self.assertEqual(round((self.non_cartesian_2 / 2)[2]), 1.)
         # Test __rmul__
-        self.assertEqual(round((2 * self.non_cartesian_1).to_cartesian()[0]), 2.)
-        self.assertEqual(round((2 * self.non_cartesian_1).to_cartesian()[1]), 2.)
-        self.assertEqual(round((2 * self.non_cartesian_1).to_cartesian()[2]), 2.)
+        self.assertEqual(round((2 * self.non_cartesian_1)[0]), 2.)
+        self.assertEqual(round((2 * self.non_cartesian_1)[1]), 2.)
+        self.assertEqual(round((2 * self.non_cartesian_1)[2]), 2.)
         # Test __rtruediv__
-        self.assertEqual(round((2 / self.non_cartesian_1).to_cartesian()[0]), 2.)
-        self.assertEqual(round((2 / self.non_cartesian_1).to_cartesian()[1]), 2.)
-        self.assertEqual(round((2 / self.non_cartesian_1).to_cartesian()[2]), 2.)
+        self.assertEqual(round((2 / self.non_cartesian_1)[0]), 2.)
+        self.assertEqual(round((2 / self.non_cartesian_1)[1]), 2.)
+        self.assertEqual(round((2 / self.non_cartesian_1)[2]), 2.)
 
     def test_len(self):
         """

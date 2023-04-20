@@ -197,13 +197,13 @@ class NonCartesian(Coordinates):
             cart2 = other.to_cartesian()
             cart = cart1 + cart2
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
         else:
             cart1 = self.to_cartesian()
             cart = cart1 + other
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def __sub__(self, other):
         """
@@ -214,13 +214,13 @@ class NonCartesian(Coordinates):
             cart2 = other.to_cartesian()
             cart = cart1 - cart2
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
         else:
             cart1 = self.to_cartesian()
             cart = cart1 - other
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def __radd__(self, other):
         # Addition is commutative when not defined above.
@@ -234,7 +234,7 @@ class NonCartesian(Coordinates):
             cart1 = self.to_cartesian()
             cart = other - cart1
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def __mul__(self, other):
         """
@@ -245,13 +245,13 @@ class NonCartesian(Coordinates):
             cart2 = other.to_cartesian()
             cart = cart1 * cart2
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
         else:
             cart1 = self.to_cartesian()
             cart = cart1 * other
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def __truediv__(self, other):
         """
@@ -262,13 +262,13 @@ class NonCartesian(Coordinates):
             cart2 = other.to_cartesian()
             cart = cart1 / cart2
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
         else:
             cart1 = self.to_cartesian()
             cart = cart1 / other
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def __rmul__(self, other):
         # Multiplication is commutative when not defined above.
@@ -282,7 +282,7 @@ class NonCartesian(Coordinates):
             cart1 = self.to_cartesian()
             cart = other / cart1
 
-            return cart.to_spherical(self.origin)
+            return self._to_self(cart)
 
     def len(self) -> float:
         """
@@ -290,6 +290,13 @@ class NonCartesian(Coordinates):
         :return: the vector length (m)
         """
         return self.to_cartesian().len()
+
+    def _to_self(self, coordinates: Cartesian):
+        """
+        TO BE OVERWRITTEN: Conversion to self to support above operators
+        :return: Coordinates of type(self)
+        """
+        return NonCartesian(coordinates.vec, self.origin)
 
     def _to_cartesian(self) -> np.array:
         """
@@ -356,6 +363,13 @@ class Spherical(NonCartesian):
         # Nice class representation here :)
         return f'<Spherical: {str(self)}, around {str(self.origin)}>'
 
+    def _to_self(self, coordinates: Cartesian):
+        """
+        Conversion to self to support operators
+        :return: Coordinates of type(self)
+        """
+        return coordinates.to_spherical(self.origin)
+
     def _to_cartesian(self) -> (float, float, float):
         """
         Convert self to a local Cartesian coordinate.
@@ -382,6 +396,13 @@ class Cylindrical(NonCartesian):
     def __repr__(self):
         # Nice class representation here :)
         return f'<Cylindrical: {str(self)}, around {str(self.origin)}>'
+
+    def _to_self(self, coordinates: Cartesian):
+        """
+        Conversion to self to support operators
+        :return: Coordinates of type(self)
+        """
+        return coordinates.to_cylindrical(self.origin)
 
     def _to_cartesian(self) -> (float, float, float):
         """
@@ -411,6 +432,13 @@ class HeadRelatedSpherical(NonCartesian):
     def __repr__(self):
         # Nice class representation here :)
         return f'<HR-Spherical: {str(self)}, around {str(self.origin)} with rotation {self.rotation}>'
+
+    def _to_self(self, coordinates: Cartesian):
+        """
+        Conversion to self to support operators
+        :return: Coordinates of type(self)
+        """
+        return coordinates.to_hr_spherical(self.origin, self.rotation)
 
     def _to_cartesian(self) -> (float, float, float):
         """
