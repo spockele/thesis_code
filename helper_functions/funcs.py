@@ -112,8 +112,8 @@ class ProgressThread(threading.Thread):
         i = 0
         print(f'Starting process')
         while self.work and threading.main_thread().is_alive():
-            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total}        ')
-            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total} {i*"."}')
+            sys.stdout.write(f'\rTask {self.step}/{self.total}        ')
+            sys.stdout.write(f'\rTask {self.step}/{self.total} {i*"."}')
             sys.stdout.flush()
             i %= 5
             i += 1
