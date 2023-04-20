@@ -17,10 +17,10 @@ class Atmosphere:
     def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None):
         """
         Class containing the ISO Standard Atmosphere (ISO 2533-1975) and a logarithmic wind profile.
-        :param z_0: Reference height for the wind profile
-        :param ws_0: Wind speed at reference height z_0
-        :param wind_z0: Roughness height for the wind profile
-        :param delta_h: Float indicating the delta altitude for generation. ISA will not generate if None
+        :param z_0: Reference height for the wind profile (m)
+        :param ws_0: Wind speed at reference height z_0 (m)
+        :param wind_z0: Roughness height for the wind profile (m)
+        :param delta_h: Float indicating the delta altitude for generation (m). ISA will not generate if None
         """
         # Load the ISA
         if delta_h is None:
@@ -103,7 +103,9 @@ class Atmosphere:
         :return: The speed of sound gradient
         """
         idx = np.argwhere(self.alt <= altitude)[-1], np.argwhere(self.alt > altitude)[0]
-        return self.speed_of_sound[idx[1]][0] - self.speed_of_sound[idx[0]][0]
+        dc = (self.speed_of_sound[idx[1]][0] - self.speed_of_sound[idx[0]][0])
+        dz = (self.alt[idx[1]][0] - self.alt[idx[0]][0])
+        return dc/dz
 
     def get_wind_speed(self, altitude):
         """
@@ -111,8 +113,16 @@ class Atmosphere:
         :param altitude: Altitude(s) at which to determine the wind speed
         :return: The wind speed(s)
         """
-        if altitude < self.z0:
-            return 0
+        if isinstance(altitude, (int, float)):
+            if altitude <= self.z0:
+                return 0
+
+        elif np.any(altitude <= self.z0):
+            ws = np.zeros(altitude.shape)
+            idx = altitude > self.z0
+            ws[idx] = self.ws_z0 * np.log(altitude[idx] / self.z0)
+
+            return ws
 
         return self.ws_z0 * np.log(altitude / self.z0)
 
@@ -126,7 +136,7 @@ class Atmosphere:
         pressure = self.get_pressure(altitude)
         density = self.get_density(altitude)
         speed_of_sound = self.get_speed_of_sound(altitude)
-        wind_speed = self.get_speed_of_sound(altitude)
+        wind_speed = self.get_wind_speed(altitude)
 
         return temperature, pressure, density, speed_of_sound, wind_speed
 
@@ -172,7 +182,7 @@ class Atmosphere:
         plt.tight_layout()
 
         plt.figure(5)
-        plt.plot(self.get_wind_speed(self.alt[self.alt > 0]), self.alt[self.alt > 0] / 1e3, color='k')
+        plt.plot(self.get_wind_speed(self.alt), self.alt / 1e3, color='k')
         plt.xlabel('Wind Speed (m/s)')
         plt.ylabel('Altitude (km)')
         plt.xlim(4, 18)
