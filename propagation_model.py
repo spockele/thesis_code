@@ -31,12 +31,21 @@ class PropagationThread(threading.Thread):
             self.p_thread = progress
 
     def run(self) -> None:
+        """
+        Propagates all SoundRays in the in_queue
+        """
+        # Loop as long as the input queue has SoundRays
         while not self.in_queue.empty():
+            # Take a SoundRay from the queue
             ray: SoundRay = self.in_queue.get()
+            # Propagate this Ray with given parameters
             ray.propagate(self.delta_t, self.receiver)
+            # When that is done, put the ray in the output queue
             self.out_queue.put(ray)
-
+            # Update the progress thread so the counter goes up
             self.p_thread.update()
+
+            # Interrupt for ctrl+c type situations...
             if not threading.main_thread().is_alive():
                 print(f'Stopped {self} after Interupt of MainThread')
                 break
