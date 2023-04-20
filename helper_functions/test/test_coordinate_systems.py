@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from helper_functions import coordinate_systems as cs
+import helper_functions as hf
 
 
 class TestCoordinates(unittest.TestCase):
@@ -9,7 +9,7 @@ class TestCoordinates(unittest.TestCase):
     Tests the base Coordinates class
     """
     def setUp(self) -> None:
-        self.coordinates = cs.Coordinates(np.array((1., 1., 1.)))
+        self.coordinates = hf.Coordinates(np.array((1., 1., 1.)))
 
     def tearDown(self) -> None:
         del self.coordinates
@@ -35,11 +35,11 @@ class TestCoordinates(unittest.TestCase):
 
 class TestCartesian(unittest.TestCase):
     def setUp(self) -> None:
-        self.cartesian_0 = cs.Cartesian(0., 0., 0.)
-        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
-        self.cartesian_2 = cs.Cartesian(2., 2., 2.)
+        self.cartesian_0 = hf.Cartesian(0., 0., 0.)
+        self.cartesian_1 = hf.Cartesian(1., 1., 1.)
+        self.cartesian_2 = hf.Cartesian(2., 2., 2.)
 
-        self.non_cartesian = cs.NonCartesian(np.array((1., 1., 1.)), cs.Cartesian(0, 0, 0))
+        self.non_cartesian = hf.NonCartesian(np.array((1., 1., 1.)), hf.Cartesian(0, 0, 0))
 
     def tearDown(self) -> None:
         del self.cartesian_0
@@ -209,12 +209,12 @@ class TestCartesian(unittest.TestCase):
 
 class TestNonCartesian(unittest.TestCase):
     def setUp(self) -> None:
-        self.non_cartesian_0 = cs.NonCartesian(np.array((0., 0., 0.)), cs.Cartesian(0, 0, 0))
-        self.non_cartesian_1 = cs.NonCartesian(np.array((1., 1., 1.)), cs.Cartesian(0, 0, 0))
-        self.non_cartesian_2 = cs.NonCartesian(np.array((2., 2., 2.)), cs.Cartesian(0, 0, 0))
+        self.non_cartesian_0 = hf.NonCartesian(np.array((0., 0., 0.)), hf.Cartesian(0, 0, 0))
+        self.non_cartesian_1 = hf.NonCartesian(np.array((1., 1., 1.)), hf.Cartesian(0, 0, 0))
+        self.non_cartesian_2 = hf.NonCartesian(np.array((2., 2., 2.)), hf.Cartesian(0, 0, 0))
 
-        self.cartesian = cs.Cartesian(1., 1., 1.)
-        self.cartesian_0 = cs.Cartesian(0., 0., 0.)
+        self.cartesian = hf.Cartesian(1., 1., 1.)
+        self.cartesian_0 = hf.Cartesian(0., 0., 0.)
 
     def tearDown(self) -> None:
         del self.non_cartesian_0
@@ -252,7 +252,7 @@ class TestNonCartesian(unittest.TestCase):
         """
         Test the assignment of the origin for the transform to Cartesian
         """
-        self.assertEqual(cs.NonCartesian(np.array((0, 0, 0)), self.cartesian).to_cartesian(), self.cartesian)
+        self.assertEqual(hf.NonCartesian(np.array((0, 0, 0)), self.cartesian).to_cartesian(), self.cartesian)
 
     def test_add_sub(self):
         """
@@ -432,12 +432,12 @@ class TestNonCartesian(unittest.TestCase):
 
 class TestSpherical(unittest.TestCase):
     def setUp(self) -> None:
-        self.spherical_o = cs.Spherical(0., 0., 0., cs.Cartesian(1., 1., 1.))
-        self.spherical_0 = cs.Spherical(0., 0., 0., cs.Cartesian(0., 0., 0.))
-        self.spherical_1 = cs.Spherical(1., 1., 1., cs.Cartesian(0., 0., 0.))
-        self.spherical = cs.Spherical(1., 0., 0., cs.Cartesian(0., 0., 0.))
-        self.cartesian = cs.Cartesian(1., 0., 0.)
-        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+        self.spherical_o = hf.Spherical(0., 0., 0., hf.Cartesian(1., 1., 1.))
+        self.spherical_0 = hf.Spherical(0., 0., 0., hf.Cartesian(0., 0., 0.))
+        self.spherical_1 = hf.Spherical(1., 1., 1., hf.Cartesian(0., 0., 0.))
+        self.spherical = hf.Spherical(1., 0., 0., hf.Cartesian(0., 0., 0.))
+        self.cartesian = hf.Cartesian(1., 0., 0.)
+        self.cartesian_1 = hf.Cartesian(1., 1., 1.)
 
     def tearDown(self) -> None:
         del self.spherical_0
@@ -451,10 +451,10 @@ class TestSpherical(unittest.TestCase):
         self.assertEqual(self.spherical_1[0], 1.)
         self.assertEqual(self.spherical_1[1], 1.)
         self.assertEqual(self.spherical_1[2], 1.)
-        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+        self.assertEqual(self.spherical_1.origin, hf.Cartesian(0., 0., 0.))
 
         # Test origin point
-        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+        self.assertEqual(self.spherical_o.to_cartesian(), hf.Cartesian(1., 1., 1.))
 
         # Test __repr__
         self.assertEqual(self.spherical_0.__repr__(), '<Spherical: [0.0, 0.0, 0.0], around [0.0, 0.0, 0.0]>')
@@ -476,12 +476,12 @@ class TestSpherical(unittest.TestCase):
 
 class TestCylindrical(unittest.TestCase):
     def setUp(self) -> None:
-        self.spherical_o = cs.Cylindrical(0., 0., 0., cs.Cartesian(1., 1., 1.))
-        self.spherical_0 = cs.Cylindrical(0., 0., 0., cs.Cartesian(0., 0., 0.))
-        self.spherical_1 = cs.Cylindrical(1., 1., 1., cs.Cartesian(0., 0., 0.))
-        self.spherical = cs.Cylindrical(1., 0., 0., cs.Cartesian(0., 0., 0.))
-        self.cartesian = cs.Cartesian(1., 0., 0.)
-        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+        self.spherical_o = hf.Cylindrical(0., 0., 0., hf.Cartesian(1., 1., 1.))
+        self.spherical_0 = hf.Cylindrical(0., 0., 0., hf.Cartesian(0., 0., 0.))
+        self.spherical_1 = hf.Cylindrical(1., 1., 1., hf.Cartesian(0., 0., 0.))
+        self.spherical = hf.Cylindrical(1., 0., 0., hf.Cartesian(0., 0., 0.))
+        self.cartesian = hf.Cartesian(1., 0., 0.)
+        self.cartesian_1 = hf.Cartesian(1., 1., 1.)
 
     def tearDown(self) -> None:
         del self.spherical_0
@@ -495,10 +495,10 @@ class TestCylindrical(unittest.TestCase):
         self.assertEqual(self.spherical_1[0], 1.)
         self.assertEqual(self.spherical_1[1], 1.)
         self.assertEqual(self.spherical_1[2], 1.)
-        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+        self.assertEqual(self.spherical_1.origin, hf.Cartesian(0., 0., 0.))
 
         # Test origin point
-        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+        self.assertEqual(self.spherical_o.to_cartesian(), hf.Cartesian(1., 1., 1.))
 
         # Test __repr__
         self.assertEqual(self.spherical_0.__repr__(), '<Cylindrical: [0.0, 0.0, 0.0], around [0.0, 0.0, 0.0]>')
@@ -520,13 +520,13 @@ class TestCylindrical(unittest.TestCase):
 
 class TestHeadRelatedSpherical(unittest.TestCase):
     def setUp(self) -> None:
-        self.spherical_r = cs.HeadRelatedSpherical(1., 1., 1., cs.Cartesian(0., 0., 0.), 1.)
-        self.spherical_o = cs.HeadRelatedSpherical(0., 0., 0., cs.Cartesian(1., 1., 1.), 0.)
-        self.spherical_0 = cs.HeadRelatedSpherical(0., 0., 0., cs.Cartesian(0., 0., 0.), 0.)
-        self.spherical_1 = cs.HeadRelatedSpherical(1., 1., 1., cs.Cartesian(0., 0., 0.), 0.)
-        self.spherical = cs.HeadRelatedSpherical(1., 0., 0., cs.Cartesian(0., 0., 0.), 0.)
-        self.cartesian = cs.Cartesian(0., 1., 0.)
-        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+        self.spherical_r = hf.HeadRelatedSpherical(1., 1., 1., hf.Cartesian(0., 0., 0.), 1.)
+        self.spherical_o = hf.HeadRelatedSpherical(0., 0., 0., hf.Cartesian(1., 1., 1.), 0.)
+        self.spherical_0 = hf.HeadRelatedSpherical(0., 0., 0., hf.Cartesian(0., 0., 0.), 0.)
+        self.spherical_1 = hf.HeadRelatedSpherical(1., 1., 1., hf.Cartesian(0., 0., 0.), 0.)
+        self.spherical = hf.HeadRelatedSpherical(1., 0., 0., hf.Cartesian(0., 0., 0.), 0.)
+        self.cartesian = hf.Cartesian(0., 1., 0.)
+        self.cartesian_1 = hf.Cartesian(1., 1., 1.)
 
     def tearDown(self) -> None:
         del self.spherical_0
@@ -540,12 +540,12 @@ class TestHeadRelatedSpherical(unittest.TestCase):
         self.assertEqual(self.spherical_1[0], 1.)
         self.assertEqual(self.spherical_1[1], 1.)
         self.assertEqual(self.spherical_1[2], 1.)
-        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+        self.assertEqual(self.spherical_1.origin, hf.Cartesian(0., 0., 0.))
 
         # Test origin point
-        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+        self.assertEqual(self.spherical_o.to_cartesian(), hf.Cartesian(1., 1., 1.))
         self.assertEqual(self.spherical_r.to_cartesian().to_hr_spherical(self.spherical_r.origin, 0.0),
-                         cs.HeadRelatedSpherical(1., 2., 1., cs.Cartesian(0., 0., 0.), 0.))
+                         hf.HeadRelatedSpherical(1., 2., 1., hf.Cartesian(0., 0., 0.), 0.))
 
         # Test __repr__
         self.assertEqual(self.spherical_0.__repr__(),
@@ -558,7 +558,7 @@ class TestHeadRelatedSpherical(unittest.TestCase):
         self.assertEqual(self.spherical._to_self(self.cartesian), self.spherical)
         self.assertEqual(self.spherical_o._to_self(self.cartesian_1), self.spherical_o)
         self.assertEqual(self.spherical_r._to_self(self.cartesian),
-                         cs.HeadRelatedSpherical(1., -1., 0., cs.Cartesian(0., 0., 0.), 1.))
+                         hf.HeadRelatedSpherical(1., -1., 0., hf.Cartesian(0., 0., 0.), 1.))
 
     def test_conversion(self):
         """
