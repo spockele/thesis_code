@@ -98,10 +98,11 @@ class ProgressThread(threading.Thread):
     Originally developed for EWI3615TU - Computer Science Project 2018/2019; Group 14 - Twitter's influenza; authored by
         Jérémie Gaffarel, Josephine Siebert Pockelé, Guillermo Presa, Enes Ugurlu, Sebastiaan van Wijk
     """
-    def __init__(self, total: int):
+    def __init__(self, total: int, task: str):
         super().__init__(name='ProgressThread')
         self.step = 1
         self.total = total
+        self.task = task
         self.work = True
         self.t0 = time.time()
 
@@ -112,8 +113,8 @@ class ProgressThread(threading.Thread):
         i = 0
         print(f'Starting process')
         while self.work and threading.main_thread().is_alive():
-            sys.stdout.write(f'\rTask {self.step}/{self.total}        ')
-            sys.stdout.write(f'\rTask {self.step}/{self.total} {i*"."}')
+            sys.stdout.write(f'\r{self.task}: {self.step}/{self.total}        ')
+            sys.stdout.write(f'\r{self.task}: {self.step}/{self.total} {i*"."}')
             sys.stdout.flush()
             i %= 5
             i += 1
