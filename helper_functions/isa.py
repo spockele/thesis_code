@@ -10,6 +10,10 @@ Definition of the ISO standard atmosphere (*ISO 2533-1975*)
 
 
 class Atmosphere:
+    # Define the layer top altitudes and the temperature gradients per layer
+    a = (-6.5e-3, 0., 1.0e-3, 2.8e-3, 0., -2.8e-3, -2.0e-3)
+    h = (11000., 20000., 32000., 47000., 51000., 71000., 86000.)
+
     def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None):
         """
         Class containing the ISO Standard Atmosphere (ISO 2533-1975) and a logarithmic wind profile.
@@ -18,10 +22,6 @@ class Atmosphere:
         :param wind_z0: Roughness height for the wind profile
         :param delta_h: Float indicating the delta altitude for generation. ISA will not generate if None
         """
-        # Define the layer top altitudes and the temperature gradients per layer
-        self.a = (-6.5e-3, 0., 1.0e-3, 2.8e-3, 0., -2.8e-3, -2.0e-3)
-        self.h = (11000., 20000., 32000., 47000., 51000., 71000., 86000.)
-
         # Load the ISA
         if delta_h is None:
             isa = read_from_file('./helper_functions/data/isa.dat')
