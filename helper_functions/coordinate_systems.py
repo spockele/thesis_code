@@ -67,6 +67,30 @@ class Cartesian(Coordinates):
         # Nice class representation here :)
         return f'<Cartesian: {str(self)}>'
 
+    def __eq__(self, other):
+        """
+        Equality operator.
+        """
+        if isinstance(other, type(self)):
+            return np.all(self.vec == other.vec)
+        elif issubclass(type(other), NonCartesian):
+            return np.all(self.vec == other.to_cartesian().vec)
+        else:
+            return False
+
+    def __ne__(self, other):
+        """
+        InEquality operator.
+        """
+        return not self.__eq__(other)
+
+    def __neg__(self):
+        """
+        Negative operator
+        """
+        neg = -self.vec
+        return Cartesian(*neg)
+
     def __add__(self, other):
         """
         Addition of other to self.
@@ -158,7 +182,7 @@ class Cartesian(Coordinates):
         :param origin: origin point around which to set the cylindrical coordinates.
         """
         x, y, z = (self - origin).vec
-        r = np.sqrt(x ** 2 + y ** 2)
+        r = np.sqrt(x ** 2 + z ** 2)
         psi = np.arctan2(-z, x)
 
         return Cylindrical(r, psi, y, origin)
@@ -187,6 +211,30 @@ class NonCartesian(Coordinates):
         """
         super().__init__(vec)
         self.origin = origin
+
+    def __eq__(self, other):
+        """
+        Equality operator.
+        """
+        if isinstance(other, Cartesian):
+            return self.to_cartesian() == other
+        elif issubclass(type(other), NonCartesian):
+            return self.to_cartesian() == other.to_cartesian()
+        else:
+            return False
+
+    def __ne__(self, other):
+        """
+        InEquality operator.
+        """
+        return not self.__eq__(other)
+
+    def __neg__(self):
+        """
+        Negative operator
+        """
+        neg = - self.to_cartesian()
+        return self._to_self(neg)
 
     def __add__(self, other):
         """

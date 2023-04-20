@@ -49,15 +49,31 @@ class TestCartesian(unittest.TestCase):
 
     def test_operators(self):
         """
-        Test the operators __init__ __repr__
+        Test the operators __init__ __repr__ __neq__
         """
         # Test __init__
         self.assertEqual(self.cartesian_1[0], 1.)
         self.assertEqual(self.cartesian_1[1], 1.)
         self.assertEqual(self.cartesian_1[2], 1.)
 
+        # Test __neg__
+        neg = -self.cartesian_1
+        self.assertEqual(neg[0], -1.)
+        self.assertEqual(neg[1], -1.)
+        self.assertEqual(neg[2], -1.)
+
         # Test __repr__
         self.assertEqual(self.cartesian_0.__repr__(), '<Cartesian: [0.0, 0.0, 0.0]>')
+
+    def test_equality(self):
+        """
+        Test the operators: __eq__ __ne__
+        """
+        self.assertTrue(self.cartesian_0 == self.cartesian_0)
+        self.assertFalse(self.cartesian_0 == self.cartesian_1)
+        self.assertTrue(self.cartesian_0 != self.cartesian_1)
+        self.assertTrue(self.cartesian_1 == self.non_cartesian)
+        self.assertFalse(self.cartesian_0 == 1.)
 
     def test_add_sub(self):
         """
@@ -205,15 +221,38 @@ class TestNonCartesian(unittest.TestCase):
         del self.non_cartesian_1
         del self.non_cartesian_2
         del self.cartesian
+        del self.cartesian_0
 
     def test_operators(self):
         """
-        Test the operators __init__
+        Test the operators __init__ __neg__
         """
         # Test __init__
         self.assertEqual(self.non_cartesian_1[0], 1.)
         self.assertEqual(self.non_cartesian_1[1], 1.)
         self.assertEqual(self.non_cartesian_1[2], 1.)
+
+        # Test __neg__
+        neg = -self.non_cartesian_1
+        self.assertEqual(neg[0], -1.)
+        self.assertEqual(neg[1], -1.)
+        self.assertEqual(neg[2], -1.)
+
+    def test_equality(self):
+        """
+        Test the operators: __eq__ __ne__
+        """
+        self.assertTrue(self.non_cartesian_0 == self.non_cartesian_0)
+        self.assertFalse(self.non_cartesian_0 == self.non_cartesian_1)
+        self.assertTrue(self.non_cartesian_0 != self.non_cartesian_1)
+        self.assertTrue(self.non_cartesian_1 == self.cartesian)
+        self.assertFalse(self.non_cartesian_0 == 1.)
+
+    def test_origin(self):
+        """
+        Test the assignment of the origin for the transform to Cartesian
+        """
+        self.assertEqual(cs.NonCartesian(np.array((0, 0, 0)), self.cartesian).to_cartesian(), self.cartesian)
 
     def test_add_sub(self):
         """
@@ -389,6 +428,148 @@ class TestNonCartesian(unittest.TestCase):
         self.assertEqual(round(sph2[0], 3), round(2 * r1, 3))
         self.assertEqual(round(sph2[1], 4), th1)
         self.assertEqual(round(sph2[2], 4), ph1)
+
+
+class TestSpherical(unittest.TestCase):
+    def setUp(self) -> None:
+        self.spherical_o = cs.Spherical(0., 0., 0., cs.Cartesian(1., 1., 1.))
+        self.spherical_0 = cs.Spherical(0., 0., 0., cs.Cartesian(0., 0., 0.))
+        self.spherical_1 = cs.Spherical(1., 1., 1., cs.Cartesian(0., 0., 0.))
+        self.spherical = cs.Spherical(1., 0., 0., cs.Cartesian(0., 0., 0.))
+        self.cartesian = cs.Cartesian(1., 0., 0.)
+        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+
+    def tearDown(self) -> None:
+        del self.spherical_0
+        del self.spherical_1
+
+    def test_operators(self):
+        """
+        Test the operators __init__ __repr__
+        """
+        # Test __init__
+        self.assertEqual(self.spherical_1[0], 1.)
+        self.assertEqual(self.spherical_1[1], 1.)
+        self.assertEqual(self.spherical_1[2], 1.)
+        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+
+        # Test origin point
+        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+
+        # Test __repr__
+        self.assertEqual(self.spherical_0.__repr__(), '<Spherical: [0.0, 0.0, 0.0], around [0.0, 0.0, 0.0]>')
+
+    def test_to_self(self):
+        """
+        Test the working of spherical _to_self
+        """
+        self.assertEqual(self.spherical._to_self(self.cartesian), self.spherical)
+        self.assertEqual(self.spherical_o._to_self(self.cartesian_1), self.spherical_o)
+
+    def test_conversion(self):
+        """
+        Test conversion to Cartesian by double conversion
+        """
+        self.assertEqual(self.spherical_1.to_cartesian().to_spherical(self.spherical_1.origin), self.spherical_1)
+        self.assertEqual(self.spherical_o.to_cartesian().to_spherical(self.spherical_o.origin), self.spherical_o)
+
+
+class TestCylindrical(unittest.TestCase):
+    def setUp(self) -> None:
+        self.spherical_o = cs.Cylindrical(0., 0., 0., cs.Cartesian(1., 1., 1.))
+        self.spherical_0 = cs.Cylindrical(0., 0., 0., cs.Cartesian(0., 0., 0.))
+        self.spherical_1 = cs.Cylindrical(1., 1., 1., cs.Cartesian(0., 0., 0.))
+        self.spherical = cs.Cylindrical(1., 0., 0., cs.Cartesian(0., 0., 0.))
+        self.cartesian = cs.Cartesian(1., 0., 0.)
+        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+
+    def tearDown(self) -> None:
+        del self.spherical_0
+        del self.spherical_1
+
+    def test_operators(self):
+        """
+        Test the operators __init__ __repr__
+        """
+        # Test __init__
+        self.assertEqual(self.spherical_1[0], 1.)
+        self.assertEqual(self.spherical_1[1], 1.)
+        self.assertEqual(self.spherical_1[2], 1.)
+        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+
+        # Test origin point
+        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+
+        # Test __repr__
+        self.assertEqual(self.spherical_0.__repr__(), '<Cylindrical: [0.0, 0.0, 0.0], around [0.0, 0.0, 0.0]>')
+
+    def test_to_self(self):
+        """
+        Test the working of spherical _to_self
+        """
+        self.assertEqual(self.spherical._to_self(self.cartesian), self.spherical)
+        self.assertEqual(self.spherical_o._to_self(self.cartesian_1), self.spherical_o)
+
+    def test_conversion(self):
+        """
+        Test conversion to Cartesian by double conversion
+        """
+        self.assertEqual(self.spherical_1.to_cartesian().to_cylindrical(self.spherical_1.origin), self.spherical_1)
+        self.assertEqual(self.spherical_o.to_cartesian().to_cylindrical(self.spherical_o.origin), self.spherical_o)
+
+
+class TestHeadRelatedSpherical(unittest.TestCase):
+    def setUp(self) -> None:
+        self.spherical_r = cs.HeadRelatedSpherical(1., 1., 1., cs.Cartesian(0., 0., 0.), 1.)
+        self.spherical_o = cs.HeadRelatedSpherical(0., 0., 0., cs.Cartesian(1., 1., 1.), 0.)
+        self.spherical_0 = cs.HeadRelatedSpherical(0., 0., 0., cs.Cartesian(0., 0., 0.), 0.)
+        self.spherical_1 = cs.HeadRelatedSpherical(1., 1., 1., cs.Cartesian(0., 0., 0.), 0.)
+        self.spherical = cs.HeadRelatedSpherical(1., 0., 0., cs.Cartesian(0., 0., 0.), 0.)
+        self.cartesian = cs.Cartesian(0., 1., 0.)
+        self.cartesian_1 = cs.Cartesian(1., 1., 1.)
+
+    def tearDown(self) -> None:
+        del self.spherical_0
+        del self.spherical_1
+
+    def test_operators(self):
+        """
+        Test the operators __init__ __repr__
+        """
+        # Test __init__
+        self.assertEqual(self.spherical_1[0], 1.)
+        self.assertEqual(self.spherical_1[1], 1.)
+        self.assertEqual(self.spherical_1[2], 1.)
+        self.assertEqual(self.spherical_1.origin, cs.Cartesian(0., 0., 0.))
+
+        # Test origin point
+        self.assertEqual(self.spherical_o.to_cartesian(), cs.Cartesian(1., 1., 1.))
+        self.assertEqual(self.spherical_r.to_cartesian().to_hr_spherical(self.spherical_r.origin, 0.0),
+                         cs.HeadRelatedSpherical(1., 2., 1., cs.Cartesian(0., 0., 0.), 0.))
+
+        # Test __repr__
+        self.assertEqual(self.spherical_0.__repr__(),
+                         '<HR-Spherical: [0.0, 0.0, 0.0], around [0.0, 0.0, 0.0] with rotation 0.0>')
+
+    def test_to_self(self):
+        """
+        Test the working of spherical _to_self
+        """
+        self.assertEqual(self.spherical._to_self(self.cartesian), self.spherical)
+        self.assertEqual(self.spherical_o._to_self(self.cartesian_1), self.spherical_o)
+        self.assertEqual(self.spherical_r._to_self(self.cartesian),
+                         cs.HeadRelatedSpherical(1., -1., 0., cs.Cartesian(0., 0., 0.), 1.))
+
+    def test_conversion(self):
+        """
+        Test conversion to Cartesian by double conversion
+        """
+        self.assertEqual(self.spherical_1.to_cartesian().to_hr_spherical(self.spherical_1.origin,
+                                                                         self.spherical_1.rotation), self.spherical_1)
+        self.assertEqual(self.spherical_r.to_cartesian().to_hr_spherical(self.spherical_r.origin,
+                                                                         self.spherical_r.rotation), self.spherical_r)
+        self.assertEqual(self.spherical_o.to_cartesian().to_hr_spherical(self.spherical_o.origin,
+                                                                         self.spherical_o.rotation), self.spherical_o)
 
 
 if __name__ == '__main__':
