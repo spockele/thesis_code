@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-import sys
 import threading
 import queue
 
@@ -12,52 +10,9 @@ The very cool propagation model of this thesis :)
 """
 
 
-class ProgressThread(threading.Thread):
-    """
-    Subclass of threading.Thread to print the progress of a program in steps
-    """
-    def __init__(self, total: int):
-        super().__init__(name='ProgressThread')
-        self.step = 1
-        self.total = total
-        self.work = True
-        self.t0 = time.time()
-
-    def run(self) -> None:
-        """
-        Override of threading.Thread.run(self) for the printing
-        """
-        i = 0
-        print(f'Starting process')
-        while self.work and threading.main_thread().is_alive():
-            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total}        ')
-            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total} {i*"."}')
-            sys.stdout.flush()
-            i %= 5
-            i += 1
-            time.sleep(0.25)
-
-        if not threading.main_thread().is_alive() and self.work:
-            print(f'Stopped {self} after Interupt of MainThread')
-
-    def stop(self) -> None:
-        """
-        Function to stop the thread when it is not needed anymore
-        """
-        sys.stdout.write(f'\rDone after {round(time.time()- self.t0, 2)}s\n')
-        sys.stdout.flush()
-        self.work = False
-
-    def update(self):
-        """
-        Update the step counter by one
-        """
-        self.step += 1
-
-
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
-                 progress: ProgressThread = None) -> None:
+                 progress: hf.ProgressThread = None) -> None:
         """
 
         :param in_queue:
@@ -71,7 +26,7 @@ class PropagationThread(threading.Thread):
         self.receiver = receiver
 
         if progress is None:
-            self.p_thread = ProgressThread(1)
+            self.p_thread = hf.ProgressThread(1)
         else:
             self.p_thread = progress
 
@@ -271,7 +226,7 @@ if __name__ == '__main__':
 
         prop_queue.put(soundray)
 
-    p_thread = ProgressThread(prop_queue.qsize())
+    p_thread = hf.ProgressThread(prop_queue.qsize())
     p_thread.start()
     threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread) for i in range(64))
     [thread.start() for thread in threads]

@@ -7,6 +7,9 @@ Uncategorised functions needed for other modules in this package
 # ----------------------------------------------------------------------------------------------------------------------
 import numpy as np
 import warnings
+import threading
+import time
+import sys
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Definition of constants
@@ -88,3 +91,47 @@ def uniform_spherical_grid(n_points: int):
     return polar[:n_count + 1], azimuth[:n_count + 1], fail, dist
 
 
+class ProgressThread(threading.Thread):
+    """
+    Subclass of threading.Thread to print the progress of a program in steps
+
+    Originally developed for EWI3615TU - Computer Science Project 2018/2019; Group 14 - Twitter's influenza; authored by
+        Jérémie Gaffarel, Josephine Siebert Pockelé, Guillermo Presa, Enes Ugurlu, Sebastiaan van Wijk
+    """
+    def __init__(self, total: int):
+        super().__init__(name='ProgressThread')
+        self.step = 1
+        self.total = total
+        self.work = True
+        self.t0 = time.time()
+
+    def run(self) -> None:
+        """
+        Override of threading.Thread.run(self) for the printing
+        """
+        i = 0
+        print(f'Starting process')
+        while self.work and threading.main_thread().is_alive():
+            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total}        ')
+            sys.stdout.write(f'\rPropagating ray {self.step}/{self.total} {i*"."}')
+            sys.stdout.flush()
+            i %= 5
+            i += 1
+            time.sleep(0.25)
+
+        if not threading.main_thread().is_alive() and self.work:
+            print(f'Stopped {self} after Interupt of MainThread')
+
+    def stop(self) -> None:
+        """
+        Function to stop the thread when it is not needed anymore
+        """
+        sys.stdout.write(f'\rDone after {round(time.time()- self.t0, 2)}s\n')
+        sys.stdout.flush()
+        self.work = False
+
+    def update(self):
+        """
+        Update the step counter by one
+        """
+        self.step += 1
