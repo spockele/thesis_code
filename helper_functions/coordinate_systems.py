@@ -35,7 +35,7 @@ class Coordinates:
     def __getitem__(self, idx: int) -> float:
         # Get the coordinate at idx
         # Check that idx is in the vector
-        if 0 > idx or idx > 2:
+        if -4 > idx or idx > 2:
             raise IndexError(f'Coordinate vector only has 3 elements: 0 <= index <= 2, {idx}')
         # Return the coordinate
         return self.vec[idx]
@@ -43,7 +43,7 @@ class Coordinates:
     def __setitem__(self, idx: int, value: float) -> None:
         # Set the coordinate at idx to value
         # Check that idx is in the vector
-        if 0 > idx or idx > 2:
+        if -4 > idx or idx > 2:
             raise IndexError(f'Coordinate vector only has 3 elements: 0 <= key <= 2, {idx}')
         # Set the coordinate
         self.vec[idx] = value

@@ -22,6 +22,8 @@ class TestCoordinates(unittest.TestCase):
         self.assertEqual(self.coordinates[0], 1.)
         self.assertEqual(self.coordinates[1], 1.)
         self.assertEqual(self.coordinates[2], 1.)
+        self.assertRaises(IndexError, self.coordinates.__getitem__, 3,)
+        self.assertRaises(IndexError, self.coordinates.__getitem__, -4,)
         # Test __setitem__
         self.coordinates[0] = 2.
         self.assertEqual(self.coordinates[0], 2.)
@@ -29,6 +31,8 @@ class TestCoordinates(unittest.TestCase):
         self.assertEqual(self.coordinates[1], 2.)
         self.coordinates[2] = 2.
         self.assertEqual(self.coordinates[2], 2.)
+        self.assertRaises(IndexError, self.coordinates.__setitem__, 3, 1.)
+        self.assertRaises(IndexError, self.coordinates.__setitem__, -4, 1.)
         # Test __str__
         self.assertEqual(str(self.coordinates), '[2.0, 2.0, 2.0]')
 
