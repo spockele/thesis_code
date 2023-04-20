@@ -353,14 +353,14 @@ class NonCartesian(Coordinates):
         """
         return self.vec
 
-    def to_cartesian(self):
+    def to_cartesian(self) -> Cartesian:
         """
         Convert self to a Cartesian coordinate.
         """
         x, y, z = self._to_cartesian()
         return Cartesian(x, y, z) + self.origin
 
-    def to_spherical(self, origin: Cartesian = None):
+    def to_spherical(self, origin: Cartesian = None) -> Coordinates:
         """
         Convert self to a Spherical coordinate.
         :param origin: origin point around which to set the spherical coordinates. If None: around own origin point.
@@ -370,7 +370,7 @@ class NonCartesian(Coordinates):
 
         return self.to_cartesian().to_spherical(origin)
 
-    def to_cylindrical(self, origin: Cartesian = None):
+    def to_cylindrical(self, origin: Cartesian = None) -> Coordinates:
         """
         Convert self to a Cylindrical coordinate.
         :param origin: origin point around which to set the cylindrical coordinates.  If None: around own origin point.
@@ -380,7 +380,7 @@ class NonCartesian(Coordinates):
 
         return self.to_cartesian().to_cylindrical(origin)
 
-    def to_hr_spherical(self, origin: Cartesian = None, rotation: float = None):
+    def to_hr_spherical(self, origin: Cartesian = None, rotation: float = None) -> Coordinates:
         """
         Convert self to a head-related spherical coordinate.
         :param origin: Origin point around which to set the cylindrical coordinates.  If None: around own origin point.
