@@ -45,7 +45,7 @@ class TestFuncs(unittest.TestCase):
         """
         Check A-weighting L_a against table of hand-calculated values
         """
-        f, l_a = hf.read_from_file('./a-weights_f-L.csv').T
+        f, l_a = hf.read_from_file('./helper_functions/test/a-weights_f-L.csv').T
         l_a_func = hf.a_weighting(f)
 
         for il, l in enumerate(l_a):
@@ -82,7 +82,7 @@ class TestProgressThread(unittest.TestCase):
         self.mock_progress_thread.update()
         # Stop the thread and wait a pinch
         self.mock_progress_thread.stop()
-        hf.time.sleep(.25)
+        hf.time.sleep(.5)
 
         # Check values for functioning
         self.assertFalse(self.mock_progress_thread.work)
@@ -104,7 +104,7 @@ class TestProgressThread(unittest.TestCase):
         # Simulate a system interrupt by changing the mock value
         hf.threading.main_thread().is_alive = MagicMock(return_value=False)
         # Give it a hot second
-        hf.time.sleep(.25)
+        hf.time.sleep(.5)
 
         # Check that the interrupt worked as expected
         self.assertTrue(self.mock_progress_thread.work)
