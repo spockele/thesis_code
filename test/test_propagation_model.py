@@ -1,9 +1,75 @@
 import unittest
 from unittest.mock import MagicMock
 import numpy as np
+import queue
 
 import helper_functions as hf
 import propagation_model as pm
+
+
+class TestPropagationThread(unittest.TestCase):
+    def setUp(self) -> None:
+        # Create a soundray
+        self.soundray = pm.SoundRay(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, 0, hf.Atmosphere(1, 0))
+
+        # Create an in and out queue
+        inq = queue.Queue()
+        outq = queue.Queue()
+        inq.put(self.soundray)
+        # Create a testing thread
+        self.prop_thread = pm.PropagationThread(inq, outq, 1, hf.Cartesian(0, 0, 0))
+
+        # Create another in and out queue
+        inq2 = queue.Queue()
+        outq2 = queue.Queue()
+        inq2.put(self.soundray)
+        # Create another testing thread
+        self.prop_thread_2 = pm.PropagationThread(inq2, outq2, 1, hf.Cartesian(0, 0, 0), hf.ProgressThread(1, 'test'))
+
+    def tearDown(self) -> None:
+        del self.soundray
+        del self.prop_thread
+        del self.prop_thread_2
+
+    def test_run(self):
+        """
+        Tests the propagationThread's run feature
+        """
+        # Mock the soundray propagation to avoid weird
+        self.soundray.propagate = MagicMock()
+        # Run the first propagation thread
+        self.prop_thread.start()
+        # Check whether the run does what it must
+        self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
+        self.soundray.propagate.assert_called_once_with(1, hf.Cartesian(0, 0, 0))
+        self.assertEqual(self.prop_thread.p_thread.step, 2)
+        # Run the second propagation thread
+        self.prop_thread_2.start()
+        # Check whether the run does what it must
+        self.assertEqual(self.prop_thread_2.p_thread.step, 2)
+
+    def test_interrupt(self):
+        # Mock the soundray propagation and terminal output to avoid weird
+        self.soundray.propagate = MagicMock()
+        hf.sys.stdout.write = MagicMock()
+
+        # Add an extra soundray to the queue
+        self.prop_thread.in_queue.put(self.soundray)
+
+        # Mock the mainthread alive check
+        mock_before = pm.threading.main_thread().is_alive
+        pm.threading.main_thread().is_alive = MagicMock(return_value=False)
+
+        # Start the propagation thread, knowing the main thread is dead
+        self.prop_thread.start()
+
+        # Check the interruption worked or not
+        self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
+        self.assertEqual(self.prop_thread.in_queue.qsize(), 1)
+        hf.sys.stdout.write.assert_called()
+
+        # Reset the mock of the alive check
+        pm.threading.main_thread().is_alive = mock_before
 
 
 class TestSoundRay(unittest.TestCase):
