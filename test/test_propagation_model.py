@@ -1,7 +1,6 @@
 import unittest
-
-from .. import propagation_model as pm
-from .. import helper_functions as hf
+import helper_functions as hf
+import propagation_model as pm
 
 
 class TestSoundRay(unittest.TestCase):
