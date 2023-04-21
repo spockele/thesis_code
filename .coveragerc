@@ -1,0 +1,4 @@
+[run]
+omit =
+    ./helper_functions/test/*
+    ./test/*
