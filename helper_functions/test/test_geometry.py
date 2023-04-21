@@ -26,7 +26,3 @@ class TestPerpendicularPlane3D(unittest.TestCase):
         self.assertEqual(self.plane_1.distance_to_point(self.p2), 1.)
         self.assertEqual(round(self.plane_2.distance_to_point(self.p2), 6), round(np.sqrt(3), 6))
         self.assertEqual(self.plane_2.distance_to_point(self.p0), 0.)
-
-
-if __name__ == '__main__':
-    unittest.main()

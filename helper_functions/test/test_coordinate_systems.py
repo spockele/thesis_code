@@ -574,7 +574,3 @@ class TestHeadRelatedSpherical(unittest.TestCase):
                                                                          self.spherical_r.rotation), self.spherical_r)
         self.assertEqual(self.spherical_o.to_cartesian().to_hr_spherical(self.spherical_o.origin,
                                                                          self.spherical_o.rotation), self.spherical_o)
-
-
-if __name__ == '__main__':
-    unittest.main()

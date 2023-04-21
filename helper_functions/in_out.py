@@ -172,7 +172,3 @@ def read_ntk_data(path, calib_path):
     data = data.reshape(n_samples, n_sensor) / calib
 
     return (n_sensor, f_sampling, n_samples), data
-
-
-if __name__ == '__main__':
-    raise RuntimeError("Do not run this file, it has no use.")

@@ -93,7 +93,3 @@ class MitHrtf:
         plt.savefig('./plots/HRTF_right.png')
 
         plt.show()
-
-
-if __name__ == '__main__':
-    raise RuntimeError('Thou shalt not run this module on its own!')

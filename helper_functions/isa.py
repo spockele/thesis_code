@@ -203,7 +203,3 @@ class Atmosphere:
             plt.savefig('./plots/isa_wind_speed.pdf')
 
         plt.show()
-
-
-if __name__ == '__main__':
-    raise RuntimeError('Thou shalt not run this module on its own!')

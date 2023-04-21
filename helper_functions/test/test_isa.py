@@ -158,7 +158,3 @@ class TestAtmosphere(unittest.TestCase):
             else:
                 hf.isa.plt.savefig.assert_not_called()
             hf.isa.plt.show.assert_called()
-
-
-if __name__ == '__main__':
-    unittest.main()

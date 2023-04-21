@@ -498,7 +498,3 @@ class HeadRelatedSpherical(NonCartesian):
         z = - r * np.sin(po)
 
         return x, y, z
-
-
-if __name__ == '__main__':
-    raise RuntimeError('Thou shalt not run this module on its own!')

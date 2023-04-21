@@ -23,7 +23,3 @@ class PerpendicularPlane3D:
         diff_vector = point - self.p2
 
         return abs(sum((normal_vector * diff_vector).vec))
-
-
-if __name__ == '__main__':
-    raise RuntimeError('Thou shalt not run this module on its own!')
