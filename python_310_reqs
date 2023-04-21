@@ -6,3 +6,4 @@ wheel
 tabulate
 librosa
 pysofaconventions
+pytest
