@@ -63,7 +63,7 @@ class TestProgressThread(unittest.TestCase):
 
     def test_run_update(self):
         """
-
+        Test the ProgressThread run, stop, and update functionality
         """
         # Mock the terminal output so no printing occurs
         hf.funcs.sys.stdout.write = MagicMock()
@@ -93,7 +93,7 @@ class TestProgressThread(unittest.TestCase):
 
     def test_interrupt(self):
         """
-
+        Test code interruption of the ProgressThread
         """
         # Mock the terminal output so no printing occurs
         hf.funcs.sys.stdout.write = MagicMock()
