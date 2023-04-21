@@ -8,6 +8,6 @@ helper_functions/geometry.py                10      0   100%
 helper_functions/hrtf.py                    60     51    15%
 helper_functions/in_out.py                  69     53    23%
 helper_functions/isa.py                    116      0   100%
-propagation_model.py                       129    110    15%
+propagation_model.py                       131     80    39%
 ------------------------------------------------------------
-TOTAL                                      729    264    64%
+TOTAL                                      731    234    68%

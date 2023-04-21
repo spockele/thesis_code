@@ -26,7 +26,7 @@ class PropagationThread(threading.Thread):
         self.receiver = receiver
 
         if progress is None:
-            self.p_thread = hf.ProgressThread(1)
+            self.p_thread = hf.ProgressThread(self.in_queue.qsize(), "Propagating rays")
         else:
             self.p_thread = progress
 
@@ -91,11 +91,10 @@ class SoundRay:
         speed_of_sound = self.atmosphere.get_speed_of_sound(height)
 
         # Determine new ray velocity v = u + c * direction
-        vel: hf.Cartesian = wind_speed * hf.Cartesian(0, 1, 0) + speed_of_sound * direction / direction.len()
-
-        # Store new velocity and direction
-        self.vel = np.append(self.vel, (vel,))
-        self.dir = np.append(self.dir, (direction,))
+        if direction.len() > 0:
+            vel: hf.Cartesian = wind_speed * hf.Cartesian(0, 1, 0) + speed_of_sound * direction / direction.len()
+        else:
+            vel: hf.Cartesian = wind_speed * hf.Cartesian(0, 1, 0)
 
         return vel, direction
 
@@ -108,19 +107,15 @@ class SoundRay:
         :return: Updated position (m, m, m) for current time step and path step (m)
         """
         # Determine new position with forward euler stepping
-        pos_new = self.pos[-1] + self.vel[-1] * delta_t
+        pos_new = self.pos[-1] + vel * delta_t
         # Check for reflections and if so: invert z-coordinate and z-velocity and z-direction
         if pos_new[2] >= 0:
             pos_new[2] = -pos_new[2]
             vel[2] = -vel[2]
             direction[2] = -direction[2]
 
-        # Store new position
-        self.pos = np.append(self.pos, (pos_new, ))
-
-        # Propagate travelled distance
-        delta_s = (self.vel[-1] * delta_t).len()
-        self.s = np.append(self.s, self.s[-1] + delta_s)
+        # Calculate ray path travel
+        delta_s = (vel * delta_t).len()
 
         return pos_new, delta_s
 
@@ -136,6 +131,13 @@ class SoundRay:
 
         # Propagate time
         self.t = np.append(self.t, self.t[-1] + delta_t)
+        # Store new velocity and direction
+        self.vel = np.append(self.vel, (vel,))
+        self.dir = np.append(self.dir, (direction,))
+        # Store new position
+        self.pos = np.append(self.pos, (pos, ))
+        # Propagate travelled distance
+        self.s = np.append(self.s, self.s[-1] + delta_s)
 
         return vel, direction, pos, delta_s
 
@@ -235,7 +237,7 @@ if __name__ == '__main__':
 
         prop_queue.put(soundray)
 
-    p_thread = hf.ProgressThread(prop_queue.qsize())
+    p_thread = hf.ProgressThread(prop_queue.qsize(), "Propagating Rays")
     p_thread.start()
     threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread) for i in range(64))
     [thread.start() for thread in threads]
