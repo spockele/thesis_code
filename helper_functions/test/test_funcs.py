@@ -1,7 +1,5 @@
-import time
 import unittest
-from unittest.mock import MagicMock, patch
-import sys
+from unittest.mock import MagicMock
 
 import numpy as np
 
