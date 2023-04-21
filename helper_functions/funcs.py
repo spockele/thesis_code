@@ -95,7 +95,7 @@ class ProgressThread(threading.Thread):
     """
     Subclass of threading.Thread to print the progress of a program in steps
 
-    Originally developed for EWI3615TU - Computer Science Project 2018/2019; Group 14 - Twitter's influenza; authored by
+    Originally developed for EWI3615TU - Computer Science Project 2019/2020; Group 14 - Twitter's influenza; authored by
         Jérémie Gaffarel, Josephine Siebert Pockelé, Guillermo Presa, Enes Ugurlu, Sebastiaan van Wijk
     """
     def __init__(self, total: int, task: str):
