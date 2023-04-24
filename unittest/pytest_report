@@ -1,11 +1,11 @@
 ============================= test session starts ==============================
-collected 47 items
+collected 49 items
 
-helper_functions/test/test_coordinate_systems.py ....................... [ 48%]
-....                                                                     [ 57%]
-helper_functions/test/test_funcs.py .....                                [ 68%]
-helper_functions/test/test_geometry.py .                                 [ 70%]
-helper_functions/test/test_isa.py .........                              [ 89%]
-test/test_propagation_model.py .....                                     [100%]
+helper_functions/test/test_coordinate_systems.py ....................... [ 46%]
+....                                                                     [ 55%]
+helper_functions/test/test_funcs.py .....                                [ 65%]
+helper_functions/test/test_geometry.py .                                 [ 67%]
+helper_functions/test/test_isa.py .........                              [ 85%]
+test/test_propagation_model.py .......                                   [100%]
 
-============================== 47 passed in 3.38s ==============================
+============================== 49 passed in 3.37s ==============================
