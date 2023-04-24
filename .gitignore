@@ -137,5 +137,5 @@ samples/
 # Excluding all wav files, because they big bois
 *.wav
 
-# Excluding Experimental code because no use in thesis
-Experimental\ Codes/
+# Exclude the NTK model
+H2model/
