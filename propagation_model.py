@@ -12,7 +12,7 @@ The very cool propagation model of this thesis :)
 
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
-                 progress: hf.ProgressThread = None) -> None:
+                 progress: hf.ProgressThread = None, t_lim: float = 1.) -> None:
         """
 
         :param in_queue:
@@ -24,6 +24,8 @@ class PropagationThread(threading.Thread):
 
         self.delta_t = delta_t
         self.receiver = receiver
+
+        self.t_lim = t_lim
 
         if progress is None:
             self.p_thread = hf.ProgressThread(self.in_queue.qsize(), "Propagating rays")
@@ -39,7 +41,7 @@ class PropagationThread(threading.Thread):
             # Take a SoundRay from the queue
             ray: SoundRay = self.in_queue.get()
             # Propagate this Ray with given parameters
-            ray.propagate(self.delta_t, self.receiver)
+            ray.propagate(self.delta_t, self.receiver, self.t_lim)
             # When that is done, put the ray in the output queue
             self.out_queue.put(ray)
             # Update the progress thread so the counter goes up
@@ -181,11 +183,12 @@ class SoundRay:
 
         return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
 
-    def propagate(self, delta_t: float, receiver: hf.Cartesian):
+    def propagate(self, delta_t: float, receiver: hf.Cartesian, t_lim: float = 1.):
         """
 
         :param delta_t:
         :param receiver:
+        :param t_lim:
         :return:
         """
         received = False
@@ -195,7 +198,7 @@ class SoundRay:
             vel, direction, pos, delta_s = self.ray_step(delta_t)
             received = self.check_reception(receiver, delta_s)
 
-            if self.t[-1] > .25:
+            if self.t[-1] > t_lim:
                 kill = True
 
     def pos_array(self) -> np.array:
@@ -214,19 +217,22 @@ if __name__ == '__main__':
     atm = hf.Atmosphere(35.5, 10.5, )
     phi, theta, fail, pd = hf.uniform_spherical_grid(2048)
 
-    x = 20.5 * np.cos(theta) * np.sin(phi)
-    y = 20.5 * np.sin(theta) * np.sin(phi)
-    z = 20.5 * np.cos(phi)
+    r = 41 / 2
+    x = r * np.cos(theta) * np.sin(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(phi)
 
     offset = hf.Cartesian(0, 0, -35.5)
-    rec = hf.Cartesian(0, -35.5 - 20.5, -1.7)
-    # rec = hf.Cartesian(0, -500, -1.7)
+    # rec = hf.Cartesian(0, -35.5 - 20.5, -1.7)
+    rec = hf.Cartesian(0, -500, -1.7)
+
+    t_lim = abs(2 * rec[1] / hf.c)
 
     f = np.linspace(1, 44.1e3, 512)
     spec = np.empty((len(x), 512))
 
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x))]
+    startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x)) if y[i] <= 0]
 
     prop_queue = queue.Queue()
     prop_done = queue.Queue()
@@ -239,7 +245,7 @@ if __name__ == '__main__':
 
     p_thread = hf.ProgressThread(prop_queue.qsize(), "Propagating Rays")
     p_thread.start()
-    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread) for i in range(64))
+    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=t_lim) for i in range(32))
     [thread.start() for thread in threads]
     while threading.active_count() > 2:
         pass
