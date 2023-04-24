@@ -177,7 +177,7 @@ class SoundRay:
 
         n_sq = dist2**2 - dist1**2
 
-        s = self.s[-1]
+        s = self.s[-2] + dist1
 
         return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
 

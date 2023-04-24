@@ -173,3 +173,36 @@ class TestSoundRay(unittest.TestCase):
         self.assertEqual(direction, hf.Cartesian(1, 0, -1))
         self.assertEqual(pos, hf.Cartesian(1, 0, -1) / hf.Cartesian(1, 0, -1).len())
         self.assertAlmostEqual(delta_s, 1.)
+
+    def test_check_reception(self):
+        """
+        Simple tests for the check_reception functions
+        """
+        # Check with only one position saved should always be False
+        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(1, 0, 0), 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(2, 0, 0), 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(-1, 0, 0), 1.5))
+        # Check with second position should return good stuff
+        self.soundray_simple.pos = np.append(self.soundray_simple.pos, [hf.Cartesian(1.5, 0, 0), ])
+        self.assertTrue(self.soundray_simple.check_reception(hf.Cartesian(1, 0, 0), 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(2, 0, 0), 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(-1, 0, 0), 1.5))
+
+    def test_gaussian_reception(self):
+        """
+        Test for the Gaussian beam reception model
+        """
+        # Setup some fake case
+        self.soundray_simple.pos = np.append(self.soundray_simple.pos, [hf.Cartesian(1, 0, 0), ])
+        self.soundray_simple.s = np.append(self.soundray_simple.s, [1., ])
+        f = np.linspace(1, 51.2e3, 100)
+        # Test for simple receiver position
+        rec = hf.Cartesian(0.5, 1, 0)
+        expected = np.clip(np.exp(-1. / ((self.bw * .5)**2 + 1/(np.pi * f))), 0, 1)
+        actual = self.soundray_simple.gaussian_reception(f, rec)
+        self.assertTrue(np.all(np.round(expected, -9) == np.round(actual, -9)))
+        # Check for less simple receiver position
+        rec = hf.Cartesian(.5, 1., 1.)
+        expected = np.clip(np.exp(-np.sqrt(2) / ((self.bw * .5) ** 2 + 1 / (np.pi * f))), 0, 1)
+        actual = self.soundray_simple.gaussian_reception(f, rec)
+        self.assertTrue(np.all(np.round(expected, -9) == np.round(actual, -9)))
