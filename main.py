@@ -1,5 +1,8 @@
 import os
 import numpy as np
+import threading
+import time
+import sys
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
@@ -167,11 +170,20 @@ class Case:
 
         for pi, p in enumerate(pos):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
+
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
         self.htc.save(self.htc_path)
 
+        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        p_thread.start()
         stdout, log = self.htc.simulate(hawc2_path)
-        print(stdout, log)
+        p_thread.update()
+
+        self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
+        self.htc.save(self.htc_path)
+
+        stdout, log = self.htc.simulate(hawc2_path)
+        p_thread.stop()
 
 
 class Project:
@@ -195,12 +207,15 @@ class Project:
         if len(self.cases) <= 0:
             raise FileNotFoundError('No input files found in project folder.')
 
+
 if __name__ == '__main__':
     # project = Project(os.path.abspath('NTK'))
     proj_path = os.path.abspath('NTK')
     case = Case(proj_path, 'ntk_05.5ms.aur')
-    case.run_hawc2(os.path.abspath('/home/josephine/HAWC2/HAWC2MB.exe'))
-    print(case.htc)
+    # case.run_hawc2(os.path.abspath('C:\\Users\\fien\\OneDrive\\Documenten\\EWEM\\HAWC2_12-9\\HAWC2MB.exe'))
+    # print(case.htc)
+    observer_pos, time_series_data, psd = hf.read_hawc2_aero_noise(os.path.join(case.h2model_path, 'res',
+                                                                                'aeroload_noise_psd_Obs001.out'))
 
 
 
