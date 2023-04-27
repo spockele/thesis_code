@@ -134,16 +134,17 @@ class Case:
         """
         self.conditions = dict()
         for line in lines[1:-1]:
-            key, value, *_ = line.split(' ')
+            if not (line.startswith(';') or line.startswith('\n')):
+                key, value, *_ = line.split(' ')
 
-            if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius', 'z0_wsp', 'z_wsp'):
-                self.conditions[key] = float(value)
+                if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius', 'z0_wsp', 'z_wsp'):
+                    self.conditions[key] = float(value)
 
-            elif key in ():
-                self.conditions[key] = int(value)
+                elif key in ():
+                    self.conditions[key] = int(value)
 
-            else:
-                self.conditions[key] = value
+                else:
+                    self.conditions[key] = value
 
     def _parse_hawc2(self, lines: list):
         """
@@ -181,7 +182,7 @@ class Case:
         self.hawc2_path = blocks['hawc2_path']
 
         # Extract the number of observer points
-        self.n_obs = blocks['n_obs']
+        self.n_obs = int(blocks['n_obs'])
 
     def _parse_source(self, lines: list):
         """
@@ -199,16 +200,17 @@ class Case:
         """
         self.propagation = dict()
         for line in lines[1:-1]:
-            key, value, *_ = line.split(' ')
+            if not (line.startswith(';') or line.startswith('\n')):
+                key, value, *_ = line.split(' ')
 
-            if key in ('n_rays',):
-                self.conditions[key] = float(value)
+                if key in ('n_rays',):
+                    self.conditions[key] = float(value)
 
-            elif key in ():
-                self.conditions[key] = int(value)
+                elif key in ():
+                    self.conditions[key] = int(value)
 
-            else:
-                self.conditions[key] = value
+                else:
+                    self.conditions[key] = value
 
     def _parse_reception(self, lines: list):
         """
@@ -258,13 +260,13 @@ class Case:
 
         p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
         p_thread.start()
-        stdout, log = self.htc.simulate(hawc2_path)
+        stdout, log = self.htc.simulate(self.hawc2_path)
         p_thread.update()
 
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
 
-        stdout, log = self.htc.simulate(hawc2_path)
+        stdout, log = self.htc.simulate(self.hawc2_path)
         p_thread.stop()
 
         os.remove(case_obj.htc_path)

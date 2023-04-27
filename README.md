@@ -145,3 +145,7 @@ end reconstruction ;
 
 - *plots/*
   - Plots generated from the helper functions for the report.
+
+```
+Get-Content NTK/H2model/log/aeroload_noise.log –Wait
+```
