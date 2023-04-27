@@ -40,11 +40,16 @@ begin conditions ;
     ; This section defines the operating conditions of the turbine
     ; Used in both auralisation and HAWC2 simulations
     ; ----------------------------------------------------------------------------------
+    hub_height 35.5 ;     Wind turbine hub height (m)
+    rotor_radius 20.5 ;   Wind turbine rotor radius (m)
+    ; rotor_rpm -float- ;   Operating rotational speed of turbine (RPM)
+    ;
     wsp -float- ;         Wind speed (m/s) at wspz height
     z_wsp -float- ;       Height (h) at which wsp is defined
+    ;
     groundtemp -float- ;  Ground level air temperature (celcius)
     groundpres -float- ;  Ground level air pressure (Pa)
-    rotor_rpm -float- ;   Operating rotational speed of turbine (RPM)
+    ;
 end conditions ;
 ;
 begin HAWC2;
@@ -67,6 +72,8 @@ begin HAWC2;
     ; All other parameters are set by the tool.
     ; ----------------------------------------------------------------------------------
     begin aero_noise ;
+       noise_start_end_time -float- -float- ;
+       noise_deltat -float- ;
        turbulent_inflow_noise -int- ;
        inflow_turbulence_intensity -float- ;
        surface_roughness -float- ;
@@ -77,7 +84,7 @@ begin HAWC2;
     end aero_noise ;
     ;
     ; ----------------------------------------------------------------------------------
-    ; File locations
+    ; Other parameters
     ; ----------------------------------------------------------------------------------
     htc_name -str- ; Name of the .htc file in the H2model folder
 end HAWC2;

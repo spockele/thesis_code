@@ -100,7 +100,7 @@ class Case:
         for line in lines[1:-1]:
             key, value, *_ = line.split(' ')
 
-            if key in ('wsp', 'groundtemp', 'groundpres',):
+            if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius'):
                 self.conditions[key] = float(value)
 
             elif key in ():
@@ -117,14 +117,27 @@ class Case:
         """
         # Get the blocks from the HAWC2 block
         blocks = self._get_blocks(lines[1:-1])
+
         # Get the name and path of the base .htc file to work with
         self.htc_base_name = blocks["htc_name"]
         self.htc_base_path = os.path.join(self.h2model_path, f'{blocks["htc_name"]}.htc')
         # Load the base htc file
         self.htc = HTCFile(filename=self.htc_base_path)
+
         # Add the case "wind" and "aero_noise" sections
         self.htc.add_section(HTCSection.from_lines(blocks['wind']))
         self.htc.aero.add_section(HTCSection.from_lines(blocks['aero_noise']))
+
+        # Add necessary parameters to the "aero_noise" section
+        self.htc.aero.aero_noise.add_line(name='output_filename', values=('aeroload', ),
+                                          comments='')
+        self.htc.aero.aero_noise.add_line(name='temperature', values=(self.conditions['groundtemp'],),
+                                          comments='')
+        self.htc.aero.aero_noise.add_line(name='atmospheric_pressure', values=(self.conditions['groundpres'],),
+                                          comments='')
+        self.htc.aero.aero_noise.add_line(name='octave_bandwidth', values=('1',),
+                                          comments='')
+
         # Create the path for the case-specific htc file and save the htc file
         self.htc_path = os.path.join(self.h2model_path, f'{self.htc_base_name}_{self.case_name}.htc')
         self.htc.save(self.htc_path)
@@ -142,7 +155,23 @@ class Case:
         pass
 
     def run_hawc2(self, hawc2_path: str):
-        pass
+        *coordinates, fail, pd = hf.uniform_spherical_grid(255)
+        coo = np.array(coordinates)
+
+        offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
+
+        pos = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
+                            self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
+                            self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
+               for idx in range(coo.shape[1])]
+
+        for pi, p in enumerate(pos):
+            self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
+        self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
+        self.htc.save(self.htc_path)
+
+        stdout, log = self.htc.simulate(hawc2_path)
+        print(stdout, log)
 
 
 class Project:
@@ -170,6 +199,8 @@ if __name__ == '__main__':
     # project = Project(os.path.abspath('NTK'))
     proj_path = os.path.abspath('NTK')
     case = Case(proj_path, 'ntk_05.5ms.aur')
+    case.run_hawc2(os.path.abspath('/home/josephine/HAWC2/HAWC2MB.exe'))
+    print(case.htc)
 
 
 
