@@ -14,47 +14,71 @@ class Atmosphere:
     a = (-6.5e-3, 0., 1.0e-3, 2.8e-3, 0., -2.8e-3, -2.0e-3)
     h = (11000., 20000., 32000., 47000., 51000., 71000., 86000.)
 
-    def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None):
+    def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None, t_0m: float = None, p_0m: float = None,
+                 atm_path: str = None):
         """
         Class containing the ISO Standard Atmosphere (ISO 2533-1975) and a logarithmic wind profile.
         :param z_0: Reference height for the wind profile (m)
         :param ws_0: Wind speed at reference height z_0 (m)
         :param wind_z0: Roughness height for the wind profile (m)
         :param delta_h: Float indicating the delta altitude for generation (m). ISA will not generate if None
+        :param t_0m: Overwrite of the ground temperature of the ISA for atmosphere generation (Celsius)
+        :param p_0m: Overwrite of the ground pressure of the ISA for atmosphere generation (Pa)
+        :param atm_path: Overwrite the cache file location for the generated atmosphere
         """
-        # Load the ISA
+        # Set the ground temperature
+        if t_0m is None:
+            t_0m = 15.
+        # Set the ground pressure
+        if p_0m is None:
+            p_0m = 101325.
+        # Set the cache file path
+        if atm_path is None:
+            atm_path = './helper_functions/data/isa.dat'
+
+        # Load the ISA if no delta h is given
         if delta_h is None:
-            isa = read_from_file('./helper_functions/data/isa.dat')
+            isa = read_from_file(atm_path)
             self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound = isa
-        # Generate the ISA
+
+        # Generate the ISA in case a delta h is given
         else:
-            # Predefine the values per metre
+            # Create empty arrays to be filled
             self.alt = np.arange(0, self.h[-1] + delta_h, delta_h)
             self.temperature = np.zeros(self.alt.shape)
             self.pressure = np.zeros(self.alt.shape)
             self.density = np.zeros(self.alt.shape)
+            # Set the ground temperature and pressure
+            self.temperature[0], self.pressure[0] = t_0m + t_0, p_0m
 
-            self.temperature[0], self.pressure[0] = 15. + t_0, 101325.
-
+            # Start at layer 0
             layer = 0
+            # Loop over the altitudes array
+            #   (hi + 1 corresponds to the current altitude index due to the [1:] inside enumerate)
             for hi, h in enumerate(self.alt[1:]):
-                layer += 1 if h > self.h[layer] else 0
 
+                # Check if the next layer is reached
+                layer += 1 if h > self.h[layer] else 0
+                # Determine the temperature
                 self.temperature[hi + 1] = self.temperature[hi] + self.a[layer] * (h - self.alt[hi])
 
+                # For isothermal layers
                 if self.a[layer] == 0.:
                     e = -(g * (h - self.alt[hi]) / (r_air * self.temperature[hi]))
                     self.pressure[hi + 1] = self.pressure[hi] * np.exp(e)
 
+                # For non-isothermal layers
                 else:
                     e = -(g / (self.a[layer] * r_air))
                     self.pressure[hi + 1] = self.pressure[hi] * (self.temperature[hi + 1] / self.temperature[hi]) ** e
 
+            # Determine density and speed of sound based on the temperature and pressure
             self.density = self.pressure / (r_air * self.temperature)
             self.speed_of_sound = np.sqrt(gamma_air * r_air * self.temperature)
 
+            # Output the results to a .dat file
             stack = np.vstack((self.alt, self.temperature, self.pressure, self.density, self.speed_of_sound))
-            write_to_file(stack, './helper_functions/data/isa.dat')
+            write_to_file(stack, atm_path)
 
         # Set the wind profile references
         if wind_z0 is None:
