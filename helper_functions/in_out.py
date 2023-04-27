@@ -84,7 +84,7 @@ def read_hawc2_aero_noise(path: str):
             info = line.replace('  ', ' ').split('# ')[1:]
             # Extract all info at this timestep in this overly complex way :)
             t = float(info[0])
-            hub_pos = [float(num) for num in info[1].split(' ')[3:-1]]
+            hub_pos = [float(num) for num in info[1].split(' ')[2:-1]]
             hub_vel = float(info[2].split('  ')[1])
             blade_azim = [limit_angle(np.radians(float(num))) for num in info[4].split(' ')[2:-1]]
 
