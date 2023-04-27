@@ -41,7 +41,7 @@ class TestPropagationThread(unittest.TestCase):
         self.prop_thread.start()
         # Check whether the run does what it must
         self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
-        self.soundray.propagate.assert_called_once_with(1, hf.Cartesian(0, 0, 0))
+        self.soundray.propagate.assert_called_once_with(1, hf.Cartesian(0, 0, 0), 1.)
         self.assertEqual(self.prop_thread.p_thread.step, 2)
         # Run the second propagation thread
         self.prop_thread_2.start()

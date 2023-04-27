@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # rec = hf.Cartesian(0, -35.5 - 20.5, -1.7)
     rec = hf.Cartesian(0, -500, -1.7)
 
-    t_lim = abs(2 * rec[1] / hf.c)
+    tlim = abs(2 * rec[1] / hf.c)
 
     f = np.linspace(1, 44.1e3, 512)
     spec = np.empty((len(x), 512))
@@ -245,7 +245,7 @@ if __name__ == '__main__':
 
     p_thread = hf.ProgressThread(prop_queue.qsize(), "Propagating Rays")
     p_thread.start()
-    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=t_lim) for i in range(32))
+    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=tlim) for i in range(32))
     [thread.start() for thread in threads]
     while threading.active_count() > 2:
         pass
