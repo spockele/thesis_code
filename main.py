@@ -11,6 +11,11 @@ import helper_functions as hf
 
 class Case:
     def __init__(self, project_path: str, case_file: str):
+        """
+        Class to load and handle an auralisation case defined by a .aur file.
+        :param project_path: path of the overarcing auralisation project folder.
+        :param case_file: file name of the .aur file inside the project folder.
+        """
         # Create paths for project and for the HAWC2 model.
         self.project_path = project_path
         self.h2model_path = os.path.join(project_path, 'H2model')
@@ -33,10 +38,15 @@ class Case:
         self.htc_base_name = ''
         self.htc_base_path = ''
         self.htc_path = ''
+        self.hawc2_path = ''
         self.htc = HTCFile()
 
         # Parse the input file lines
         self._parse_input_file(lines)
+
+        # Set the variables to store the properties of the HAWC2 sphere
+        self.obs_sphere = None
+        self.n_obs = None
 
     @staticmethod
     def _get_blocks(lines: list):
@@ -122,8 +132,8 @@ class Case:
         blocks = self._get_blocks(lines[1:-1])
 
         # Get the name and path of the base .htc file to work with
-        self.htc_base_name = blocks["htc_name"]
-        self.htc_base_path = os.path.join(self.h2model_path, f'{blocks["htc_name"]}.htc')
+        self.htc_base_name = blocks['htc_name']
+        self.htc_base_path = os.path.join(self.h2model_path, f'{self.htc_base_name}.htc')
         # Load the base htc file
         self.htc = HTCFile(filename=self.htc_base_path)
 
@@ -145,45 +155,86 @@ class Case:
         self.htc_path = os.path.join(self.h2model_path, f'{self.htc_base_name}_{self.case_name}.htc')
         self.htc.save(self.htc_path)
 
+        # Extract the HAWC2 executable file location
+        self.hawc2_path = blocks['hawc2_path']
+
+        # Extract the number of observer points
+        self.n_obs = blocks['n_obs']
+
     def _parse_source(self, lines: list):
+        """
+
+        :param lines:
+        :return:
+        """
         pass
 
     def _parse_propagation(self, lines: list):
+        """
+
+        :param lines:
+        :return:
+        """
         pass
 
     def _parse_reception(self, lines: list):
+        """
+
+        :param lines:
+        :return:
+        """
         pass
 
     def _parse_reconstruction(self, lines: list):
+        """
+
+        :param lines:
+        :return:
+        """
         pass
 
-    def run_hawc2(self, hawc2_path: str):
-        *coordinates, fail, pd = hf.uniform_spherical_grid(255)
+    def generate_sphere(self, ):
+        """
+        Generate a sphere of evenly spaced observer points
+        """
+        *coordinates, fail, pd = hf.uniform_spherical_grid(self.n_obs)
         coo = np.array(coordinates)
 
         offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
 
-        pos = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
-                            self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
-                            self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
-               for idx in range(coo.shape[1])]
+        self.obs_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
+                           self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
+                           self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
+                           for idx in range(coo.shape[1])]
 
-        for pi, p in enumerate(pos):
+        for pi, p in enumerate(self.obs_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
+
+        self.htc.save(self.htc_path)
+
+    def run_hawc2(self, ):
+        """
+        Run the HAWC2 simulations for this case.
+        """
+        if self.n_obs is None:
+            raise RuntimeError('Observer sphere not yet generated.')
+
+        if not os.path.isfile(self.hawc2_path):
+            raise FileNotFoundError('Invalid file path given for HAWC2.')
 
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
         self.htc.save(self.htc_path)
 
-        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
-        p_thread.start()
-        stdout, log = self.htc.simulate(hawc2_path)
-        p_thread.update()
+        # p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        # p_thread.start()
+        # stdout, log = self.htc.simulate(hawc2_path)
+        # p_thread.update()
 
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
 
-        stdout, log = self.htc.simulate(hawc2_path)
-        p_thread.stop()
+        # stdout, log = self.htc.simulate(hawc2_path)
+        # p_thread.stop()
 
 
 class Project:
@@ -207,14 +258,19 @@ class Project:
         if len(self.cases) <= 0:
             raise FileNotFoundError('No input files found in project folder.')
 
+    def run_cases(self):
+        for case in self.cases:
+            case.generate_sphere()
+            case.run_hawc2()
+
 
 if __name__ == '__main__':
     # project = Project(os.path.abspath('NTK'))
     proj_path = os.path.abspath('NTK')
-    case = Case(proj_path, 'ntk_05.5ms.aur')
-    # case.run_hawc2(os.path.abspath('C:\\Users\\fien\\OneDrive\\Documenten\\EWEM\\HAWC2_12-9\\HAWC2MB.exe'))
-    # print(case.htc)
-    observer_pos, time_series_data, psd = hf.read_hawc2_aero_noise(os.path.join(case.h2model_path, 'res',
+    case_obj = Case(proj_path, 'ntk_05.5ms.aur')
+    # case_obj.run_hawc2()
+    # print(case_obj.htc)
+    observer_pos, time_series_data, psd = hf.read_hawc2_aero_noise(os.path.join(case_obj.h2model_path, 'res',
                                                                                 'aeroload_noise_psd_Obs001.out'))
 
 

@@ -1,7 +1,7 @@
 # Auralisation of Modelled Wind Turbine Noise for Psychoacoustic Listening Experiments
 
 ---
-### Code repository for the MSc. thesis by Josephine Siebert Pockelé.
+### Code repository for the M.Sc. thesis by Josephine Siebert Pockelé.
 
 ---
 To obtain the degree of Master of Science at the *Delft University of Technology* and the *Technical University of Denmark*.  
@@ -29,9 +29,11 @@ pip install -r python_310_reqs
 ## Tool input
 ### Project folder structure
 - *case.aur*
-  - Input file for the auralisation (Can be multiple files. ~~Tool will autodetect.~~)
+  - Input file for the auralisation (Can be multiple files. Tool will autodetect.)
 - *H2model/*
   - The HAWC2 model folder containing everything needed for running the HAWC2 simulation
+  - It is strongly recommended to test the HAWC2 model before running this tool, as error handling may not be as nice as native HAWC2
+
 ### Input file structure
 Below is the general structure of the input files that should be used
 ```
@@ -87,6 +89,8 @@ begin HAWC2;
     ; Other parameters
     ; ----------------------------------------------------------------------------------
     htc_name -str- ; Name of the .htc file in the H2model folder
+    hawc2_path -float- ; File path where the HAWC2 executable is located
+    n_obs -int- ; must be <256
 end HAWC2;
 ;
 begin source ;
