@@ -18,12 +18,88 @@ To obtain the degree of Master of Science at the *Delft University of Technology
 
 ---
 ### Requirements
+- Ubuntu 22.04.2 LTS (Testing on Windows 10 22H2 WIP)
 - [Python](https://www.python.org/) [3.10.10](https://www.python.org/downloads/release/python-31010/)
 - Required modules can be installed through:
 ```
 pip install -r python_310_reqs
 ```
 
+---
+## Tool input
+### Project folder structure
+- *case.aur*
+  - Input file for the auralisation (Can be multiple files. ~~Tool will autodetect.~~)
+- *H2model/*
+  - The HAWC2 model folder containing everything needed for running the HAWC2 simulation
+### Input file structure
+Below is the general structure of the input files that should be used
+```
+begin conditions ;
+    ; ----------------------------------------------------------------------------------
+    ; This section defines the operating conditions of the turbine
+    ; Used in both auralisation and HAWC2 simulations
+    ; ----------------------------------------------------------------------------------
+    wsp -float- ;         Wind speed (m/s) at wspz height
+    z_wsp -float- ;       Height (h) at which wsp is defined
+    groundtemp -float- ;  Ground level air temperature (celcius)
+    groundpres -float- ;  Ground level air pressure (Pa)
+    rotor_rpm -float- ;   Operating rotational speed of turbine (RPM)
+end conditions ;
+;
+begin HAWC2;
+    ; ----------------------------------------------------------------------------------
+    ; Define operating parameters for HAWC2 model, as would normally 
+    ; be defined in .htc files. The .htc file(s) of the model should only contain the 
+    ; turbine model.
+    ; See HAWC2 manual for more info. Use .htc file syntax.
+    ; ----------------------------------------------------------------------------------
+    ;
+    ; ----------------------------------------------------------------------------------
+    ; First is the wind block, where all parameters should be defined per the manual
+    ; ----------------------------------------------------------------------------------
+    begin wind ;
+        ; SEE HAWC2 MANUAL
+    end wind;
+    ;
+    ; ----------------------------------------------------------------------------------
+    ; Define which aero noise models to use. See HAWC2 manual
+    ; All other parameters are set by the tool.
+    ; ----------------------------------------------------------------------------------
+    begin aero_noise ;
+       turbulent_inflow_noise -int- ;
+       inflow_turbulence_intensity -float- ;
+       surface_roughness -float- ;
+       trailing_edge_noise -int- ;
+       bldata_filename -str- ;
+       stall_noise -int- ;
+       tip_noise -int- ;
+    end aero_noise ;
+    ;
+    ; ----------------------------------------------------------------------------------
+    ; File locations
+    ; ----------------------------------------------------------------------------------
+    htc_name -str- ; Name of the .htc file in the H2model folder
+end HAWC2;
+;
+begin source ;
+    ; --- WIP ---
+end source ;
+;
+begin propagation ;
+    ; --- WIP ---
+end propagation ;
+;
+begin reception ;
+    ; --- WIP ---
+end reception ;
+;
+begin reconstruction ;
+    ; --- WIP ---
+end reconstruction ;
+``` 
+
+---
 ### Code Structure
 - *main.py*  
   - ~~Runs the auralisation tool~~ A mess, at this point :(
@@ -56,4 +132,3 @@ pip install -r python_310_reqs
 
 - *plots/*
   - Plots generated from the helper functions for the report.
-

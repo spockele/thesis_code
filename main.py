@@ -1,53 +1,183 @@
+import os
 import numpy as np
+from wetb.hawc2 import HTCFile
+from wetb.hawc2.htc_contents import HTCSection
 
 import helper_functions as hf
 
 
-def directivity(theta, phi, mach):
-    """
-    BPM directivity pattern (Brooks et al. 1989, Equation B1)
-    :param theta: angle in the rotated zy-plane in Brooks et al. 1989, Figure B3
-    :param phi: angle in the yz-plane defined in Brooks et al. 1989, Figure B3
-    :param mach: mach number in the airfoil motion direction
-    :return: the directivity value of BPM at the given angular coordinate and mach number
-    """
-    # Limit the angles to [-pi, pi]
-    theta = hf.limit_angle(theta)
-    phi = hf.limit_angle(phi)
-    # Determine convective mach number with assumption m_c = .8 M
-    mach_conv = .8 * mach
-    # Determine the numerator and denominator of the BPM directivity (Brooks et al. 1989, Equation B1)
-    num = 2 * ((np.sin(.5 * theta)) ** 2) * np.sin(phi) ** 2
-    den = (1 + mach * np.cos(theta)) * (1 + (mach - mach_conv) * np.cos(theta)) ** 2
-    # Return the sh!t out of the directivity value
-    return num / den
+class Case:
+    def __init__(self, project_path: str, case_file: str):
+        # Create paths for project and for the HAWC2 model.
+        self.project_path = project_path
+        self.h2model_path = os.path.join(project_path, 'H2model')
 
+        self.case_file = os.path.join(project_path, case_file)
+        # Check that the input file actually exists.
+        if not os.path.isfile(self.case_file):
+            raise FileNotFoundError('Given input file name does not exist.')
+
+        # Open the input file and read the lines
+        with open(self.case_file, 'r') as f:
+            lines = f.readlines()
+        # Remove all leading and trailing spaces from the lines for parsing
+        lines = [line.strip(' ') for line in lines]
+
+        # Create variables for the parsing process
+        self.conditions = {}
+        self.source = {}
+        self.case_name = ''
+        self.htc_base_name = ''
+        self.htc_base_path = ''
+        self.htc_path = ''
+        self.htc = HTCFile()
+
+        # Parse the input file lines
+        self._parse_input_file(lines)
+
+    @staticmethod
+    def _get_blocks(lines: list):
+        """
+
+        :param lines:
+        :return:
+        """
+        # Create empty list for returning the blocks
+        blocks = {}
+        # Go over all the lines
+        while lines:
+            line = lines.pop(0)
+            # Figure out the blocks
+            if line.startswith('begin'):
+                # Get the name of the current block
+                _, block_name, *_ = line.split(' ')
+                # Create block collection list
+                block = [line, ]
+                # Obtain all lines in the current block
+                while not block[-1].strip(' ').startswith(f'end {block_name}'):
+                    block.append(lines.pop(0))
+                # Add this block to the list
+                blocks[block_name] = block
+
+            elif not (line.startswith(';') or line.startswith('\n')):
+                key, value, *_ = line.split(' ')
+                blocks[key] = value
+
+        return blocks
+
+    def _parse_input_file(self, lines: list):
+        """
+        Parse the input file into the blocks and then parse those.
+        :param lines:
+        :return:
+        """
+        # Obtain the blocks from the input file lines
+        blocks = self._get_blocks(lines)
+        self.case_name = blocks['name']
+        # Check if input file contains required stuff
+        for block_name_required in ('conditions', 'HAWC2', 'source', 'propagation', 'reception', 'reconstruction'):
+            if block_name_required not in blocks.keys():
+                raise KeyError(f'No {block_name_required} block found in {self.case_name}')
+
+        for block_name, block in blocks.items():
+            # Parse Conditions block
+            if block_name == 'conditions':
+                self._parse_conditions(block)
+            # Parse HAWC2 block
+            elif block_name == 'HAWC2':
+                self._parse_hawc2(block)
+            # Parse source model block
+            elif block_name == 'source':
+                self._parse_source(block)
+
+    def _parse_conditions(self, lines: list):
+        """
+        Parse the conditions block into the conditions dictionary
+        :param lines:
+        :return:
+        """
+        self.conditions = dict()
+        for line in lines[1:-1]:
+            key, value, *_ = line.split(' ')
+
+            if key in ('wsp', 'groundtemp', 'groundpres',):
+                self.conditions[key] = float(value)
+
+            elif key in ():
+                self.conditions[key] = int(value)
+
+            else:
+                self.conditions[key] = value
+
+    def _parse_hawc2(self, lines: list):
+        """
+        Parse the HAWC2 block and create the case .htc file
+        :param lines:
+        :return:
+        """
+        # Get the blocks from the HAWC2 block
+        blocks = self._get_blocks(lines[1:-1])
+        # Get the name and path of the base .htc file to work with
+        self.htc_base_name = blocks["htc_name"]
+        self.htc_base_path = os.path.join(self.h2model_path, f'{blocks["htc_name"]}.htc')
+        # Load the base htc file
+        self.htc = HTCFile(filename=self.htc_base_path)
+        # Add the case "wind" and "aero_noise" sections
+        self.htc.add_section(HTCSection.from_lines(blocks['wind']))
+        self.htc.aero.add_section(HTCSection.from_lines(blocks['aero_noise']))
+        # Create the path for the case-specific htc file and save the htc file
+        self.htc_path = os.path.join(self.h2model_path, f'{self.htc_base_name}_{self.case_name}.htc')
+        self.htc.save(self.htc_path)
+
+    def _parse_source(self, lines: list):
+        pass
+
+    def _parse_propagation(self, lines: list):
+        pass
+
+    def _parse_reception(self, lines: list):
+        pass
+
+    def _parse_reconstruction(self, lines: list):
+        pass
+
+    def run_hawc2(self, hawc2_path: str):
+        pass
+
+
+class Project:
+    def __init__(self, project_path: str,):
+        # Check if project folder exists.
+        if not os.path.isdir(project_path):
+            raise NotADirectoryError('Invalid project folder path given.')
+
+        # Create paths for project and for the HAWC2 model
+        self.project_path = project_path
+        self.h2model_path = os.path.join(project_path, 'H2model')
+
+        # Check that the project contains a HAWC2 model
+        if not os.path.isdir(self.h2model_path):
+            raise NotADirectoryError('The given project folder does not contain a HAWC2 model in folder "H2model".')
+
+        # Obtain cases from the project folder
+        self.cases = [Case(self.project_path, aur_file)
+                      for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
+
+        if len(self.cases) <= 0:
+            raise FileNotFoundError('No input files found in project folder.')
 
 if __name__ == '__main__':
-    # phg, thg = hf.uniform_spherical_grid(5000)
-    #
-    # d = directivity(phg, thg, .9)
-    #
-    # y = np.sin(phg) * np.cos(thg)
-    # z = np.sin(phg) * np.sin(thg)
-    # x = np.cos(phg)
-    # #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
-    #
-    # idx = d > 20 ** (np.log10(np.max(d)) - 20)
-    # scat = ax.scatter(x[idx], y[idx], z[idx], c=20 * np.log10(d[idx]), )
-    # plt.colorbar(scat)
-    #
-    # ax.set_aspect('equal')
-    # # Create cubic bounding box to simulate equal aspect ratio
-    # max_range = np.max([x.max() - x.min(), y.max() - y.min(), z.max() - z.min()])
-    # xb = 0.5 * max_range * np.mgrid[-1:2:2, -1:2:2, -1:2:2][0].flatten() + 0.5 * (x.max() + x.min())
-    # yb = 0.5 * max_range * np.mgrid[-1:2:2, -1:2:2, -1:2:2][1].flatten() + 0.5 * (y.max() + y.min())
-    # zb = 0.5 * max_range * np.mgrid[-1:2:2, -1:2:2, -1:2:2][2].flatten() + 0.5 * (z.max() + z.min())
-    # for xbb, ybb, zbb in zip(xb, yb, zb):
-    #     ax.plot([xbb], [ybb], [zbb], 'w')
-    # plt.show()
+    # project = Project(os.path.abspath('NTK'))
+    proj_path = os.path.abspath('NTK')
+    case = Case(proj_path, 'ntk_05.5ms.aur')
+
+
+
+
+
+
+
+
 
     # (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')
     # # Sampling period
@@ -132,5 +262,5 @@ if __name__ == '__main__':
     # print(h, atmosphere.conditions(h)[-1])
     # atmosphere.plot()
 
-    hrtf = hf.MitHrtf()
-    hrtf.plot_horizontal()
+    # hrtf = hf.MitHrtf()
+    # hrtf.plot_horizontal()
