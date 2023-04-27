@@ -1,12 +1,16 @@
 name 055ms ;
 ;
 begin conditions ;
-    wsp 5.5 ;
-    z_wsp -35.5 ;
-    groundtemp 11. ;
-    groundpres 102210.0 ;
-    hub_height 35.5 ;
-    rotor_radius 20.5 ;
+    hub_height 35.5 ;       Wind turbine hub height (m)
+    rotor_radius 20.5 ;     Wind turbine rotor radius (m)
+    ;
+    wsp 5.5 ;               Wind speed (m/s) at z_wsp height
+    z_wsp 35.5 ;            Height (m)) at which wsp is defined
+    z0_wsp 0.03 ;           Roughness height (m) for the wind speed profile
+    ;
+    groundtemp 11. ;        Ground level air temperature (celcius)
+    groundpres 102210.0 ;   Ground level air pressure (Pa)
+    ;
 end conditions ;
 
 begin HAWC2 ;
@@ -56,6 +60,7 @@ begin HAWC2 ;
     htc_name ntk_500_41 ;
     hawc2_path C:\\Users\\fien\\OneDrive\\Documenten\\EWEM\\HAWC2_12-9\\HAWC2MB.exe ;
     n_obs 255 ; must be <256
+    ;
 end HAWC2 ;
 ;
 begin source ;
@@ -63,6 +68,7 @@ begin source ;
 end source ;
 ;
 begin propagation ;
+    n_rays 2048 ; Defines the number of sound rays used for propagation
     ; --- WIP ---
 end propagation ;
 ;

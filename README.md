@@ -42,15 +42,16 @@ begin conditions ;
     ; This section defines the operating conditions of the turbine
     ; Used in both auralisation and HAWC2 simulations
     ; ----------------------------------------------------------------------------------
-    hub_height 35.5 ;     Wind turbine hub height (m)
-    rotor_radius 20.5 ;   Wind turbine rotor radius (m)
+    hub_height -float- ;    Wind turbine hub height (m)
+    rotor_radius -float- ;  Wind turbine rotor radius (m)
     ; rotor_rpm -float- ;   Operating rotational speed of turbine (RPM)
     ;
-    wsp -float- ;         Wind speed (m/s) at wspz height
-    z_wsp -float- ;       Height (h) at which wsp is defined
+    wsp -float- ;           Wind speed (m/s) at z_wsp height
+    z_wsp -float- ;         Height (m)) at which wsp is defined
+    z0_wsp -float- ;        Roughness height (m) for the wind speed profile
     ;
-    groundtemp -float- ;  Ground level air temperature (celcius)
-    groundpres -float- ;  Ground level air pressure (Pa)
+    groundtemp -float- ;    Ground level air temperature (celcius)
+    groundpres -float- ;    Ground level air pressure (Pa)
     ;
 end conditions ;
 ;
@@ -74,7 +75,7 @@ begin HAWC2;
     ; All other parameters are set by the tool.
     ; ----------------------------------------------------------------------------------
     begin aero_noise ;
-       noise_start_end_time -float- -float- ;
+       noise_start_end_time -float- -float- ; Define this to be one rotor rotation
        noise_deltat -float- ;
        turbulent_inflow_noise -int- ;
        inflow_turbulence_intensity -float- ;
@@ -91,6 +92,7 @@ begin HAWC2;
     htc_name -str- ; Name of the .htc file in the H2model folder
     hawc2_path -float- ; File path where the HAWC2 executable is located
     n_obs -int- ; must be <256
+    ;
 end HAWC2;
 ;
 begin source ;
@@ -98,7 +100,7 @@ begin source ;
 end source ;
 ;
 begin propagation ;
-    ; --- WIP ---
+    n_rays -int- ; Defines the number of sound rays used for propagation
 end propagation ;
 ;
 begin reception ;

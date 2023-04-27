@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import queue
 import threading
 import time
 import sys
@@ -7,6 +8,7 @@ from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
 import helper_functions as hf
+import propagation_model as pm
 
 
 class Case:
@@ -16,6 +18,7 @@ class Case:
         :param project_path: path of the overarcing auralisation project folder.
         :param case_file: file name of the .aur file inside the project folder.
         """
+        ''' Preprocessing of the input parameters '''
         # Create paths for project and for the HAWC2 model.
         self.project_path = project_path
         self.h2model_path = os.path.join(project_path, 'H2model')
@@ -25,28 +28,48 @@ class Case:
         if not os.path.isfile(self.case_file):
             raise FileNotFoundError('Given input file name does not exist.')
 
+        ''' Input file parsing process '''
         # Open the input file and read the lines
         with open(self.case_file, 'r') as f:
             lines = f.readlines()
         # Remove all leading and trailing spaces from the lines for parsing
         lines = [line.strip(' ') for line in lines]
 
-        # Create variables for the parsing process
+        # Dictionaries to store inputs for the models
         self.conditions = {}
         self.source = {}
+        self.propagation = {}
+        self.reception = {}
+        self.reconstruction = {}
+        # File paths and names
         self.case_name = ''
         self.htc_base_name = ''
         self.htc_base_path = ''
         self.htc_path = ''
         self.hawc2_path = ''
+        # Placeholder for the real .htc file
         self.htc = HTCFile()
+        # Parameters from the hawc2 input block
+        self.n_obs = 0
 
         # Parse the input file lines
         self._parse_input_file(lines)
 
+        ''' Setup of the models '''
+        # Set the path for the atmosphere cache file
+        self.atmosphere_path = os.path.join(self.project_path, f'atm/atm_{self.case_name}.dat')
+        # Generate atmosphere if it does not exist yet
+        if not os.path.isfile(self.atmosphere_path):
+            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
+                                            1., self.conditions['groundtemp'], self.conditions['groundpres'],
+                                            atm_path=self.atmosphere_path)
+        # Otherwise, load the cache file
+        else:
+            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
+                                            atm_path=self.atmosphere_path)
+
         # Set the variables to store the properties of the HAWC2 sphere
         self.obs_sphere = None
-        self.n_obs = None
 
     @staticmethod
     def _get_blocks(lines: list):
@@ -113,7 +136,7 @@ class Case:
         for line in lines[1:-1]:
             key, value, *_ = line.split(' ')
 
-            if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius'):
+            if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius', 'z0_wsp', 'z_wsp'):
                 self.conditions[key] = float(value)
 
             elif key in ():
@@ -148,12 +171,11 @@ class Case:
                                           comments='')
         self.htc.aero.aero_noise.add_line(name='atmospheric_pressure', values=(self.conditions['groundpres'],),
                                           comments='')
-        self.htc.aero.aero_noise.add_line(name='octave_bandwidth', values=('1',),
+        self.htc.aero.aero_noise.add_line(name='octave_bandwidth', values=('24',),
                                           comments='')
 
         # Create the path for the case-specific htc file and save the htc file
         self.htc_path = os.path.join(self.h2model_path, f'{self.htc_base_name}_{self.case_name}.htc')
-        self.htc.save(self.htc_path)
 
         # Extract the HAWC2 executable file location
         self.hawc2_path = blocks['hawc2_path']
@@ -175,7 +197,18 @@ class Case:
         :param lines:
         :return:
         """
-        pass
+        self.propagation = dict()
+        for line in lines[1:-1]:
+            key, value, *_ = line.split(' ')
+
+            if key in ('n_rays',):
+                self.conditions[key] = float(value)
+
+            elif key in ():
+                self.conditions[key] = int(value)
+
+            else:
+                self.conditions[key] = value
 
     def _parse_reception(self, lines: list):
         """
@@ -193,7 +226,7 @@ class Case:
         """
         pass
 
-    def generate_sphere(self, ):
+    def generate_hawc2_sphere(self, ):
         """
         Generate a sphere of evenly spaced observer points
         """
@@ -210,14 +243,12 @@ class Case:
         for pi, p in enumerate(self.obs_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
 
-        self.htc.save(self.htc_path)
-
     def run_hawc2(self, ):
         """
         Run the HAWC2 simulations for this case.
         """
-        if self.n_obs is None:
-            raise RuntimeError('Observer sphere not yet generated.')
+        if self.obs_sphere is None:
+            self.generate_hawc2_sphere()
 
         if not os.path.isfile(self.hawc2_path):
             raise FileNotFoundError('Invalid file path given for HAWC2.')
@@ -225,20 +256,26 @@ class Case:
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
         self.htc.save(self.htc_path)
 
-        # p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
-        # p_thread.start()
-        # stdout, log = self.htc.simulate(hawc2_path)
-        # p_thread.update()
+        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        p_thread.start()
+        stdout, log = self.htc.simulate(hawc2_path)
+        p_thread.update()
 
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
 
-        # stdout, log = self.htc.simulate(hawc2_path)
-        # p_thread.stop()
+        stdout, log = self.htc.simulate(hawc2_path)
+        p_thread.stop()
+
+        os.remove(case_obj.htc_path)
 
 
 class Project:
     def __init__(self, project_path: str,):
+        """
+
+        :param project_path:
+        """
         # Check if project folder exists.
         if not os.path.isdir(project_path):
             raise NotADirectoryError('Invalid project folder path given.')
@@ -251,6 +288,10 @@ class Project:
         if not os.path.isdir(self.h2model_path):
             raise NotADirectoryError('The given project folder does not contain a HAWC2 model in folder "H2model".')
 
+        # Make atmosphere folder if that does not exist yet
+        if not os.path.isdir(os.path.join(self.project_path, 'atm')):
+            os.mkdir(os.path.join(self.project_path, 'atm'))
+
         # Obtain cases from the project folder
         self.cases = [Case(self.project_path, aur_file)
                       for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
@@ -259,8 +300,10 @@ class Project:
             raise FileNotFoundError('No input files found in project folder.')
 
     def run_cases(self):
+        """
+
+        """
         for case in self.cases:
-            case.generate_sphere()
             case.run_hawc2()
 
 
@@ -268,10 +311,9 @@ if __name__ == '__main__':
     # project = Project(os.path.abspath('NTK'))
     proj_path = os.path.abspath('NTK')
     case_obj = Case(proj_path, 'ntk_05.5ms.aur')
-    # case_obj.run_hawc2()
+    case_obj.run_hawc2()
     # print(case_obj.htc)
-    observer_pos, time_series_data, psd = hf.read_hawc2_aero_noise(os.path.join(case_obj.h2model_path, 'res',
-                                                                                'aeroload_noise_psd_Obs001.out'))
+
 
 
 
