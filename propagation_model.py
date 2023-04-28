@@ -213,6 +213,12 @@ class SoundRay:
         return arr
 
 
+class PropagationModel:
+    def __init__(self, aur_file_dict: dict, soundrays: list):
+        self.params = aur_file_dict
+        self.soundrays = soundrays
+
+
 if __name__ == '__main__':
     atm = hf.Atmosphere(35.5, 10.5, )
     phi, theta, fail, pd = hf.uniform_spherical_grid(2048)
