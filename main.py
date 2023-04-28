@@ -1,9 +1,6 @@
 import os
 import numpy as np
-import queue
-import threading
-import time
-import sys
+import shutil as sh
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
@@ -11,10 +8,10 @@ import helper_functions as hf
 import propagation_model as pm
 
 
-class Case:
+class CaseLoader:
     def __init__(self, project_path: str, case_file: str):
         """
-        Class to load and handle an auralisation case defined by a .aur file.
+        Class to load an auralisation case defined by a .aur file.
         :param project_path: path of the overarcing auralisation project folder.
         :param case_file: file name of the .aur file inside the project folder.
         """
@@ -55,28 +52,12 @@ class Case:
         # Parse the input file lines
         self._parse_input_file(lines)
 
-        ''' Setup of the models '''
-        # Set the path for the atmosphere cache file
-        self.atmosphere_path = os.path.join(self.project_path, f'atm/atm_{self.case_name}.dat')
-        # Generate atmosphere if it does not exist yet
-        if not os.path.isfile(self.atmosphere_path):
-            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
-                                            1., self.conditions['groundtemp'], self.conditions['groundpres'],
-                                            atm_path=self.atmosphere_path)
-        # Otherwise, load the cache file
-        else:
-            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
-                                            atm_path=self.atmosphere_path)
-
-        # Set the variables to store the properties of the HAWC2 sphere
-        self.obs_sphere = None
-
     @staticmethod
     def _get_blocks(lines: list):
         """
-
-        :param lines:
-        :return:
+        Obtain code blocks from the given list of lines
+        :param lines: list of lines containing auralisation input code
+        :return: a dictionary containing the code blocks. dict(str: list(str))
         """
         # Create empty list for returning the blocks
         blocks = {}
@@ -95,6 +76,7 @@ class Case:
                 # Add this block to the list
                 blocks[block_name] = block
 
+            # Put non-block lines in the dictionary as well
             elif not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
                 blocks[key] = value
@@ -104,8 +86,7 @@ class Case:
     def _parse_input_file(self, lines: list):
         """
         Parse the input file into the blocks and then parse those.
-        :param lines:
-        :return:
+        :param lines: list of lines containing auralisation input code
         """
         # Obtain the blocks from the input file lines
         blocks = self._get_blocks(lines)
@@ -129,8 +110,7 @@ class Case:
     def _parse_conditions(self, lines: list):
         """
         Parse the conditions block into the conditions dictionary
-        :param lines:
-        :return:
+        :param lines: list of lines containing auralisation input code
         """
         self.conditions = dict()
         for line in lines[1:-1]:
@@ -149,8 +129,7 @@ class Case:
     def _parse_hawc2(self, lines: list):
         """
         Parse the HAWC2 block and create the case .htc file
-        :param lines:
-        :return:
+        :param lines: list of lines containing auralisation input code
         """
         # Get the blocks from the HAWC2 block
         blocks = self._get_blocks(lines[1:-1])
@@ -179,24 +158,15 @@ class Case:
         self.htc_path = os.path.join(self.h2model_path, f'{self.htc_base_name}_{self.case_name}.htc')
 
         # Extract the HAWC2 executable file location
-        self.hawc2_path = blocks['hawc2_path']
+        self.hawc2_path = os.path.join(blocks['hawc2_path'])
 
         # Extract the number of observer points
         self.n_obs = int(blocks['n_obs'])
 
     def _parse_source(self, lines: list):
         """
-
-        :param lines:
-        :return:
-        """
-        pass
-
-    def _parse_propagation(self, lines: list):
-        """
-
-        :param lines:
-        :return:
+        Parse the source block
+        :param lines: list of lines containing auralisation input code
         """
         self.propagation = dict()
         for line in lines[1:-1]:
@@ -212,21 +182,67 @@ class Case:
                 else:
                     self.conditions[key] = value
 
+    def _parse_propagation(self, lines: list):
+        """
+        Parse the propagation block
+        :param lines: list of lines containing auralisation input code
+        """
+        self.propagation = dict()
+        for line in lines[1:-1]:
+            if not (line.startswith(';') or line.startswith('\n')):
+                key, value, *_ = line.split(' ')
+
+                if key in ():
+                    self.conditions[key] = float(value)
+
+                elif key in ():
+                    self.conditions[key] = int(value)
+
+                else:
+                    self.conditions[key] = value
+
     def _parse_reception(self, lines: list):
         """
-
-        :param lines:
-        :return:
+        Parse the reception block
+        :param lines: list of lines containing auralisation input code
         """
         pass
 
     def _parse_reconstruction(self, lines: list):
         """
-
-        :param lines:
-        :return:
+        Parse the reconstruction block
+        :param lines: list of lines containing auralisation input code
         """
         pass
+
+
+class Case(CaseLoader):
+    def __init__(self, project_path: str, case_file: str):
+        """
+        Class to manage an auralisation case defined by a .aur file.
+        :param project_path: path of the overarcing auralisation project folder.
+        :param case_file: file name of the .aur file inside the project folder.
+        """
+        # Call the CaseLoader
+        super().__init__(project_path, case_file)
+
+        ''' Preparations for HAWC2 '''
+        # Set the variables to store the properties of the HAWC2 sphere
+        self.obs_sphere = None
+        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
+
+        ''' Setup of the models '''
+        # Set the path for the atmosphere cache file
+        self.atmosphere_path = os.path.join(self.project_path, f'atm/atm_{self.case_name}.dat')
+        # Generate atmosphere if it does not exist yet
+        if not os.path.isfile(self.atmosphere_path):
+            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
+                                            1., self.conditions['groundtemp'], self.conditions['groundpres'],
+                                            atm_path=self.atmosphere_path)
+        # Otherwise, load the cache file
+        else:
+            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
+                                            atm_path=self.atmosphere_path)
 
     def generate_hawc2_sphere(self, ):
         """
@@ -249,27 +265,58 @@ class Case:
         """
         Run the HAWC2 simulations for this case.
         """
+        ''' Preprocessing '''
+        # Make sure an observer sphere is generated
         if self.obs_sphere is None:
             self.generate_hawc2_sphere()
-
+        # Make sure the HAWC2 path is valid
         if not os.path.isfile(self.hawc2_path):
             raise FileNotFoundError('Invalid file path given for HAWC2.')
 
+        # Set the aero_noise simulation mode to 2, meaning to run and store the needed parameters
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
         self.htc.save(self.htc_path)
 
-        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
-        p_thread.start()
-        stdout, log = self.htc.simulate(self.hawc2_path)
-        p_thread.update()
+        ''' Running HAWC2 '''
+        # # Create and start a progress thread to continuously print the progress and .....
+        # p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        # p_thread.start()
+        # # Run the simulation
+        # self.htc.simulate(self.hawc2_path)
+        # # Set 1 to 2 in the progress thread
+        # p_thread.update()
 
+        # Prepare for noise simulation by setting the noise mode to calculate
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
+        # # Run the noise simulation
+        # self.htc.simulate(self.hawc2_path)
+        # # Stop the progress thread
+        # p_thread.stop()
 
-        stdout, log = self.htc.simulate(self.hawc2_path)
-        p_thread.stop()
-
+        ''' Postprocessing '''
+        # Remove the temp htc file
         os.remove(case_obj.htc_path)
+
+        # Create a directory to move noise results to if it does not exist yet
+        if not os.path.isdir(self.h2result_path):
+            os.mkdir(self.h2result_path)
+
+        # Loop over all generated result files
+        for fname in os.listdir(os.path.join(self.h2model_path, 'res')):
+            # Create the path string for the current result file
+            fpath = os.path.join(self.h2model_path, 'res', fname)
+            # Store the base HAWC2 output files
+            if fname.endswith('.sel') or fname.endswith('.dat'):
+                sh.move(fpath, self.h2result_path)
+            # Store the noise output files
+            elif fname.endswith('.out'):
+                # But only the relevant ones...
+                if fname.startswith('aeroload_noise_psd'):
+                    sh.move(fpath, self.h2result_path)
+                # Remove the other ones
+                else:
+                    os.remove(fpath)
 
 
 class Project:
