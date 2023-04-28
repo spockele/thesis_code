@@ -1,6 +1,8 @@
 import os
 
 import case_mgmt as cm
+import source_model as sm
+import propagation_model as pm
 
 
 class Project:
@@ -41,13 +43,12 @@ class Project:
 
 
 if __name__ == '__main__':
-    # project = Project(os.path.abspath('NTK'))
-    proj_path = os.path.abspath('NTK')
-    case_obj = cm.Case(proj_path, 'ntk_05.5ms.aur')
-    case_obj.run_hawc2()
-    # print(case_obj.htc)
+    # proj_path = os.path.abspath('NTK')
+    # case_obj = cm.Case(proj_path, 'ntk_05.5ms.aur')
+    # case_obj.run_hawc2()
 
-
+    source = sm.SourceModel({}, os.path.abspath('./NTK/H2model/res/055ms/'))
+    source.h2sphere.load_sphere()
 
 
 
