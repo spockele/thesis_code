@@ -9,7 +9,7 @@ import helper_functions as hf
 
 class CaseLoader:
     # Some predefined values for the HAWC2.aero.aero_noise module
-    octave_bandwidth = '24'
+    octave_bandwidth = '3'
     output_filename = 'aeroload'
 
     def __init__(self, project_path: str, case_file: str):
@@ -261,7 +261,7 @@ class Case(CaseLoader):
 
         ''' Preparations for HAWC2 '''
         # Set the variables to store the properties of the HAWC2 sphere
-        self.obs_sphere = None
+        self.h2result_sphere = None
         self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
 
         ''' Setup of the models '''
@@ -286,12 +286,12 @@ class Case(CaseLoader):
 
         offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
 
-        self.obs_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
-                           self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
-                           self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
-                           for idx in range(coo.shape[1])]
+        self.h2result_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
+                                             self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
+                                             self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
+                                for idx in range(coo.shape[1])]
 
-        for pi, p in enumerate(self.obs_sphere):
+        for pi, p in enumerate(self.h2result_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
 
     def run_hawc2(self, ):
@@ -300,7 +300,7 @@ class Case(CaseLoader):
         """
         ''' Preprocessing '''
         # Make sure an observer sphere is generated
-        if self.obs_sphere is None:
+        if self.h2result_sphere is None:
             self.generate_hawc2_sphere()
         # Make sure the HAWC2 path is valid
         if not os.path.isfile(self.hawc2_path):
