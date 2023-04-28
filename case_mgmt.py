@@ -286,9 +286,9 @@ class Case(CaseLoader):
 
         offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
 
-        self.h2result_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[1][idx]),
-                                             self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[1][idx]),
-                                             self.conditions['rotor_radius'] * np.cos(coo[1][idx])) + offset
+        self.h2result_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[0][idx]),
+                                             self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[0][idx]),
+                                             self.conditions['rotor_radius'] * np.cos(coo[0][idx])) + offset
                                 for idx in range(coo.shape[1])]
 
         for pi, p in enumerate(self.h2result_sphere):
