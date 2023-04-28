@@ -96,11 +96,11 @@ begin HAWC2;
 end HAWC2;
 ;
 begin source ;
-    ; --- WIP ---
+    n_rays -int- ; Defines the number of sound rays used for propagation
 end source ;
 ;
 begin propagation ;
-    n_rays -int- ; Defines the number of sound rays used for propagation
+    n_threads -int- ; Defines the number of threads used for propagating sound rays
 end propagation ;
 ;
 begin reception ;
