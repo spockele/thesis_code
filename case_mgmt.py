@@ -9,7 +9,7 @@ import helper_functions as hf
 
 class CaseLoader:
     # Some predefined values for the HAWC2.aero.aero_noise module
-    octave_bandwidth = '3'
+    octave_bandwidth = '1'
     output_filename = 'aeroload'
 
     def __init__(self, project_path: str, case_file: str):
@@ -322,6 +322,7 @@ class Case(CaseLoader):
         # Prepare for noise simulation by setting the noise mode to calculate
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
+
         # # Run the noise simulation
         # self.htc.simulate(self.hawc2_path)
         # # Stop the progress thread
