@@ -1,4 +1,7 @@
 import os
+import matplotlib.pyplot as plt
+
+import helper_functions as hf
 
 import case_mgmt as cm
 import source_model as sm
@@ -45,11 +48,21 @@ class Project:
 if __name__ == '__main__':
     proj_path = os.path.abspath('NTK')
     case_obj = cm.Case(proj_path, 'ntk_05.5ms.aur')
+
+    case_obj.generate_hawc2_sphere()
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    for point in case_obj.h2result_sphere:
+        ax.scatter(*point.vec)
+
+    plt.show()
+
     case_obj.run_hawc2()
 
-    # source = sm.SourceModel({}, os.path.abspath('./NTK/H2model/res/055ms/'))
-    # source.h2sphere.load_sphere()
 
+    # source = sm.SourceModel(case_obj.conditions, case_obj.source, os.path.abspath('./NTK/H2model/res/055ms/'))
+    # source.h2sphere.load_sphere()
+    # print(source.h2sphere)
+    # source.h2sphere.interpolate_sound(hf.Cartesian(0, 0, 0))
 
 
 

@@ -214,8 +214,9 @@ class SoundRay:
 
 
 class PropagationModel:
-    def __init__(self, aur_file_dict: dict, soundrays: list):
-        self.params = aur_file_dict
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, soundrays: list):
+        self.conditions = aur_conditions_dict
+        self.params = aur_propagation_dict
         self.soundrays = soundrays
 
 
