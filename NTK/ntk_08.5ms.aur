@@ -1,7 +1,16 @@
+name 085ms ;
+;
 begin conditions ;
-    wsp 8.5 ;
-    groundtemp 11. ;
-    groundpres 102210.0 ;
+    hub_height 35.5 ;       Wind turbine hub height (m)
+    rotor_radius 20.5 ;     Wind turbine rotor radius (m)
+    ;
+    wsp 8.5 ;               Wind speed (m/s) at z_wsp height
+    z_wsp 35.5 ;            Height (m)) at which wsp is defined
+    z0_wsp 0.03 ;           Roughness height (m) for the wind speed profile
+    ;
+    groundtemp 11. ;        Ground level air temperature (celcius)
+    groundpres 102210.0 ;   Ground level air pressure (Pa)
+    ;
 end conditions ;
 
 begin HAWC2 ;
@@ -37,12 +46,38 @@ begin HAWC2 ;
     end wind ;
     ;
     begin aero_noise ;
-       turbulent_inflow_noise 2 ;
-       inflow_turbulence_intensity 15.29 ;
-       surface_roughness 1.00 ;
-       trailing_edge_noise 5 ;
-       bldata_filename ./data/ntk500_bldata.dat ;
-       stall_noise 1 ;
-       tip_noise 0 ;
+        noise_start_end_time  50.0 52.2066; Define this to be one rotor rotation
+        noise_deltat 0.04 ;
+        turbulent_inflow_noise 2 ;
+        inflow_turbulence_intensity 15.29 ;
+        surface_roughness 1.00 ;
+        trailing_edge_noise 5 ;
+        bldata_filename ./data/ntk500_bldata.dat ;
+        stall_noise 1 ;
+        tip_noise 0 ;
     end aero_noise ;
+    ;
+    htc_name ntk_500_41 ;
+    hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ;
+    ; hawc2_path /home/josephine/HAWC2/HAWC2MB.exe ;
+    n_obs 255 ; must be <256
+    ;
 end HAWC2 ;
+;
+begin source ;
+    n_rays 2048 ; Defines the number of sound rays used for propagation
+    ; --- WIP ---
+end source ;
+;
+begin propagation ;
+    n_threads 16 ; Defines the number of threads used for propagating sound rays
+    ; --- WIP ---
+end propagation ;
+;
+begin reception ;
+    ; --- WIP ---
+end reception ;
+;
+begin reconstruction ;
+    ; --- WIP ---
+end reconstruction ;

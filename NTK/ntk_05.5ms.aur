@@ -58,8 +58,8 @@ begin HAWC2 ;
     end aero_noise ;
     ;
     htc_name ntk_500_41 ;
-    ; hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ;
-    hawc2_path /home/josephine/HAWC2/HAWC2MB.exe ;
+    hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ;
+    ; hawc2_path /home/josephine/HAWC2/HAWC2MB.exe ;
     n_obs 255 ; must be <256
     ;
 end HAWC2 ;
