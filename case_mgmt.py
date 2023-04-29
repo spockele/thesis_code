@@ -311,22 +311,34 @@ class Case(CaseLoader):
         self.htc.save(self.htc_path)
 
         ''' Running HAWC2 '''
-        # # Create and start a progress thread to continuously print the progress and .....
-        # p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
-        # p_thread.start()
-        # # Run the simulation
-        # self.htc.simulate(self.hawc2_path)
-        # # Set 1 to 2 in the progress thread
-        # p_thread.update()
+        # Create and start a progress thread to continuously print the progress and .....
+        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        p_thread.start()
 
+        # Run the base simulation
+        try:
+            self.htc.simulate(self.hawc2_path)
+        # If an error code 0 (No problem) is thrown, just continue; otherwise throw the error again
+        except Exception as e:
+            if "Error code: 0" not in e:
+                raise Exception(e)
+
+        # Set 1 to 2 in the progress thread
+        p_thread.update()
         # Prepare for noise simulation by setting the noise mode to calculate
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
         self.htc.save(self.htc_path)
 
-        # # Run the noise simulation
-        # self.htc.simulate(self.hawc2_path)
-        # # Stop the progress thread
-        # p_thread.stop()
+        # Run the noise simulation
+        try:
+            self.htc.simulate(self.hawc2_path)
+        # If an error code 0 (No problem) is thrown, just continue; otherwise throw the error again
+        except Exception as e:
+            if "Error code: 0" not in e:
+                raise Exception(e)
+
+        # Stop the progress thread
+        p_thread.stop()
 
         ''' Postprocessing '''
         # Remove the temp htc file
