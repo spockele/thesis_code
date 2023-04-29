@@ -127,7 +127,7 @@ class ProgressThread(threading.Thread):
         """
         Function to stop the thread when it is not needed anymore
         """
-        sys.stdout.write(f'\rDone after {round(time.time()- self.t0, 2)}s\n')
+        sys.stdout.write(f'\r{self.task}: Done! (Elapsed time: {round(time.time()- self.t0, 2)} s)\n')
         sys.stdout.flush()
         self.work = False
 
