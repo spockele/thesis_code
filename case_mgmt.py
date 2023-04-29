@@ -318,10 +318,9 @@ class Case(CaseLoader):
         # Run the base simulation
         try:
             self.htc.simulate(self.hawc2_path)
-        # If an error code 0 (No problem) is thrown, just continue; otherwise throw the error again
+        # If an error is thrown, just smile and wave
         except Exception as e:
-            if "Error code: 0" not in e:
-                raise Exception(e)
+            print(e)
 
         # Set 1 to 2 in the progress thread
         p_thread.update()
@@ -332,10 +331,9 @@ class Case(CaseLoader):
         # Run the noise simulation
         try:
             self.htc.simulate(self.hawc2_path)
-        # If an error code 0 (No problem) is thrown, just continue; otherwise throw the error again
+        # If an error is thrown, just smile and wave
         except Exception as e:
-            if "Error code: 0" not in e:
-                raise Exception(e)
+            print(e)
 
         # Stop the progress thread
         p_thread.stop()
