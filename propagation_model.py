@@ -54,14 +54,13 @@ class PropagationThread(threading.Thread):
 
 
 class SoundRay:
-    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, t_0: float, s_0: float, beam_width: float,
+    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
                  atmosphere: hf.Atmosphere) -> None:
         """
         Class for the propagation sound ray model.
 
         :param pos_0: initial position in cartesian coordinates (m, m, m)
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
-        :param t_0: initial time (s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
         """
@@ -69,7 +68,7 @@ class SoundRay:
         self.pos = np.array([pos_0, ])
         self.vel = np.array([vel_0, ])
         self.dir = np.array([vel_0, ])
-        self.t = np.array([t_0, ])
+        self.t = np.array([0., ])
         self.s = np.array([s_0])
         # Set fixed parameters
         self.bw = beam_width
@@ -246,7 +245,7 @@ if __name__ == '__main__':
 
     for pi, p_init in enumerate(startpt):
         c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
-        soundray = SoundRay(p_init + offset, c_init, 0, 0, pd, atm)
+        soundray = SoundRay(p_init + offset, c_init, 0, pd, atm)
 
         prop_queue.put(soundray)
 

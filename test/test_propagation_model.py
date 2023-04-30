@@ -10,7 +10,7 @@ import propagation_model as pm
 class TestPropagationThread(unittest.TestCase):
     def setUp(self) -> None:
         # Create a soundray
-        self.soundray = pm.SoundRay(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, 0, hf.Atmosphere(1, 0))
+        self.soundray = pm.SoundRay(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, hf.Atmosphere(1, 0))
 
         # Create an in and out queue
         inq = queue.Queue()
@@ -77,7 +77,6 @@ class TestSoundRay(unittest.TestCase):
         # Create general starting conditions
         self.p0 = hf.Cartesian(0, 0, 0)
         self.c0 = hf.Cartesian(1, 0, 0)
-        self.t0 = 0.
         self.s0 = 0.
         self.bw = np.pi / 36
         # Create simple simple atmosphere parameters
@@ -88,12 +87,12 @@ class TestSoundRay(unittest.TestCase):
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
         self.atm_simple = hf.Atmosphere(1, 0, )
         # Create simple sound ray
-        self.soundray_simple = pm.SoundRay(self.p0, self.c0, self.t0, self.s0, self.bw, self.atm_simple)
+        self.soundray_simple = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, self.atm_simple)
 
         # Create windy atmosphere
         self.atm_wind = hf.Atmosphere(1, 1, wind_z0=1/np.e)
         # Create windy sound ray
-        self.soundray_wind = pm.SoundRay(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.t0, self.s0, self.bw, self.atm_wind)
+        self.soundray_wind = pm.SoundRay(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw, self.atm_wind)
 
         # Create extreme speed of sound gradient
         atmosphere[4] = (1, 100001)
@@ -101,7 +100,7 @@ class TestSoundRay(unittest.TestCase):
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
         self.atm_complex = hf.Atmosphere(1, 0, )
         # Create complex sound ray
-        self.soundray_complex = pm.SoundRay(self.p0, self.c0, self.t0, self.s0, self.bw, self.atm_complex)
+        self.soundray_complex = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, self.atm_complex)
 
     def tearDown(self) -> None:
         del self.atm_simple
@@ -113,7 +112,6 @@ class TestSoundRay(unittest.TestCase):
 
         del self.p0
         del self.c0
-        del self.t0
         del self.s0
         del self.bw
 
