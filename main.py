@@ -37,12 +37,14 @@ class Project:
         if len(self.cases) <= 0:
             raise FileNotFoundError('No input files found in project folder.')
 
+        print('Project loaded succesfully!')
+
     def run_cases(self):
         """
 
         """
         for ci, case in enumerate(self.cases):
-            print(f'Simulating case {ci + 1}/{len(self.cases)}')
+            print(f'==================== Simulating case {ci + 1}/{len(self.cases)} ====================')
             case.run_hawc2()
             print()
 

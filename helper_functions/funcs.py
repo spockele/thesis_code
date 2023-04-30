@@ -111,7 +111,6 @@ class ProgressThread(threading.Thread):
         Override of threading.Thread.run(self) for the printing
         """
         i = 0
-        print(f'Starting process')
         while self.work and threading.main_thread().is_alive():
             sys.stdout.write(f'\r{self.task}: {self.step}/{self.total}        ')
             sys.stdout.write(f'\r{self.task}: {self.step}/{self.total} {i*"."}')

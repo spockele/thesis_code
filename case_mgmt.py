@@ -277,7 +277,7 @@ class Case(CaseLoader):
             self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
                                             atm_path=self.atmosphere_path)
 
-    def generate_hawc2_sphere(self, ):
+    def generate_hawc2_sphere(self):
         """
         Generate a sphere of evenly spaced observer points
         """
@@ -294,7 +294,18 @@ class Case(CaseLoader):
         for pi, p in enumerate(self.h2result_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
 
-    def run_hawc2(self, ):
+    def _simulate_hawc2(self):
+        """
+        Run the HTCFile.simulate function with compensation for its stupidity
+        :param n: number to put in Exception log file name
+        """
+        try:
+            self.htc.simulate(self.hawc2_path)
+        # If an error is thrown, just smile and wave
+        except Exception as e:
+            return e
+
+    def run_hawc2(self):
         """
         Run the HAWC2 simulations for this case.
         """
@@ -312,15 +323,11 @@ class Case(CaseLoader):
 
         ''' Running HAWC2 '''
         # Create and start a progress thread to continuously print the progress and .....
-        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulation')
+        p_thread = hf.ProgressThread(2, 'Running HAWC2 simulations')
         p_thread.start()
 
         # Run the base simulation
-        try:
-            self.htc.simulate(self.hawc2_path)
-        # If an error is thrown, just smile and wave
-        except Exception as e:
-            print(e)
+        self._simulate_hawc2()
 
         # Set 1 to 2 in the progress thread
         p_thread.update()
@@ -329,11 +336,7 @@ class Case(CaseLoader):
         self.htc.save(self.htc_path)
 
         # Run the noise simulation
-        try:
-            self.htc.simulate(self.hawc2_path)
-        # If an error is thrown, just smile and wave
-        except Exception as e:
-            print(e)
+        self._simulate_hawc2()
 
         # Stop the progress thread
         p_thread.stop()
