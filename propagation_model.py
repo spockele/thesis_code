@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import threading
 import queue
+import time
 
 import helper_functions as hf
 
@@ -12,7 +13,7 @@ The very cool propagation model of this thesis :)
 
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
-                 progress: hf.ProgressThread = None, t_lim: float = 1.) -> None:
+                 p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
         """
 
         :param in_queue:
@@ -27,17 +28,14 @@ class PropagationThread(threading.Thread):
 
         self.t_lim = t_lim
 
-        if progress is None:
-            self.p_thread = hf.ProgressThread(self.in_queue.qsize(), "Propagating rays")
-        else:
-            self.p_thread = progress
+        self.p_thread = p_thread
 
     def run(self) -> None:
         """
         Propagates all SoundRays in the in_queue
         """
         # Loop as long as the input queue has SoundRays
-        while not self.in_queue.empty():
+        while threading.main_thread().is_alive() and not self.in_queue.empty():
             # Take a SoundRay from the queue
             ray: SoundRay = self.in_queue.get()
             # Propagate this Ray with given parameters
@@ -47,15 +45,14 @@ class PropagationThread(threading.Thread):
             # Update the progress thread so the counter goes up
             self.p_thread.update()
 
-            # Interrupt for ctrl+c type situations...
-            if not threading.main_thread().is_alive():
-                print(f'Stopped {self} after Interupt of MainThread')
-                break
+        # Check for ctrl+c type situations...
+        if not threading.main_thread().is_alive():
+            print(f'Stopped {self} after Interupt of MainThread')
 
 
 class SoundRay:
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 atmosphere: hf.Atmosphere) -> None:
+                 atmosphere: hf.Atmosphere, t_0: float = 0.) -> None:
         """
         Class for the propagation sound ray model.
 
@@ -68,7 +65,7 @@ class SoundRay:
         self.pos = np.array([pos_0, ])
         self.vel = np.array([vel_0, ])
         self.dir = np.array([vel_0, ])
-        self.t = np.array([0., ])
+        self.t = np.array([t_0, ])
         self.s = np.array([s_0])
         # Set fixed parameters
         self.bw = beam_width
@@ -251,10 +248,9 @@ if __name__ == '__main__':
 
     p_thread = hf.ProgressThread(prop_queue.qsize(), "Propagating Rays")
     p_thread.start()
-    threads = (PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=tlim) for i in range(32))
+    threads = [PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=tlim) for _ in range(32)]
     [thread.start() for thread in threads]
-    while threading.active_count() > 2:
-        pass
+    [thread.join() for thread in threads]
 
     p_thread.stop()
 
