@@ -117,7 +117,7 @@ class ProgressThread(threading.Thread):
             sys.stdout.flush()
             i %= 5
             i += 1
-            time.sleep(0.25)
+            time.sleep(0.5)
 
         if not threading.main_thread().is_alive() and self.work:
             print(f'Stopped {self} after Interupt of MainThread')
@@ -126,7 +126,8 @@ class ProgressThread(threading.Thread):
         """
         Function to stop the thread when it is not needed anymore
         """
-        sys.stdout.write(f'\r{self.task}: Done! (Elapsed time: {round(time.time()- self.t0, 2)} s)\n')
+        elapsed = round(time.time()- self.t0, 2)
+        sys.stdout.write(f'\r{self.task}: {self.total}/{self.total} Done! (Elapsed time: {elapsed} s)\n')
         sys.stdout.flush()
         self.work = False
 
