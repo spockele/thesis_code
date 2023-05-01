@@ -294,15 +294,13 @@ class Case(CaseLoader):
         """
         Generate a sphere of evenly spaced observer points
         """
-        *coordinates, fail, pd = hf.uniform_spherical_grid(self.n_obs)
-        coo = np.array(coordinates)
+        coordinates, fail, _ = hf.uniform_spherical_grid(self.n_obs)
+        if fail:
+            raise ValueError(f'Parameter n_obs = {self.n_obs} resulted in incomplete sphere. Try a different value.')
 
         offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
 
-        self.h2result_sphere = [hf.Cartesian(self.conditions['rotor_radius'] * np.cos(coo[1][idx]) * np.sin(coo[0][idx]),
-                                             self.conditions['rotor_radius'] * np.sin(coo[1][idx]) * np.sin(coo[0][idx]),
-                                             self.conditions['rotor_radius'] * np.cos(coo[0][idx])) + offset
-                                for idx in range(coo.shape[1])]
+        self.h2result_sphere = [coordinate + offset for coordinate in coordinates]
 
         for pi, p in enumerate(self.h2result_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
