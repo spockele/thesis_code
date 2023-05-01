@@ -71,7 +71,7 @@ class Cartesian(Coordinates):
         """
         Equality operator.
         """
-        if isinstance(other, type(self)):
+        if issubclass(type(other), Cartesian):
             return np.all(self.vec == other.vec)
         elif issubclass(type(other), NonCartesian):
             return np.all(self.vec == other.to_cartesian().vec)
@@ -95,7 +95,7 @@ class Cartesian(Coordinates):
         """
         Addition of other to self.
         """
-        if isinstance(other, type(self)):
+        if issubclass(type(other), Cartesian):
             return Cartesian(*(self.vec + other.vec))
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec + other.to_cartesian().vec))
@@ -106,7 +106,7 @@ class Cartesian(Coordinates):
         """
         Subtraction of other from self.
         """
-        if isinstance(other, type(self)):
+        if issubclass(type(other), Cartesian):
             return Cartesian(*(self.vec - other.vec))
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec - other.to_cartesian().vec))
@@ -121,14 +121,14 @@ class Cartesian(Coordinates):
         """
         Subtraction of self from other.
         """
-        if not (isinstance(other, type(self)) or issubclass(type(other), NonCartesian)):
+        if not (issubclass(type(other), Cartesian) or issubclass(type(other), NonCartesian)):
             return Cartesian(*(other - self.vec))
 
     def __mul__(self, other):
         """
         Multiplication of other with self. Coordinates are multiplied elementwise.
         """
-        if isinstance(other, Cartesian):
+        if issubclass(type(other), Cartesian):
             return Cartesian(*(self.vec * other.vec))
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec * other.to_cartesian().vec))
@@ -139,7 +139,7 @@ class Cartesian(Coordinates):
         """
         Division of self by other. Coordinates are divided elementwise.
         """
-        if isinstance(other, Cartesian):
+        if issubclass(type(other), Cartesian):
             return Cartesian(*(self.vec / other.vec))
         elif issubclass(type(other), NonCartesian):
             return Cartesian(*(self.vec / other.to_cartesian().vec))
@@ -154,7 +154,7 @@ class Cartesian(Coordinates):
         """
         Division of other by self. Coordinates are divided elementwise.
         """
-        if not (isinstance(other, Cartesian) or issubclass(type(other), NonCartesian)):
+        if not (issubclass(type(other), Cartesian) or issubclass(type(other), NonCartesian)):
             return Cartesian(*(other / self.vec))
 
     def len(self) -> float:
@@ -163,6 +163,14 @@ class Cartesian(Coordinates):
         :return: the vector length (m)
         """
         return np.sqrt(np.sum(self.vec ** 2))
+
+    def dist(self, other: Coordinates) -> float:
+        """
+        Distance from self to other point
+        :return: the distance to other (m)
+        """
+        if issubclass(type(other), NonCartesian) or issubclass(type(other), Cartesian):
+            return (other - self).len()
 
     def to_spherical(self, origin) -> Coordinates:
         """
@@ -216,7 +224,7 @@ class NonCartesian(Coordinates):
         """
         Equality operator.
         """
-        if isinstance(other, Cartesian):
+        if issubclass(type(other), Cartesian):
             return self.to_cartesian() == other
         elif issubclass(type(other), NonCartesian):
             return self.to_cartesian() == other.to_cartesian()
@@ -338,6 +346,14 @@ class NonCartesian(Coordinates):
         :return: the vector length (m)
         """
         return self.to_cartesian().len()
+
+    def dist(self, other: Coordinates) -> float:
+        """
+        Distance from self to other point
+        :return: the distance to other (m)
+        """
+        if issubclass(type(other), NonCartesian) or issubclass(type(other), Cartesian):
+            return (other - self).len()
 
     def _to_self(self, coordinates: Cartesian):
         """
