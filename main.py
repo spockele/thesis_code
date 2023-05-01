@@ -79,11 +79,7 @@ if __name__ == '__main__':
 
     source = sm.SourceModel(case_obj.conditions, case_obj.source, os.path.abspath('./NTK/H2model/res/055ms/'))
 
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    for point in source.source_sphere:
-        ax.scatter(*point.vec)
-
-    plt.show()
+    source.source_sphere[0].generate_rays(source.conditions, source.params, case_obj.atmosphere, .1)
 
 
     # (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')

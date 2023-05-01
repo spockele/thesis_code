@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import helper_functions as hf
 
+import propagation_model as pm
+
 
 """
 ========================================================================================================================
@@ -28,23 +30,51 @@ class Source(hf.Cartesian):
         """
         super().__init__(*pos)
         self.time_series = time_series
-        self.turbine_psd = turbine_psd
-        self.blade_1_psd = blade_1_psd
-        self.blade_2_psd = blade_2_psd
-        self.blade_3_psd = blade_3_psd
+        self.psd = {'blade_0': turbine_psd, 'blade_1': blade_1_psd, 'blade_2': blade_2_psd, 'blade_3': blade_3_psd}
 
     def __repr__(self):
         return f'<Sound source at {str(self)}>'
+
+    def to_cartesian(self):
+        return hf.Cartesian(*self.vec)
+
+    def generate_rays(self, aur_conditions_dict: dict, aur_source_dict: dict, atmosphere: hf.Atmosphere,
+                      beam_width: float):
+        radius = aur_source_dict['blade_percent'] * aur_conditions_dict['rotor_radius'] / 100
+        for t in self.time_series.index:
+            origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
+            self.time_series.loc[t, 'blade_0'] = origin
+            self.time_series.loc[t, 'blade_1'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_1'], 0,
+                                                                origin).to_cartesian()
+            self.time_series.loc[t, 'blade_2'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_2'], 0,
+                                                                origin).to_cartesian()
+            self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
+                                                                origin).to_cartesian()
+
+        rays = pd.DataFrame(index=self.time_series.index, columns=['blade_0', 'blade_1', 'blade_2', 'blade_3'])
+        for t in rays.index:
+            for blade in rays.columns:
+                pos_0 = self.to_cartesian()
+
+                dir_0 = self.to_cartesian() - self.time_series.loc[t, blade]
+                speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
+                vel_0 = speed_of_sound * dir_0 / dir_0.len()
+                amplitude_spectrum = self.psd[blade].loc[:, t]
+
+                rays.loc[t, blade] = pm.SoundRay(pos_0, vel_0, dir_0.len(), beam_width, atmosphere,
+                                                 amplitude_spectrum, t_0=t)
+
+        return rays
 
 
 class H2Observer(hf.Cartesian):
     def __init__(self, fname: str, scope: str):
         """
         ================================================================================================================
-
+        Class to wrap the HAWC2 result at a single observer point. Subclass of Cartesian for ease of use
         ================================================================================================================
-        :param fname:
-        :param scope:
+        :param fname: path to the result file for this observer point
+        :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
         """
         pos, time_series, psd = hf.read_hawc2_aero_noise(fname, scope=scope)
         super().__init__(*pos)
@@ -53,6 +83,12 @@ class H2Observer(hf.Cartesian):
         self.blade_1_psd = psd[1]
         self.blade_2_psd = psd[2]
         self.blade_3_psd = psd[3]
+
+        self.time_series.index = self.time_series.index - self.time_series.index[0]
+        self.turbine_psd.columns = self.time_series.index
+        self.blade_1_psd.columns = self.time_series.index
+        self.blade_2_psd.columns = self.time_series.index
+        self.blade_3_psd.columns = self.time_series.index
 
     def __repr__(self):
         return f'<HAWC2 Observer at {str(self)}>'
@@ -123,7 +159,7 @@ class SourceSphere(list):
         if fail:
             raise ValueError(f'Parameter n_rays = {n_rays} resulted in incomplete sphere. Try a different value.')
 
-        p_thread = hf.ProgressThread(n_rays, 'Interpolating results')
+        p_thread = hf.ProgressThread(len(points), 'Interpolating results')
         p_thread.start()
         for point in points:
             self.append(h2_sphere.interpolate_sound(point))
