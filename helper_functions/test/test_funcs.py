@@ -1,9 +1,17 @@
 import unittest
 from unittest.mock import MagicMock
-
 import numpy as np
 
 import helper_functions as hf
+
+
+"""
+========================================================================================================================
+===                                                                                                                  ===
+=== Unit tests for the funcs module                                                                                  ===
+===                                                                                                                  ===
+========================================================================================================================
+"""
 
 
 class TestFuncs(unittest.TestCase):

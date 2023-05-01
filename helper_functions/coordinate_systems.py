@@ -1,33 +1,22 @@
 import numpy as np
 from . import limit_angle
 
+
 """
 ========================================================================================================================
-Definitions of the used coordinate systems
+===                                                                                                                  ===
+=== Definitions of the used coordinate systems                                                                       ===
+===                                                                                                                  ===
 ========================================================================================================================
-> Coordinates -> common class for all these systems, mainly for type-setting purposes.
-
->> Cartesian -> direct child of Coordinates to store Cartesian coordinates.
-    Contains conversions to all others
-
->> NonCartesian -> the common class for all systems that are not Cartesian.
-    Contains the operator and conversion logic for all its child classes
-    CHILD CLASSES SHOULD OVERWRITE INTERNAL _to_cartesian(self) FUNCTION TO GENERATE LOCAL X,Y,Z VALUES
-
->>> Spherical -> child of NonCartesian to define project spherical system
-
->>> Cylindrical -> child of NonCartesian to define project cylindrical system
-
->>> HeadRelatedSpherical -> child of NonCartesian to define Head-Related Spherical system
-     Biggest difference to Spherical is different definition of polar and azimuth angles
-     and a direction for the head to point in
 """
 
 
 class Coordinates:
     def __init__(self, vec: np.array) -> None:
         """
+        ================================================================================================================
         Super class for all coordinate systems to universally type-set them.
+        ================================================================================================================
         :param vec: the coordinate vector as determined in the child class.
         """
         self.vec = vec
@@ -56,7 +45,9 @@ class Coordinates:
 class Cartesian(Coordinates):
     def __init__(self, x: float, y: float, z: float):
         """
-        Class to store a point in CARTESIAN coordinates.
+        ================================================================================================================
+        Class to store a point in Cartesian coordinates.
+        ================================================================================================================
         :param x: Coordinate on the x-axis (m).
         :param y: Coordinate on the y-axis (m).
         :param z: Coordinate on the z-axis (m).
@@ -212,7 +203,9 @@ class Cartesian(Coordinates):
 class NonCartesian(Coordinates):
     def __init__(self, vec: np.array, origin: Cartesian) -> None:
         """
+        ================================================================================================================
         Super class for the non-Cartesian coordinate systems containing all their conversions
+        ================================================================================================================
         ONLY THE _to_cartesian() FUNCTION IS TO BE OVERWRITTEN, AS WELL AS THE __init__().
         :param vec: the coordinate vector as determined in the child class.
         :param origin: Reference point around which these coordinates are determined.
@@ -414,7 +407,9 @@ class NonCartesian(Coordinates):
 class Spherical(NonCartesian):
     def __init__(self, r: float, theta: float, phi: float, origin: Cartesian) -> None:
         """
+        ================================================================================================================
         Class to store a point in SPHERICAL coordinates around "origin"
+        ================================================================================================================
         :param r: Radial coordinate.
         :param theta: Angle in xy-plane IN RADIANS.
         :param phi: Angle in the plane; perpendicular to xy-plane, and through origin and point.
@@ -449,7 +444,9 @@ class Spherical(NonCartesian):
 class Cylindrical(NonCartesian):
     def __init__(self, r: float, psi: float, y: float, origin: Cartesian):
         """
+        ================================================================================================================
         Class to store a point in Cylindrical coordinates around "origin"
+        ================================================================================================================
         :param r: Radial coordinate.
         :param psi: Angle in xz-plane IN RADIANS.
         :param y: Coordinate in the y-axis.
@@ -482,7 +479,9 @@ class Cylindrical(NonCartesian):
 class HeadRelatedSpherical(NonCartesian):
     def __init__(self, r, azimuth, polar, origin, rotation):
         """
-        Class to store a point in Head-Related SPHERICAL coordinates around "origin"
+        ================================================================================================================
+        Class to store a point in Head-Related SPHERICAL coordinates around "origin", offset by "rotation" angle
+        ================================================================================================================
         :param r: Radial coordinate.
         :param azimuth: Angle in xy-plane IN RADIANS.
         :param polar: Angle in the plane; perpendicular to xy-plane, and through origin and point.

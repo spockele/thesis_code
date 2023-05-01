@@ -4,6 +4,15 @@ import numpy as np
 import helper_functions as hf
 
 
+"""
+========================================================================================================================
+===                                                                                                                  ===
+=== Unit tests for the coordinate_systems module                                                                     ===
+===                                                                                                                  ===
+========================================================================================================================
+"""
+
+
 class TestCoordinates(unittest.TestCase):
     """
     Tests the base Coordinates class

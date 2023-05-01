@@ -4,6 +4,15 @@ import numpy as np
 import helper_functions as hf
 
 
+"""
+========================================================================================================================
+===                                                                                                                  ===
+=== Unit tests for the geometry module                                                                               ===
+===                                                                                                                  ===
+========================================================================================================================
+"""
+
+
 class TestPerpendicularPlane3D(unittest.TestCase):
     def setUp(self) -> None:
         self.p0 = hf.Cartesian(0, 0, 0)

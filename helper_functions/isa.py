@@ -5,7 +5,11 @@ from . import t_0, r_air, g, gamma_air, write_to_file, read_from_file
 
 
 """
-Definition of the ISO standard atmosphere (*ISO 2533-1975*)
+========================================================================================================================
+===                                                                                                                  ===
+=== Definition of the ISO standard atmosphere (*ISO 2533-1975*)                                                      ===
+===                                                                                                                  ===
+========================================================================================================================
 """
 
 
@@ -17,7 +21,9 @@ class Atmosphere:
     def __init__(self, z_0, ws_0, wind_z0: float = None, delta_h: float = None, t_0m: float = None, p_0m: float = None,
                  atm_path: str = None):
         """
+        ================================================================================================================
         Class containing the ISO Standard Atmosphere (ISO 2533-1975) and a logarithmic wind profile.
+        ================================================================================================================
         :param z_0: Reference height for the wind profile (m)
         :param ws_0: Wind speed at reference height z_0 (m)
         :param wind_z0: Roughness height for the wind profile (m)

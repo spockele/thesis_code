@@ -1,19 +1,19 @@
-"""
-Uncategorised functions needed for other modules in this package
-"""
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Import python modules for functions in this file
-# ----------------------------------------------------------------------------------------------------------------------
 import numpy as np
 import warnings
 import threading
 import time
 import sys
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Definition of constants
-# ----------------------------------------------------------------------------------------------------------------------
+
+"""
+========================================================================================================================
+===                                                                                                                  ===
+=== Uncategorised functions needed for other modules in this package                                                 ===
+===                                                                                                                  ===
+========================================================================================================================
+"""
+
+
 c = 343  # Speed of Sound [m/s]
 p_ref = 2e-5  # Sound reference pressure [Pa]
 g = 9.80665  # Gravity [m/s2]
@@ -93,8 +93,9 @@ def uniform_spherical_grid(n_points: int):
 
 class ProgressThread(threading.Thread):
     """
+    ====================================================================================================================
     Subclass of threading.Thread to print the progress of a program in steps
-
+    ====================================================================================================================
     Originally developed for EWI3615TU - Computer Science Project 2019/2020; Group 14 - Twitter's influenza; authored by
         Jérémie Gaffarel, Josephine Siebert Pockelé, Guillermo Presa, Enes Ugurlu, Sebastiaan van Wijk
     """

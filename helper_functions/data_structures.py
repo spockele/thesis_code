@@ -1,11 +1,17 @@
 """
-Definitions of special datastructures to be used
+========================================================================================================================
+===                                                                                                                  ===
+=== Definitions of special datastructures to be used                                                                 ===
+===                                                                                                                  ===
+========================================================================================================================
 """
 
 
 class Heap(list):
     """
-    zero-indexed list-based min-or-max heap class
+    ====================================================================================================================
+    Zero-indexed list-based min-or-max heap class
+    ====================================================================================================================
     Code skeleton by Bart Gerritsen, EEMCS, TU Delft; from course TI3111TU - Algorithms and Data Structures 2019/2020
     Implementation by Josephine Pockelé
     """
