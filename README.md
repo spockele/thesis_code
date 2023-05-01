@@ -97,6 +97,7 @@ end HAWC2;
 ;
 begin source ;
     n_rays -int- ; Defines the number of sound rays used for propagation
+    blade_percent -float- ; Defines r = blade_percent * R at which the source is assumed to be located.
 end source ;
 ;
 begin propagation ;

@@ -196,7 +196,7 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ():
+                if key in ('blade_percent',):
                     self.source[key] = float(value)
 
                 elif key in ('n_rays',):
