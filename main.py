@@ -66,27 +66,24 @@ if __name__ == '__main__':
     # proj.run_cases()
 
     case_obj = cm.Case(proj_path, 'ntk_05.5ms.aur')
-    #
+
     # case_obj.generate_hawc2_sphere()
     # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
     # for point in case_obj.h2result_sphere:
     #     ax.scatter(*point.vec)
     #
     # plt.show()
-    #
+
     # case_obj.run_hawc2()
 
 
     source = sm.SourceModel(case_obj.conditions, case_obj.source, os.path.abspath('./NTK/H2model/res/055ms/'))
-    source.h2sphere.load_sphere()
-    source.h2sphere.interpolate_sound(hf.Cartesian(0, 0, 0))
 
-    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    # for point in source.h2sphere:
-    #     ax.scatter(*point.vec)
-    #
-    # plt.show()
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    for point in source.source_sphere:
+        ax.scatter(*point.vec)
 
+    plt.show()
 
 
     # (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')
