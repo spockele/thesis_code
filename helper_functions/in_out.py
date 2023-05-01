@@ -45,14 +45,20 @@ def read_from_file(path: str):
     return np.array(out_list)
 
 
-def read_hawc2_aero_noise(path: str):
+def read_hawc2_aero_noise(path: str, scope: str = 'All'):
     """
     Read the sample HAWC2 aeroacoustic output file
     :param path: HAWC2 aeroacoustic output file
+    :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
     :return:    The observer position as numpy array of floats,
                 pd.DataFrame of time series of hub position, wind speed and blade azimuths,
-                Dict with pd.DataFrame of all PSD values at each timestep with time as keys
+                List with pd.DataFrames of all PSD values at each timestep
     """
+    if scope not in ('All', 'TI', 'TE', 'ST', 'TP'):
+        raise ValueError(f'Invalid scope name: {scope}. Should be in {("All", "TI", "TE", "ST", "TP")}')
+
+    scope_idxs = {'All': 0, 'TI': 1, 'TE': 2, 'ST': 3, 'TP': 4}
+
     # Read the data file into python
     with open(path) as f:
         lines = f.readlines()
@@ -67,44 +73,35 @@ def read_hawc2_aero_noise(path: str):
     time_series_data.set_index('t', inplace=True)
 
     # Create empty PSD dict
-    psd = {n: {'All': pd.DataFrame(), 'TI': pd.DataFrame(), 'TE': pd.DataFrame(),
-               'ST': pd.DataFrame(), 'TP': pd.DataFrame()}
-           for n in range(4)
-           }
+    psd = [pd.DataFrame() for _ in range(4)]
 
-    # Python is STOOOPID
-    t = 0
-    # Indicator to start the next timestep to True
-    nxt = True
-    # Loop over all the lines in the file
-    for line in lines[6:]:
-        # In case of having reached a new timestep
-        if nxt:
-            # Read the info line and simplify it for processing
-            info = line.replace('  ', ' ').split('# ')[1:]
-            # Extract all info at this timestep in this overly complex way :)
-            t = float(info[0])
-            hub_pos = [float(num) for num in info[1].split(' ')[2:-1]]
-            hub_vel = float(info[2].split('  ')[1])
-            blade_azim = [limit_angle(np.radians(float(num))) for num in info[4].split(' ')[2:-1]]
+    # Set the number of lines per time step
+    n_lines_per_t = n_freq + 2
+    # Loop over each time step
+    for li, line in enumerate(lines[6::n_lines_per_t]):
+        # Read the timestep info line and simplify it for processing
+        info = line.replace('  ', ' ').split('# ')[1:]
+        # Extract time
+        t = float(info[0])
+        # Extract rotor hub position
+        hub_pos = [float(num) for num in info[1].split(' ')[2:-1]]
+        # Extract hub wind speed
+        hub_vel = float(info[2].split('  ')[1])
+        # Extract azimuth of each blade
+        blade_azim = [limit_angle(np.radians(float(num))) for num in info[4].split(' ')[2:-1]]
+        # Fill this info into the time series DataFrame
+        time_series_data.loc[t] = [*hub_pos, hub_vel, *blade_azim]
 
-            # Fill this info into the DataFrame in an even better way :))
-            time_series_data.loc[t] = [*hub_pos, hub_vel, *blade_azim]
-            # Set the next timestep indicator to False since we will continue to extract the PSD stuff
-            nxt = False
-
-        # When an empty line is reached
-        elif line == ' ':
-            # We have reached the next timestep :)
-            nxt = True
-
-        # All other lines are considered PSD data (THIS MIGHT BREAK WITH ACTUAL DATA...)
-        else:
-            # Split the numbers in this line from one another and fill them into the DataFrame of this timestep's PSD
-            data = [float(num) for num in line.split('  ')[1:]]
-            for n in range(4):
-                for m, key in enumerate(psd[n].keys()):
-                    psd[n][key].loc[data[0], t] = data[(5*n + 1) + m]
+        # Set the zero index of the PSD information
+        psd_0_idx = 6 + li * n_lines_per_t + 1
+        # Read the PSD at this timestep
+        for psd_line in lines[psd_0_idx:psd_0_idx + n_freq]:
+            # Process the line
+            psd_line = [float(value) for value in psd_line.strip('  ').replace('  ', ' ').split(' ')]
+            # Fill values into spectrum
+            for n_blade in range(4):
+                psd_idx = 5 * n_blade + 1
+                psd[n_blade].loc[psd_line[0], t] = psd_line[psd_idx + scope_idxs[scope]]
 
     # Return all the extracted data ;|
     return observer_pos, time_series_data, psd
