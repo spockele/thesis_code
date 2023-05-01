@@ -6,8 +6,13 @@ import time
 
 import helper_functions as hf
 
+
 """
-The very cool propagation model of this thesis :)
+========================================================================================================================
+===                                                                                                                  ===
+===                                                                                                                  ===
+===                                                                                                                  ===
+========================================================================================================================
 """
 
 
@@ -15,9 +20,15 @@ class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
                  p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
         """
-
+        ================================================================================================================
+        Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function
+        ================================================================================================================
         :param in_queue:
+        :param out_queue:
         :param delta_t:
+        :param receiver
+        :param p_thread
+        :param t_lim
         """
         super().__init__()
         self.in_queue = in_queue
@@ -54,8 +65,9 @@ class SoundRay:
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
                  atmosphere: hf.Atmosphere, t_0: float = 0.) -> None:
         """
+        ================================================================================================================
         Class for the propagation sound ray model.
-
+        ================================================================================================================
         :param pos_0: initial position in cartesian coordinates (m, m, m)
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
@@ -211,6 +223,14 @@ class SoundRay:
 
 class PropagationModel:
     def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, soundrays: list):
+        """
+        ================================================================================================================
+
+        ================================================================================================================
+        :param aur_conditions_dict:
+        :param aur_propagation_dict:
+        :param soundrays:
+        """
         self.conditions = aur_conditions_dict
         self.params = aur_propagation_dict
         self.soundrays = soundrays

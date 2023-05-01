@@ -7,6 +7,15 @@ from wetb.hawc2.htc_contents import HTCSection
 import helper_functions as hf
 
 
+"""
+========================================================================================================================
+===                                                                                                                  ===
+===                                                                                                                  ===
+===                                                                                                                  ===
+========================================================================================================================
+"""
+
+
 class CaseLoader:
     # Some predefined values for the HAWC2.aero.aero_noise module
     octave_bandwidth = '1'
@@ -14,7 +23,9 @@ class CaseLoader:
 
     def __init__(self, project_path: str, case_file: str):
         """
+        ================================================================================================================
         Class to load an auralisation case defined by a .aur file.
+        ================================================================================================================
         :param project_path: path of the overarcing auralisation project folder.
         :param case_file: file name of the .aur file inside the project folder.
         """
@@ -252,7 +263,9 @@ class CaseLoader:
 class Case(CaseLoader):
     def __init__(self, project_path: str, case_file: str):
         """
+        ================================================================================================================
         Class to manage an auralisation case defined by a .aur file.
+        ================================================================================================================
         :param project_path: path of the overarcing auralisation project folder.
         :param case_file: file name of the .aur file inside the project folder.
         """
