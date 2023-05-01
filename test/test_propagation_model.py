@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 import numpy as np
 import queue
+import sys
 
 import helper_functions as hf
 import propagation_model as pm
@@ -10,14 +11,14 @@ import propagation_model as pm
 class TestPropagationThread(unittest.TestCase):
     def setUp(self) -> None:
         # Create a soundray
-        self.soundray = pm.SoundRay(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, hf.Atmosphere(1, 0))
+        self.soundray = pm.Ray(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, hf.Atmosphere(1, 0))
 
         # Create an in and out queue
         inq = queue.Queue()
         outq = queue.Queue()
         inq.put(self.soundray)
         # Create a testing thread
-        self.prop_thread = pm.PropagationThread(inq, outq, 1, hf.Cartesian(0, 0, 0))
+        self.prop_thread = pm.PropagationThread(inq, outq, 1, hf.Cartesian(0, 0, 0), hf.ProgressThread(0, ''))
 
         # Create another in and out queue
         inq2 = queue.Queue()
@@ -51,7 +52,7 @@ class TestPropagationThread(unittest.TestCase):
     def test_interrupt(self):
         # Mock the soundray propagation and terminal output to avoid weird
         self.soundray.propagate = MagicMock()
-        hf.sys.stdout.write = MagicMock()
+        sys.stdout.write = MagicMock()
 
         # Add an extra soundray to the queue
         self.prop_thread.in_queue.put(self.soundray)
@@ -66,9 +67,9 @@ class TestPropagationThread(unittest.TestCase):
         # Check the interruption worked or not
         self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
         self.assertEqual(self.prop_thread.in_queue.qsize(), 1)
-        hf.sys.stdout.write.assert_called()
+        sys.stdout.write.assert_called()
 
-        # Reset the mock of the alive check
+        # Reset mock of the alive check
         pm.threading.main_thread().is_alive = mock_before
 
 
@@ -79,20 +80,20 @@ class TestSoundRay(unittest.TestCase):
         self.c0 = hf.Cartesian(1, 0, 0)
         self.s0 = 0.
         self.bw = np.pi / 36
-        # Create simple simple atmosphere parameters
+        # Create simple atmosphere parameters
         atmosphere = np.ones((5, 2))
         atmosphere[0] = (0, 100000)
 
-        # Create simple simple atmosphere
+        # Create simple atmosphere
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
         self.atm_simple = hf.Atmosphere(1, 0, )
         # Create simple sound ray
-        self.soundray_simple = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, self.atm_simple)
+        self.soundray_simple = pm.Ray(self.p0, self.c0, self.s0, self.bw, self.atm_simple)
 
         # Create windy atmosphere
         self.atm_wind = hf.Atmosphere(1, 1, wind_z0=1/np.e)
         # Create windy sound ray
-        self.soundray_wind = pm.SoundRay(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw, self.atm_wind)
+        self.soundray_wind = pm.Ray(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw, self.atm_wind)
 
         # Create extreme speed of sound gradient
         atmosphere[4] = (1, 100001)
@@ -100,7 +101,7 @@ class TestSoundRay(unittest.TestCase):
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
         self.atm_complex = hf.Atmosphere(1, 0, )
         # Create complex sound ray
-        self.soundray_complex = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, self.atm_complex)
+        self.soundray_complex = pm.Ray(self.p0, self.c0, self.s0, self.bw, self.atm_complex)
 
     def tearDown(self) -> None:
         del self.atm_simple

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import threading
 import queue
@@ -48,7 +49,7 @@ class PropagationThread(threading.Thread):
         # Loop as long as the input queue has SoundRays
         while threading.main_thread().is_alive() and not self.in_queue.empty():
             # Take a SoundRay from the queue
-            ray: SoundRay = self.in_queue.get()
+            ray: Ray = self.in_queue.get()
             # Propagate this Ray with given parameters
             ray.propagate(self.delta_t, self.receiver, self.t_lim)
             # When that is done, put the ray in the output queue
@@ -61,7 +62,7 @@ class PropagationThread(threading.Thread):
             print(f'Stopped {self} after Interupt of MainThread')
 
 
-class SoundRay:
+class Ray:
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
                  atmosphere: hf.Atmosphere, t_0: float = 0.) -> None:
         """
@@ -72,6 +73,8 @@ class SoundRay:
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
+        :param atmosphere:
+        :param t_0:
         """
         # Set initial conditions
         self.pos = np.array([pos_0, ])
@@ -221,6 +224,15 @@ class SoundRay:
         return arr
 
 
+class SoundRay(Ray):
+    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
+                 atmosphere: hf.Atmosphere, amplitude_spectrum: pd.DataFrame, t_0: float = 0.):
+        super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
+
+        self.amplitude = amplitude_spectrum
+        self.phase = pd.DataFrame(index=self.amplitude.index)
+
+
 class PropagationModel:
     def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, soundrays: list):
         """
@@ -262,7 +274,7 @@ if __name__ == '__main__':
 
     for pi, p_init in enumerate(startpt):
         c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
-        soundray = SoundRay(p_init + offset, c_init, 0, pd, atm)
+        soundray = Ray(p_init + offset, c_init, 0, pd, atm)
 
         prop_queue.put(soundray)
 
