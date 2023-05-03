@@ -1,10 +1,15 @@
 import os
+import queue
 import numpy as np
 import shutil as sh
+import matplotlib.pyplot as plt
+import pandas as pd
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
 import helper_functions as hf
+import source_model as sm
+import propagation_model as pm
 
 
 """
@@ -47,17 +52,20 @@ class CaseLoader:
         lines = [line.strip(' ') for line in lines]
 
         # Dictionaries to store inputs for the models
-        self.conditions = {}
-        self.source = {}
-        self.propagation = {}
-        self.reception = {}
-        self.reconstruction = {}
+        self.conditions_dict = {}
+        self.source_dict = {}
+        self.propagation_dict = {}
+        self.receiver_dict = {}
+        self.reception_dict = {}
+        self.reconstruction_dict = {}
         # File paths and names
         self.case_name = ''
         self.htc_base_name = ''
         self.htc_base_path = ''
         self.htc_path = ''
         self.hawc2_path = ''
+        # Parameter to store the hub position of the turbine
+        self.hub_pos = hf.Cartesian(0, 0, 0)
         # Placeholder for the real .htc file
         self.htc = HTCFile()
         # Parameters from the hawc2 input block
@@ -137,19 +145,24 @@ class CaseLoader:
         Parse the conditions block into the conditions dictionary
         :param lines: list of lines containing auralisation input code
         """
-        self.conditions = dict()
+        self.conditions_dict = dict()
         for line in lines[1:-1]:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ('wsp', 'groundtemp', 'groundpres', 'hub_height', 'rotor_radius', 'z0_wsp', 'z_wsp'):
-                    self.conditions[key] = float(value)
+                if key in ('wsp', 'groundtemp', 'groundpres', 'rotor_radius', 'z0_wsp', 'z_wsp'):
+                    self.conditions_dict[key] = float(value)
 
                 elif key in ():
-                    self.conditions[key] = int(value)
+                    self.conditions_dict[key] = int(value)
+
+                elif key == 'hub_pos':
+                    x, y, z = value.split(',')
+                    self.hub_pos = hf.Cartesian(float(x), float(y), float(z))
+                    self.conditions_dict[key] = hf.Cartesian(float(x), float(y), float(z))
 
                 else:
-                    self.conditions[key] = value
+                    self.conditions_dict[key] = value
 
     def _parse_hawc2(self, lines: list):
         """
@@ -170,9 +183,9 @@ class CaseLoader:
         self.htc.aero.add_section(HTCSection.from_lines(blocks['aero_noise']))
 
         # Add necessary parameters to the "aero_noise" section
-        self.htc.aero.aero_noise.add_line(name='temperature', values=(self.conditions['groundtemp'],),
+        self.htc.aero.aero_noise.add_line(name='temperature', values=(self.conditions_dict['groundtemp'],),
                                           comments='')
-        self.htc.aero.aero_noise.add_line(name='atmospheric_pressure', values=(self.conditions['groundpres'],),
+        self.htc.aero.aero_noise.add_line(name='atmospheric_pressure', values=(self.conditions_dict['groundpres'],),
                                           comments='')
         self.htc.aero.aero_noise.add_line(name='output_filename', values=(self.output_filename, ),
                                           comments='')
@@ -197,13 +210,13 @@ class CaseLoader:
                 key, value, *_ = line.split(' ')
 
                 if key in ('blade_percent',):
-                    self.source[key] = float(value)
+                    self.source_dict[key] = float(value)
 
                 elif key in ('n_rays',):
-                    self.source[key] = int(value)
+                    self.source_dict[key] = int(value)
 
                 else:
-                    self.source[key] = value
+                    self.source_dict[key] = value
 
     def _parse_propagation(self, lines: list):
         """
@@ -214,14 +227,18 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ():
-                    self.propagation[key] = float(value)
+                if key in ('delta_t', ):
+                    self.propagation_dict[key] = float(value)
 
                 elif key in ('n_threads', ):
-                    self.propagation[key] = int(value)
+                    self.propagation_dict[key] = int(value)
+
+                elif key == 'receiver':
+                    idx, x, y, z = value.split(',')
+                    self.receiver_dict[int(idx)] = hf.Cartesian(float(x), float(y), float(z))
 
                 else:
-                    self.propagation[key] = value
+                    self.propagation_dict[key] = value
 
     def _parse_reception(self, lines: list):
         """
@@ -233,13 +250,13 @@ class CaseLoader:
                 key, value, *_ = line.split(' ')
 
                 if key in ():
-                    self.reception[key] = float(value)
+                    self.reception_dict[key] = float(value)
 
                 elif key in ():
-                    self.reception[key] = int(value)
+                    self.reception_dict[key] = int(value)
 
                 else:
-                    self.reception[key] = value
+                    self.reception_dict[key] = value
 
     def _parse_reconstruction(self, lines: list):
         """
@@ -251,13 +268,13 @@ class CaseLoader:
                 key, value, *_ = line.split(' ')
 
                 if key in ():
-                    self.reconstruction[key] = float(value)
+                    self.reconstruction_dict[key] = float(value)
 
                 elif key in ():
-                    self.reconstruction[key] = int(value)
+                    self.reconstruction_dict[key] = int(value)
 
                 else:
-                    self.reconstruction[key] = value
+                    self.reconstruction_dict[key] = value
 
 
 class Case(CaseLoader):
@@ -282,13 +299,13 @@ class Case(CaseLoader):
         self.atmosphere_path = os.path.join(self.project_path, f'atm/atm_{self.case_name}.dat')
         # Generate atmosphere if it does not exist yet
         if not os.path.isfile(self.atmosphere_path):
-            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
-                                            1., self.conditions['groundtemp'], self.conditions['groundpres'],
-                                            atm_path=self.atmosphere_path)
+            self.atmosphere = hf.Atmosphere(self.conditions_dict['z_wsp'], self.conditions_dict['wsp'],
+                                            self.conditions_dict['z0_wsp'], 1., self.conditions_dict['groundtemp'],
+                                            self.conditions_dict['groundpres'], atm_path=self.atmosphere_path)
         # Otherwise, load the cache file
         else:
-            self.atmosphere = hf.Atmosphere(self.conditions['z_wsp'], self.conditions['wsp'], self.conditions['z0_wsp'],
-                                            atm_path=self.atmosphere_path)
+            self.atmosphere = hf.Atmosphere(self.conditions_dict['z_wsp'], self.conditions_dict['wsp'],
+                                            self.conditions_dict['z0_wsp'], atm_path=self.atmosphere_path)
 
     def generate_hawc2_sphere(self):
         """
@@ -298,9 +315,7 @@ class Case(CaseLoader):
         if fail:
             raise ValueError(f'Parameter n_obs = {self.n_obs} resulted in incomplete sphere. Try a different value.')
 
-        offset = hf.Cartesian(0, 0, -self.conditions['hub_height'])
-
-        self.h2result_sphere = [coordinate + offset for coordinate in coordinates]
+        self.h2result_sphere = [coordinate + self.hub_pos for coordinate in coordinates]
 
         for pi, p in enumerate(self.h2result_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
@@ -308,7 +323,6 @@ class Case(CaseLoader):
     def _simulate_hawc2(self):
         """
         Run the HTCFile.simulate function with compensation for its stupidity
-        :param n: number to put in Exception log file name
         """
         try:
             self.htc.simulate(self.hawc2_path)
@@ -375,3 +389,36 @@ class Case(CaseLoader):
                 # Remove the other ones
                 else:
                     os.remove(fpath)
+
+    def run(self):
+        """
+
+        """
+        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path,
+                                      self.atmosphere, self.hub_pos)
+        ray_list: list = source_model.run()
+
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
+                                                self.receiver_dict, ray_list)
+
+        ray_queue: queue.Queue = propagation_model.run(0)
+
+        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}
+
+        while not ray_queue.empty():
+            ray: pm.SoundRay = ray_queue.get()
+            pos_array = ray.pos_array()
+            if ray.received:
+                ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
+
+        ax.set_xlabel('x (m)')
+        ax.set_ylabel('y (m)')
+        ax.set_zlabel('z (m)')
+
+        ax.set_xlim(-100, 100)
+        ax.set_ylim(-100, 100)
+        ax.set_zlim(-200, 0)
+        ax.set_box_aspect([1, 1, 1])
+
+        plt.show()

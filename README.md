@@ -42,9 +42,9 @@ begin conditions ;
     ; This section defines the operating conditions of the turbine
     ; Used in both auralisation and HAWC2 simulations
     ; ----------------------------------------------------------------------------------
-    hub_height -float- ;    Wind turbine hub height (m)
-    rotor_radius -float- ;  Wind turbine rotor radius (m)
-    ; rotor_rpm -float- ;   Operating rotational speed of turbine (RPM)
+    hub_pos -float-,-float-,-float- ; Position of the wind turbine hub x,y,z (m)
+    rotor_radius -float- ;            Wind turbine rotor radius (m)
+    ; rotor_rpm -float- ;             Operating rotational speed of turbine (RPM)
     ;
     wsp -float- ;           Wind speed (m/s) at z_wsp height
     z_wsp -float- ;         Height (m)) at which wsp is defined
@@ -98,10 +98,13 @@ end HAWC2;
 begin source ;
     n_rays -int- ; Defines the number of sound rays used for propagation
     blade_percent -float- ; Defines r = blade_percent * R at which the source is assumed to be located.
+    scope -str- ; Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
 end source ;
 ;
 begin propagation ;
     n_threads -int- ; Defines the number of threads used for propagating sound rays
+    delta_t -float- ; Defines the propagation time step (s)
+    receiver -int-,-float-,-float-,-float- ; Define the receiver location index,x,y,z (m) 
 end propagation ;
 ;
 begin reception ;

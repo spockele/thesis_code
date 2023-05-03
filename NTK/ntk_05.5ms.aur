@@ -1,7 +1,7 @@
 name 055ms ;
 ;
 begin conditions ;
-    hub_height 35.5 ;       Wind turbine hub height (m)
+    hub_pos 0,0,-35.5 ;     Position of the wind turbine hub x,y,z (m)
     rotor_radius 20.5 ;     Wind turbine rotor radius (m)
     ;
     wsp 5.5 ;               Wind speed (m/s) at z_wsp height
@@ -57,8 +57,8 @@ begin HAWC2 ;
         tip_noise 0 ;
     end aero_noise ;
     ;
-    htc_name ntk_500_41 ;
-    hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ;
+    htc_name ntk_500_41 ; Name of the .htc file in the H2model folder
+    hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ; File path where the HAWC2 executable is located
     ; hawc2_path /home/josephine/HAWC2/HAWC2MB.exe ;
     n_obs 255 ; must be <256
     ;
@@ -66,12 +66,15 @@ end HAWC2 ;
 ;
 begin source ;
     n_rays 255 ; Defines the number of sound rays used for propagation
-    blade_percent 85 ; Defines r = blade_percent * R at which the source is assumed to be located
+    blade_percent 85 ; Defines r = blade_percent * R at which the source is assumed to be located (%)
+    scope All ; Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
     ; --- WIP ---
 end source ;
 ;
 begin propagation ;
-    n_threads 16 ; Defines the number of threads used for propagating sound rays
+    n_threads 32 ; Defines the number of threads used for propagating sound rays
+    delta_t .01 ; Defines the propagation time step (s)
+    receiver 0,0,-60,-1.7 ; Define the receiver location index,x,y,z (m)
     ; --- WIP ---
 end propagation ;
 ;
