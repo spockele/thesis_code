@@ -291,11 +291,15 @@ class PropagationModel:
         :param which:
         """
         if which == -1:
-            for receiver_idx, receiver_pos in self.receivers.items():
-                out_queue = self.run_receiver(receiver_idx, receiver_pos)
+            raise NotImplementedError('Multiple observer running not implemented yet!')
+            # for receiver_idx, receiver_pos in self.receivers.items():
+            #     self.run_receiver(receiver_idx, receiver_pos)
+
+        elif which >= 0:
+            return self.run_receiver(which, self.receivers[which])
 
         else:
-            return self.run_receiver(which, self.receivers[which])
+            raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
 
 
 if __name__ == '__main__':
