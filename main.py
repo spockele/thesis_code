@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 
 import helper_functions as hf
@@ -56,31 +57,15 @@ class Project:
         """
         for ci, case in enumerate(self.cases):
             print(f'==================== Simulating case {ci + 1}/{len(self.cases)} ====================')
-            case.run_hawc2()
+            # case.run_hawc2()
+            case.run()
             print()
 
 
 if __name__ == '__main__':
     proj_path = os.path.abspath('NTK')
-    # proj = Project(proj_path)
-    # proj.run_cases()
-
-    case_obj = cm.Case(proj_path, 'ntk_05.5ms.aur')
-
-    # case_obj.generate_hawc2_sphere()
-    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    # for point in case_obj.h2result_sphere:
-    #     ax.scatter(*point.vec)
-    #
-    # plt.show()
-
-    # case_obj.run_hawc2()
-
-
-    source = sm.SourceModel(case_obj.conditions, case_obj.source, os.path.abspath('./NTK/H2model/res/055ms/'))
-
-    source.source_sphere[0].generate_rays(source.conditions, source.params, case_obj.atmosphere, .1)
-
+    proj = Project(proj_path)
+    proj.run_cases()
 
     # (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')
     # # Sampling period
