@@ -64,8 +64,6 @@ class CaseLoader:
         self.htc_base_path = ''
         self.htc_path = ''
         self.hawc2_path = ''
-        # Parameter to store the hub position of the turbine
-        self.hub_pos = hf.Cartesian(0, 0, 0)
         # Placeholder for the real .htc file
         self.htc = HTCFile()
         # Parameters from the hawc2 input block
@@ -158,7 +156,6 @@ class CaseLoader:
 
                 elif key == 'hub_pos':
                     x, y, z = value.split(',')
-                    self.hub_pos = hf.Cartesian(float(x), float(y), float(z))
                     self.conditions_dict[key] = hf.Cartesian(float(x), float(y), float(z))
 
                 else:
@@ -209,7 +206,7 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ('blade_percent',):
+                if key in ('blade_percent', 'radius_factor'):
                     self.source_dict[key] = float(value)
 
                 elif key in ('n_rays',):
@@ -315,7 +312,8 @@ class Case(CaseLoader):
         if fail:
             raise ValueError(f'Parameter n_obs = {self.n_obs} resulted in incomplete sphere. Try a different value.')
 
-        self.h2result_sphere = [coordinate + self.hub_pos for coordinate in coordinates]
+        scale = self.source_dict['radius_factor'] * self.conditions_dict['rotor_radius']
+        self.h2result_sphere = [scale * coordinate + self.conditions_dict['hub_pos'] for coordinate in coordinates]
 
         for pi, p in enumerate(self.h2result_sphere):
             self.htc.aero.aero_noise.add_line(name='xyz_observer', values=p.vec, comments=f'Observer_{pi}')
@@ -392,10 +390,9 @@ class Case(CaseLoader):
 
     def run(self):
         """
-
+        Run everything except HAWC2
         """
-        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path,
-                                      self.atmosphere, self.hub_pos)
+        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
         ray_list: list = source_model.run()
 
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,

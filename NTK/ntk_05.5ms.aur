@@ -68,6 +68,7 @@ begin source ;
     n_rays 255 ; Defines the number of sound rays used for propagation
     blade_percent 85 ; Defines r = blade_percent * R at which the source is assumed to be located (%)
     scope All ; Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
+    radius_factor 1.0 ; Scaling factor for the radius of the sound source sphere
     ; --- WIP ---
 end source ;
 ;
