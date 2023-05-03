@@ -82,6 +82,7 @@ class Ray:
         self.dir = np.array([vel_0, ])
         self.t = np.array([t_0, ])
         self.s = np.array([s_0])
+        self.received = False
         # Set fixed parameters
         self.bw = beam_width
         self.atmosphere = atmosphere
@@ -202,12 +203,12 @@ class Ray:
         :param t_lim:
         :return:
         """
-        received = False
-        kill = False
+        self.received = False
+        kill = self.pos[0][2] >= 0
 
-        while not (received or kill):
+        while not (self.received or kill):
             vel, direction, pos, delta_s = self.ray_step(delta_t)
-            received = self.check_reception(receiver, delta_s)
+            self.received = self.check_reception(receiver, delta_s)
 
             if self.t[-1] > t_lim:
                 kill = True
@@ -226,26 +227,75 @@ class Ray:
 
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 atmosphere: hf.Atmosphere, amplitude_spectrum: pd.DataFrame, t_0: float = 0.):
+                 atmosphere: hf.Atmosphere, amplitude_spectrum: pd.DataFrame, t_0: float = 0., label: str = None):
         super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
 
+        self.label = label
         self.amplitude = amplitude_spectrum
         self.phase = pd.DataFrame(index=self.amplitude.index)
 
+    def copy(self):
+        """
+        Create a copy of this Soundray
+        """
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.amplitude,
+                        self.t[0], self.label)
+
 
 class PropagationModel:
-    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, soundrays: list):
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, aur_receiver_dict: dict, ray_list: list):
         """
         ================================================================================================================
 
         ================================================================================================================
         :param aur_conditions_dict:
         :param aur_propagation_dict:
-        :param soundrays:
+        :param ray_list:
         """
-        self.conditions = aur_conditions_dict
+        self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
-        self.soundrays = soundrays
+        self.receivers = aur_receiver_dict
+        self.ray_list = ray_list
+
+    def run_receiver(self, receiver_idx, receiver_pos):
+        in_queue = queue.Queue()
+        out_queue = queue.Queue()
+
+        p_thread_0 = hf.ProgressThread(len(self.ray_list), 'Reading sound rays')
+        p_thread_0.start()
+        ray_dataframe: pd.DataFrame
+        for ray_dataframe in self.ray_list:
+            p_thread_0.update()
+            for t in ray_dataframe.index:
+                for blade in ray_dataframe.columns:
+                    in_queue.put(ray_dataframe.loc[t, blade].copy())
+
+        p_thread_0.stop()
+
+        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
+
+        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_idx}')
+        p_thread.start()
+        threads = [PropagationThread(in_queue, out_queue, self.params['delta_t'], receiver_pos, p_thread, t_limit)
+                   for _ in range(self.params['n_threads'])]
+
+        [thread.start() for thread in threads]
+        [thread.join() for thread in threads]
+        p_thread.stop()
+
+        return out_queue
+
+    def run(self, which: int = -1):
+        """
+
+        :param which:
+        """
+        if which == -1:
+            for receiver_idx, receiver_pos in self.receivers.items():
+                out_queue = self.run_receiver(receiver_idx, receiver_pos)
+
+        else:
+            return self.run_receiver(which, self.receivers[which])
 
 
 if __name__ == '__main__':
@@ -303,8 +353,8 @@ if __name__ == '__main__':
     ax.scatter(*rec.vec)
     plt.show()
 
-    plt.plot(f, spec.T)
-    plt.show()
+    # plt.plot(f, spec.T)
+    # plt.show()
 
     # atm = hf.Atmosphere(1, 0, )
     # c = atm.get_speed_of_sound(0)
