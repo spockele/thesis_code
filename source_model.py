@@ -226,7 +226,7 @@ class SourceModel:
 
         self.h2_sphere = H2Sphere(self.h2_result_path, self.params['scope'])
         self.source_sphere = SourceSphere(self.params['n_rays'], self.h2_sphere,
-                                          self.params['radius_scale'] * self.conditions_dict['rotor_radius'],
+                                          self.params['radius_factor'] * self.conditions_dict['rotor_radius'],
                                           self.conditions_dict['hub_pos'])
 
     def run(self):
