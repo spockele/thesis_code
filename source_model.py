@@ -40,6 +40,14 @@ class Source(hf.Cartesian):
 
     def generate_rays(self, aur_conditions_dict: dict, aur_source_dict: dict, atmosphere: hf.Atmosphere,
                       beam_width: float):
+        """
+
+        :param aur_conditions_dict:
+        :param aur_source_dict:
+        :param atmosphere:
+        :param beam_width:
+        :return:
+        """
         radius = aur_source_dict['blade_percent'] * aur_conditions_dict['rotor_radius'] / 100
         for t in self.time_series.index:
             origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
@@ -62,7 +70,7 @@ class Source(hf.Cartesian):
                 amplitude_spectrum = self.psd[blade].loc[:, t]
 
                 rays.loc[t, blade] = pm.SoundRay(pos_0, vel_0, dir_0.len(), beam_width, atmosphere,
-                                                 amplitude_spectrum, t_0=t)
+                                                 amplitude_spectrum, t_0=t, label=blade)
 
         return rays
 
@@ -144,7 +152,7 @@ class H2Sphere(list):
 
 
 class SourceSphere(list):
-    def __init__(self, n_rays: int, h2_sphere: H2Sphere):
+    def __init__(self, n_rays: int, h2_sphere: H2Sphere, radius: float, offset: hf.Cartesian):
         """
         ================================================================================================================
 
@@ -162,14 +170,15 @@ class SourceSphere(list):
         p_thread = hf.ProgressThread(len(points), 'Interpolating results')
         p_thread.start()
         for point in points:
-            self.append(h2_sphere.interpolate_sound(point))
+            self.append(h2_sphere.interpolate_sound(radius * point + offset))
             p_thread.update()
 
         p_thread.stop()
 
 
 class SourceModel:
-    def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict, h2_result_path: str, scope: str = 'All'):
+    def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict, h2_result_path: str, atmosphere: hf.Atmosphere,
+                 offset: hf.Cartesian):
         """
         ================================================================================================================
 
@@ -177,14 +186,33 @@ class SourceModel:
         :param aur_conditions_dict:
         :param aur_source_dict:
         :param h2_result_path:
-        :param scope:
         """
-        self.conditions = aur_conditions_dict
+        self.conditions_dict = aur_conditions_dict
         self.params = aur_source_dict
         self.h2_result_path = h2_result_path
+        self.atmosphere = atmosphere
 
-        self.h2_sphere = H2Sphere(self.h2_result_path, scope)
-        self.source_sphere = SourceSphere(self.params['n_rays'], self.h2_sphere)
+        self.h2_sphere = H2Sphere(self.h2_result_path, self.params['scope'])
+        self.source_sphere = SourceSphere(self.params['n_rays'], self.h2_sphere,
+                                          self.conditions_dict['rotor_radius'], offset)
+
+    def run(self):
+        """
+
+        """
+        ray_list = []
+        source: Source
+        p_thread = hf.ProgressThread(len(self.source_sphere), 'Generating sound rays')
+        p_thread.start()
+        for source in self.source_sphere:
+            # print(source.to_cartesian())
+            rays = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, .1)
+            ray_list.append(rays)
+            p_thread.update()
+
+        p_thread.stop()
+
+        return ray_list
 
 
 if __name__ == '__main__':
