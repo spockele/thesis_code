@@ -398,7 +398,7 @@ class Case(CaseLoader):
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
                                                 self.receiver_dict, ray_list)
 
-        ray_queue: queue.Queue = propagation_model.run(0)
+        ray_queue: queue.Queue = propagation_model.run(2.2, which=0)
 
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
         colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}

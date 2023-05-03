@@ -257,7 +257,7 @@ class PropagationModel:
         self.receivers = aur_receiver_dict
         self.ray_list = ray_list
 
-    def run_receiver(self, receiver_idx, receiver_pos):
+    def run_receiver(self, receiver_idx: int, receiver_pos: hf.Cartesian, emission_duration: float):
         in_queue = queue.Queue()
         out_queue = queue.Queue()
 
@@ -272,7 +272,7 @@ class PropagationModel:
 
         p_thread_0.stop()
 
-        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
+        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c + emission_duration
 
         p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_idx}')
         p_thread.start()
@@ -285,18 +285,18 @@ class PropagationModel:
 
         return out_queue
 
-    def run(self, which: int = -1):
+    def run(self, emission_duration: float, which: int = -1, ):
         """
-
+        :param emission_duration:
         :param which:
         """
         if which == -1:
             raise NotImplementedError('Multiple observer running not implemented yet!')
             # for receiver_idx, receiver_pos in self.receivers.items():
-            #     self.run_receiver(receiver_idx, receiver_pos)
+            #     self.run_receiver(receiver_idx, receiver_pos, emission_duration)
 
         elif which >= 0:
-            return self.run_receiver(which, self.receivers[which])
+            return self.run_receiver(which, self.receivers[which], emission_duration)
 
         else:
             raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
