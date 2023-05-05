@@ -21,6 +21,14 @@ t_0 = 273.15  # Zero celsius in kelvin [K]
 gamma_air = 1.4  # Specific heat ratio of air [-]
 
 
+def octave_band_fc(b: int):
+    """
+    Definition of the 1/b-th octave band central frequencies
+    """
+    n = np.arange(-6 * b, 4 * b + 1)
+    return 1e3 * 2. ** (n / b)
+
+
 def limit_angle(angle):
     """
     Limit a radian angle between -pi and pi
