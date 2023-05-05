@@ -10,6 +10,7 @@ from wetb.hawc2.htc_contents import HTCSection
 import helper_functions as hf
 import source_model as sm
 import propagation_model as pm
+import reception_model as rm
 
 
 """
@@ -398,7 +399,7 @@ class Case(CaseLoader):
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
                                                 self.receiver_dict, ray_list)
 
-        ray_queue: queue.Queue = propagation_model.run(2.2, which=0)
+        ray_queue: queue.Queue = propagation_model.run(which=0)
 
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
         colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}
@@ -407,7 +408,8 @@ class Case(CaseLoader):
             ray: pm.SoundRay = ray_queue.get()
             pos_array = ray.pos_array()
             if ray.received:
-                ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
+                if 10 * np.log10(np.mean(ray.gaussian_factor)) >= -30.:
+                    ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
 
         ax.set_xlabel('x (m)')
         ax.set_ylabel('y (m)')

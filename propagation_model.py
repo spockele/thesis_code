@@ -86,6 +86,8 @@ class Ray:
         # Set fixed parameters
         self.bw = beam_width
         self.atmosphere = atmosphere
+        # Preset Gaussian reception spectrum
+        self.gaussian_factor = None
 
     def update_ray_velocity(self, delta_t: float) -> (hf.Cartesian, hf.Cartesian):
         """
@@ -210,8 +212,11 @@ class Ray:
             vel, direction, pos, delta_s = self.ray_step(delta_t)
             self.received = self.check_reception(receiver, delta_s)
 
-            if self.t[-1] > t_lim:
+            if self.t[-1] - self.t[0] > t_lim:
                 kill = True
+
+        if self.received:
+            self.gaussian_factor = self.gaussian_reception(hf.octave_band_fc(1), receiver)
 
     def pos_array(self) -> np.array:
         """
@@ -257,7 +262,7 @@ class PropagationModel:
         self.receivers = aur_receiver_dict
         self.ray_list = ray_list
 
-    def run_receiver(self, receiver_idx: int, receiver_pos: hf.Cartesian, emission_duration: float):
+    def run_receiver(self, receiver_idx: int, receiver_pos: hf.Cartesian):
         in_queue = queue.Queue()
         out_queue = queue.Queue()
 
@@ -272,7 +277,7 @@ class PropagationModel:
 
         p_thread_0.stop()
 
-        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c + emission_duration
+        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
 
         p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_idx}')
         p_thread.start()
@@ -285,18 +290,17 @@ class PropagationModel:
 
         return out_queue
 
-    def run(self, emission_duration: float, which: int = -1, ):
+    def run(self, which: int = -1):
         """
-        :param emission_duration:
         :param which:
         """
         if which == -1:
             raise NotImplementedError('Multiple observer running not implemented yet!')
             # for receiver_idx, receiver_pos in self.receivers.items():
-            #     self.run_receiver(receiver_idx, receiver_pos, emission_duration)
+            #     self.run_receiver(receiver_idx, receiver_pos)
 
         elif which >= 0:
-            return self.run_receiver(which, self.receivers[which], emission_duration)
+            return self.run_receiver(which, self.receivers[which])
 
         else:
             raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
