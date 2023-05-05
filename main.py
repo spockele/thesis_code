@@ -51,7 +51,7 @@ class Project:
 
         print('Project loaded succesfully!')
 
-    def run_cases(self):
+    def run(self):
         """
 
         """
@@ -65,7 +65,7 @@ class Project:
 if __name__ == '__main__':
     proj_path = os.path.abspath('NTK')
     proj = Project(proj_path)
-    proj.run_cases()
+    proj.run()
 
     # (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data('./samples/NTK_Oct2016/nordtank_20150901_122400.tim')
     # # Sampling period

@@ -37,6 +37,8 @@ pip install -r python_310_reqs
 ### Input file structure
 Below is the general structure of the input files that should be used
 ```
+name -str- ; A name for the case defined in this file
+;
 begin conditions ;
     ; ----------------------------------------------------------------------------------
     ; This section defines the operating conditions of the turbine
