@@ -65,8 +65,8 @@ class TestPropagationThread(unittest.TestCase):
         self.prop_thread.start()
 
         # Check the interruption worked or not
-        self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
-        self.assertEqual(self.prop_thread.in_queue.qsize(), 1)
+        self.assertEqual(self.prop_thread.out_queue.qsize(), 0)
+        self.assertEqual(self.prop_thread.in_queue.qsize(), 2)
         sys.stdout.write.assert_called()
 
         # Reset mock of the alive check
