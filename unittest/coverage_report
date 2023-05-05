@@ -1,13 +1,13 @@
 Name                                     Stmts   Miss  Cover
 ------------------------------------------------------------
 helper_functions/__init__.py                 7      0   100%
-helper_functions/coordinate_systems.py     212      0   100%
+helper_functions/coordinate_systems.py     218      2    99%
 helper_functions/data_structures.py         64     50    22%
-helper_functions/funcs.py                   62      0   100%
-helper_functions/geometry.py                10      0   100%
+helper_functions/funcs.py                   44      2    95%
+helper_functions/geometry.py                35      0   100%
 helper_functions/hrtf.py                    60     51    15%
 helper_functions/in_out.py                  69     53    23%
-helper_functions/isa.py                    116      0   100%
-propagation_model.py                       131     49    63%
+helper_functions/isa.py                    122      0   100%
+propagation_model.py                       135     45    67%
 ------------------------------------------------------------
-TOTAL                                      731    203    72%
+TOTAL                                      754    203    73%
