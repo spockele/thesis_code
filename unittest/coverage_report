@@ -1,5 +1,6 @@
 Name                                     Stmts   Miss  Cover
 ------------------------------------------------------------
+case_mgmt.py                               215    183    15%
 helper_functions/__init__.py                 7      0   100%
 helper_functions/coordinate_systems.py     218      2    99%
 helper_functions/data_structures.py         64     50    22%
@@ -9,5 +10,7 @@ helper_functions/hrtf.py                    60     51    15%
 helper_functions/in_out.py                  69     53    23%
 helper_functions/isa.py                    122      0   100%
 propagation_model.py                       135     45    67%
+reception_model.py                           6      1    83%
+source_model.py                            104     82    21%
 ------------------------------------------------------------
-TOTAL                                      754    203    73%
+TOTAL                                     1079    469    57%
