@@ -11,7 +11,7 @@ import helper_functions as hf
 """
 ========================================================================================================================
 ===                                                                                                                  ===
-===                                                                                                                  ===
+=== The propagation model for this auralisation tool                                                                 ===
 ===                                                                                                                  ===
 ========================================================================================================================
 """
@@ -24,12 +24,12 @@ class PropagationThread(threading.Thread):
         ================================================================================================================
         Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function
         ================================================================================================================
-        :param in_queue:
-        :param out_queue:
-        :param delta_t:
-        :param receiver
-        :param p_thread
-        :param t_lim
+        :param in_queue: queue.Queue instance containing non-propagated SoundRays
+        :param out_queue: queue.Queue instance where propagated SoundRays will be put
+        :param delta_t: time step (s)
+        :param receiver: the receiver point in Cartesian coordinates (m, m, m).
+        :param p_thread: ProgressThread instance to track progress of the propagation model
+        :param t_lim: propagation time limit (s)
         """
         super().__init__()
         self.in_queue = in_queue
@@ -73,8 +73,8 @@ class Ray:
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
-        :param atmosphere:
-        :param t_0:
+        :param atmosphere: atmosphere defined in hf.Atmosphere()
+        :param t_0: the start time of the ray propagation (s)
         """
         # Set initial conditions
         self.pos = np.array([pos_0, ])
@@ -182,28 +182,31 @@ class Ray:
 
     def gaussian_reception(self, frequency: np.array, receiver: hf.Cartesian):
         """
-
-        :param frequency:
-        :param receiver:
-        :return:
+        Calculate the Gaussian beam reception transfer function
+        :param frequency: array of frequencies to determine transfer function at (Hz)
+        :param receiver: the receiver point in Cartesian coordinates (m, m, m)
+        :return: transfer function values at the given frequencies
         """
+        # Determine the perpendicular plane just before the receiver
         plane = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
+        # Determine distance from that plane to the receiver
         dist1 = plane.distance_to_point(receiver)
-        dist2 = (receiver - self.pos[-2]).len()
-
+        # Determine the distance between the ray-plane intersection and the receiver
+        dist2 = self.pos[-2].dist(receiver)
+        # Determine the distance between the ray and the receiver
         n_sq = dist2**2 - dist1**2
-
+        # Determine the distance along the ray to the intersecting line
         s = self.s[-2] + dist1
 
+        # Determine the filter and clip to between 0 and 1
         return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
 
     def propagate(self, delta_t: float, receiver: hf.Cartesian, t_lim: float = 1.):
         """
-
-        :param delta_t:
-        :param receiver:
-        :param t_lim:
-        :return:
+        Propagate the Ray until received or kill condition is reached
+        :param delta_t: time step (s)
+        :param receiver: the receiver point in Cartesian coordinates (m, m, m)
+        :param t_lim: propagation time limit (s)
         """
         self.received = False
         kill = self.pos[0][2] >= 0
@@ -233,6 +236,18 @@ class Ray:
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
                  atmosphere: hf.Atmosphere, amplitude_spectrum: pd.DataFrame, t_0: float = 0., label: str = None):
+        """
+        ================================================================================================================
+        Class for the propagation sound ray model. With the sound spectral effects.
+        ================================================================================================================
+        :param pos_0: initial position in cartesian coordinates (m, m, m)
+        :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
+        :param s_0: initial beam length (m)
+        :param beam_width: initial beam width angle (rad)
+        :param atmosphere: atmosphere defined in hf.Atmosphere()
+        :param t_0: the start time of the ray propagation (s)
+        :param label: a string label for SoundRay
+        """
         super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
 
         self.label = label
@@ -251,124 +266,77 @@ class PropagationModel:
     def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, aur_receiver_dict: dict, ray_list: list):
         """
         ================================================================================================================
-
+        Class that manages the whole propagation model
         ================================================================================================================
-        :param aur_conditions_dict:
-        :param aur_propagation_dict:
-        :param ray_list:
+        :param aur_conditions_dict: conditions_dict from the Case class
+        :param aur_propagation_dict: propagation_dict from the Case class
+        :param ray_list: list of DataFrames containing all the SoundRays to propagate
         """
         self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
         self.receivers = aur_receiver_dict
         self.ray_list = ray_list
 
-    def run_receiver(self, receiver_idx: int, receiver_pos: hf.Cartesian):
+    def run_receiver(self, receiver_key: int, receiver_pos: hf.Cartesian):
+        """
+        Run the propagation model for one receiver
+        :param receiver_key: key of the receiver in self.receivers
+        :param receiver_pos: the receiver point in Cartesian coordinates (m, m, m)
+        :return: a queue.Queue instance containing all propagated SoundRays
+        """
+        # Initialise the queue.Queue()s
         in_queue = queue.Queue()
         out_queue = queue.Queue()
-
+        # Start a ProgressThread to follow filling the in_queue
         p_thread_0 = hf.ProgressThread(len(self.ray_list), 'Reading sound rays')
         p_thread_0.start()
+
+        # Type definition
         ray_dataframe: pd.DataFrame
+        # Go over the list with SoundRays
         for ray_dataframe in self.ray_list:
+            # Update the ProgressThread
             p_thread_0.update()
+
+            # Fill all Rays into the in_queue
             for t in ray_dataframe.index:
                 for blade in ray_dataframe.columns:
                     in_queue.put(ray_dataframe.loc[t, blade].copy())
-
+        # Stop the ProgressThread
         p_thread_0.stop()
 
+        # Set the time limit to limit compute time
         t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
 
-        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_idx}')
+        # Start a ProgressThread to follow the propagation
+        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_key}')
         p_thread.start()
+        # Create the PropagationThreads
         threads = [PropagationThread(in_queue, out_queue, self.params['delta_t'], receiver_pos, p_thread, t_limit)
                    for _ in range(self.params['n_threads'])]
-
+        # Start the threads and hold until all are done
         [thread.start() for thread in threads]
         [thread.join() for thread in threads]
+        # Stop the ProgressThread
         p_thread.stop()
 
         return out_queue
 
     def run(self, which: int = -1):
         """
-        :param which:
+        Run the propagation model
+        :param which: key of the receiver to which to propagate the sound
         """
+        # Run for all receivers
         if which == -1:
             raise NotImplementedError('Multiple observer running not implemented yet!')
             # for receiver_idx, receiver_pos in self.receivers.items():
             #     self.run_receiver(receiver_idx, receiver_pos)
 
+        # Run for specified receiver
         elif which >= 0:
             return self.run_receiver(which, self.receivers[which])
 
+        # We don't do negative numbers here
         else:
             raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
-
-
-if __name__ == '__main__':
-    atm = hf.Atmosphere(35.5, 10.5, )
-    phi, theta, fail, pd = hf.uniform_spherical_grid(2048)
-
-    r = 41 / 2
-    x = r * np.cos(theta) * np.sin(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    z = r * np.cos(phi)
-
-    offset = hf.Cartesian(0, 0, -35.5)
-    # rec = hf.Cartesian(0, -35.5 - 20.5, -1.7)
-    rec = hf.Cartesian(0, -500, -1.7)
-
-    tlim = abs(2 * rec[1] / hf.c)
-
-    f = np.linspace(1, 44.1e3, 512)
-    spec = np.empty((len(x), 512))
-
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    startpt = [hf.Cartesian(x[i], y[i], z[i]) for i in range(len(x)) if y[i] <= 0]
-
-    prop_queue = queue.Queue()
-    prop_done = queue.Queue()
-
-    for pi, p_init in enumerate(startpt):
-        c_init = p_init * atm.get_speed_of_sound(0) / p_init.len()
-        soundray = Ray(p_init + offset, c_init, 0, pd, atm)
-
-        prop_queue.put(soundray)
-
-    p_thread = hf.ProgressThread(prop_queue.qsize(), "Propagating Rays")
-    p_thread.start()
-    threads = [PropagationThread(prop_queue, prop_done, .01, rec, p_thread, t_lim=tlim) for _ in range(32)]
-    [thread.start() for thread in threads]
-    [thread.join() for thread in threads]
-
-    p_thread.stop()
-
-    i = 0
-    while not prop_done.empty():
-        soundray = prop_done.get()
-
-        spec[i] = soundray.gaussian_reception(f, rec)
-        i += 1
-
-        pos_arr = soundray.pos_array()
-
-        ax.plot(pos_arr[:, 0], pos_arr[:, 1], pos_arr[:, 2])
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        ax.set_zlabel('z (m)')
-
-    ax.scatter(*rec.vec)
-    plt.show()
-
-    # plt.plot(f, spec.T)
-    # plt.show()
-
-    # atm = hf.Atmosphere(1, 0, )
-    # c = atm.get_speed_of_sound(0)
-    # p_init = hf.Cartesian(0, 0, -10)
-    # c_init = c * hf.Cartesian(1, 1, 0) / hf.Cartesian(1, 1, 0).len()
-    # soundray = SoundRay(p_init, c_init, 0, 0, 0, atm)
-    #
-    # soundray.propagate(.01, hf.Cartesian(200, 0, 0))
-    # print(soundray.pos[-1])

@@ -83,7 +83,7 @@ class ProgressThread(threading.Thread):
         """
         Function to stop the thread when it is not needed anymore
         """
-        elapsed = round(time.time()- self.t0, 2)
+        elapsed = round(time.time() - self.t0, 2)
         sys.stdout.write(f'\r{self.task}: {self.total}/{self.total} Done! (Elapsed time: {elapsed} s)\n')
         sys.stdout.flush()
         self.work = False

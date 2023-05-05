@@ -213,10 +213,10 @@ class SourceModel:
         ================================================================================================================
         Class that manages the whole source model
         ================================================================================================================
-        :param aur_conditions_dict:
-        :param aur_source_dict:
-        :param h2_result_path:
-        :param atmosphere:
+        :param aur_conditions_dict: conditions_dict from the Case class
+        :param aur_source_dict: source_dict from the Case class
+        :param h2_result_path: path where the HAWC2 results are stored
+        :param atmosphere: atmosphere defined in hf.Atmosphere()
         """
         # Store the input parameters
         self.conditions_dict = aur_conditions_dict
@@ -246,7 +246,3 @@ class SourceModel:
         p_thread.stop()
 
         return ray_list
-
-
-if __name__ == '__main__':
-    pass
