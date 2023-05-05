@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
 import numpy as np
+import warnings
+import threading
+import time
 
 import helper_functions as hf
 
@@ -38,17 +41,6 @@ class TestFuncs(unittest.TestCase):
         self.assertAlmostEqual(0., hf.limit_angle(2 * np.pi))
         self.assertAlmostEqual(0., hf.limit_angle(-2 * np.pi))
 
-    def test_uniform_spherical_grid(self):
-        """
-        Checks the calls for the uniform grid generator
-        """
-        hf.warnings.warn = MagicMock()
-        self.assertTrue(hf.uniform_spherical_grid(1)[2])
-        hf.warnings.warn.assert_called_once()
-
-        self.assertAlmostEqual(hf.uniform_spherical_grid(4)[3], np.sqrt(np.pi))
-        self.assertFalse(hf.uniform_spherical_grid(4)[2])
-
     def test_a_weighting(self):
         """
         Check A-weighting L_a against table of hand-calculated values
@@ -75,12 +67,12 @@ class TestProgressThread(unittest.TestCase):
         hf.funcs.sys.stdout.write = MagicMock()
         hf.funcs.sys.stdout.flush = MagicMock()
         # Mock the main_thread().is_alive() function to always be True
-        hf.threading.main_thread().is_alive = MagicMock(return_value=True)
+        threading.main_thread().is_alive = MagicMock(return_value=True)
 
         # Start the progress thread
         self.mock_progress_thread.start()
         # Wait just a pinch
-        hf.time.sleep(.1)
+        time.sleep(.1)
 
         # Check some calls
         hf.funcs.sys.stdout.write.assert_called()
@@ -90,7 +82,7 @@ class TestProgressThread(unittest.TestCase):
         self.mock_progress_thread.update()
         # Stop the thread and wait a pinch
         self.mock_progress_thread.stop()
-        hf.time.sleep(.5)
+        time.sleep(.5)
 
         # Check values for functioning
         self.assertFalse(self.mock_progress_thread.work)
@@ -105,14 +97,14 @@ class TestProgressThread(unittest.TestCase):
         hf.funcs.sys.stdout.write = MagicMock()
         hf.funcs.sys.stdout.flush = MagicMock()
         # Mock the main_thread().is_alive() function to always be True
-        hf.threading.main_thread().is_alive = MagicMock(return_value=True)
+        threading.main_thread().is_alive = MagicMock(return_value=True)
 
         # Start the progress thread
         self.mock_progress_thread.start()
         # Simulate a system interrupt by changing the mock value
-        hf.threading.main_thread().is_alive = MagicMock(return_value=False)
+        threading.main_thread().is_alive = MagicMock(return_value=False)
         # Give it a hot second
-        hf.time.sleep(.5)
+        time.sleep(.5)
 
         # Check that the interrupt worked as expected
         self.assertTrue(self.mock_progress_thread.work)

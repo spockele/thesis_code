@@ -1,5 +1,7 @@
 import unittest
+from unittest.mock import MagicMock
 import numpy as np
+import warnings
 
 import helper_functions as hf
 
@@ -11,6 +13,19 @@ import helper_functions as hf
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+
+
+class TestGeometry(unittest.TestCase):
+    def test_uniform_spherical_grid(self):
+        """
+        Checks the calls for the uniform grid generator
+        """
+        warnings.warn = MagicMock()
+        self.assertTrue(hf.uniform_spherical_grid(1)[2])
+        warnings.warn.assert_called_once()
+
+        self.assertAlmostEqual(hf.uniform_spherical_grid(4)[2], np.sqrt(np.pi))
+        self.assertFalse(hf.uniform_spherical_grid(4)[1])
 
 
 class TestPerpendicularPlane3D(unittest.TestCase):
