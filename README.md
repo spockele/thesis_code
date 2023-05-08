@@ -98,20 +98,19 @@ begin HAWC2;
 end HAWC2;
 ;
 begin source ;
-    n_rays -int- ; Defines the number of sound rays used for propagation
+    n_rays -int- ; Defines the number of sound rays (per time step) used for propagation
     blade_percent -float- ; Defines r = blade_percent * R at which the source is assumed to be located.
     scope -str- ; Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
     radius_factor -float- ; Scaling factor for the radius of the sound source sphere
 end source ;
 ;
 begin propagation ;
-    n_threads -int- ; Defines the number of threads used for propagating sound rays
+    n_threads -int- ; Defines the number of compute threads used for propagating sound rays
     delta_t -float- ; Defines the propagation time step (s)
-    receiver -int-,-float-,-float-,-float- ; Define the receiver location index,x,y,z (m) 
 end propagation ;
 ;
 begin reception ;
-    ; --- WIP ---
+    receiver -int-,-float-,-float-,-float- ; Define the receiver location index,x,y,z (m) 
 end reception ;
 ;
 begin reconstruction ;

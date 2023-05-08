@@ -231,10 +231,6 @@ class CaseLoader:
                 elif key in ('n_threads', ):
                     self.propagation_dict[key] = int(value)
 
-                elif key == 'receiver':
-                    idx, x, y, z = value.split(',')
-                    self.receiver_dict[int(idx)] = hf.Cartesian(float(x), float(y), float(z))
-
                 else:
                     self.propagation_dict[key] = value
 
@@ -252,6 +248,10 @@ class CaseLoader:
 
                 elif key in ():
                     self.reception_dict[key] = int(value)
+
+                elif key == 'receiver':
+                    idx, x, y, z = value.split(',')
+                    self.receiver_dict[int(idx)] = rm.Receiver(int(idx), float(x), float(y), float(z))
 
                 else:
                     self.reception_dict[key] = value
