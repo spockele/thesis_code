@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
-import helper_functions as hf
 
+import helper_functions as hf
 import propagation_model as pm
 
 
@@ -33,7 +33,7 @@ class Source(hf.Cartesian):
         self.psd = {'blade_0': turbine_psd, 'blade_1': blade_1_psd, 'blade_2': blade_2_psd, 'blade_3': blade_3_psd}
 
     def __repr__(self):
-        return f'<Sound source at {str(self)}>'
+        return f'<Sound source: {str(self)}>'
 
     def to_cartesian(self):
         """
@@ -42,13 +42,13 @@ class Source(hf.Cartesian):
         return hf.Cartesian(*self.vec)
 
     def generate_rays(self, aur_conditions_dict: dict, aur_source_dict: dict, atmosphere: hf.Atmosphere,
-                      beam_width: float):
+                      dist: float):
         """
         Generate sound rays over the whole time series for this source point
         :param aur_conditions_dict: conditions_dict from the Case class
         :param aur_source_dict: source_dict from the Case class
         :param atmosphere: atmosphere defined in hf.Atmosphere()
-        :param beam_width: the angular width of the Gaussian beams
+        :param dist: estimate of inter-ray distance to determine beam width (m)
         :return: a list of Dataframes (per source point) of shape (t, 4) with sound rays (per time step per blade)
         """
         # Set the source origin radius
@@ -75,8 +75,11 @@ class Source(hf.Cartesian):
             for blade in rays.columns:
                 # Set initial position of sound ray
                 pos_0 = self.to_cartesian()
-                # Determine initial ray direction
+                # Determine initial ray direction and initial travel distance
                 dir_0 = self.to_cartesian() - self.time_series.loc[t, blade]
+                s_0 = dir_0.len()
+                # Determine beam width
+                beam_width = 2 * np.arcsin(dist / s_0 / 2)
                 # Determine local speed of sound
                 speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
                 # Set the initial velocity vector
@@ -85,7 +88,7 @@ class Source(hf.Cartesian):
                 amplitude_spectrum = self.psd[blade].loc[:, t]
 
                 # Create the SoundRay and put it in the pd.DataFrame
-                rays.loc[t, blade] = pm.SoundRay(pos_0, vel_0, dir_0.len(), beam_width, atmosphere,
+                rays.loc[t, blade] = pm.SoundRay(pos_0, vel_0, s_0, beam_width, atmosphere,
                                                  amplitude_spectrum, t_0=t, label=blade)
 
         # Return the whole pd.DataFrame
@@ -121,7 +124,7 @@ class H2Observer(hf.Cartesian):
         self.blade_3_psd.columns = self.time_series.index
 
     def __repr__(self):
-        return f'<HAWC2 Observer at {str(self)}>'
+        return f'<HAWC2 Observer: {str(self)}>'
 
 
 class H2Sphere(list):
@@ -196,6 +199,7 @@ class SourceSphere(list):
         points, fail, self.dist = hf.uniform_spherical_grid(n_rays)
         if fail:
             raise ValueError(f'Parameter n_rays = {n_rays} resulted in incomplete sphere. Try a different value.')
+        self.dist *= radius
 
         # Interpolate the H2Sphere to this sphere
         p_thread = hf.ProgressThread(len(points), 'Interpolating results')
@@ -238,8 +242,7 @@ class SourceModel:
         p_thread = hf.ProgressThread(len(self.source_sphere), 'Generating sound rays')
         p_thread.start()
         for source in self.source_sphere:
-            # print(source.to_cartesian())
-            rays = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, .1)
+            rays = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, self.source_sphere.dist)
             ray_list.append(rays)
             p_thread.update()
 

@@ -6,6 +6,7 @@ import queue
 import time
 
 import helper_functions as hf
+import reception_model as rm
 
 
 """
@@ -18,7 +19,7 @@ import helper_functions as hf
 
 
 class PropagationThread(threading.Thread):
-    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: hf.Cartesian,
+    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: rm.Receiver,
                  p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
         """
         ================================================================================================================
@@ -157,7 +158,7 @@ class Ray:
 
         return vel, direction, pos, delta_s
 
-    def check_reception(self, receiver: hf.Cartesian, delta_s: float):
+    def check_reception(self, receiver: rm.Receiver, delta_s: float):
         """
         Check if the ray went past a receiver point.
         :param receiver: the receiver point in Cartesian coordinates (m, m, m).
@@ -180,7 +181,7 @@ class Ray:
         # If all else fails: this ray has not yet passed, probably
         return False
 
-    def gaussian_reception(self, frequency: np.array, receiver: hf.Cartesian):
+    def gaussian_reception(self, frequency: np.array, receiver: rm.Receiver):
         """
         Calculate the Gaussian beam reception transfer function
         :param frequency: array of frequencies to determine transfer function at (Hz)
@@ -201,7 +202,7 @@ class Ray:
         # Determine the filter and clip to between 0 and 1
         return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
 
-    def propagate(self, delta_t: float, receiver: hf.Cartesian, t_lim: float = 1.):
+    def propagate(self, delta_t: float, receiver: rm.Receiver, t_lim: float = 1.):
         """
         Propagate the Ray until received or kill condition is reached
         :param delta_t: time step (s)
@@ -251,14 +252,14 @@ class SoundRay(Ray):
         super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
 
         self.label = label
-        self.amplitude = amplitude_spectrum
-        self.phase = pd.DataFrame(index=self.amplitude.index)
+        self.spectrum = amplitude_spectrum
+        # self.spectrum['p'] = 0.
 
     def copy(self):
         """
         Create a copy of this Soundray
         """
-        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.amplitude,
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.spectrum,
                         self.t[0], self.label)
 
 
@@ -277,7 +278,7 @@ class PropagationModel:
         self.receivers = aur_receiver_dict
         self.ray_list = ray_list
 
-    def run_receiver(self, receiver_key: int, receiver_pos: hf.Cartesian):
+    def run_receiver(self, receiver_key: int, receiver_pos: rm.Receiver):
         """
         Run the propagation model for one receiver
         :param receiver_key: key of the receiver in self.receivers
