@@ -110,7 +110,14 @@ begin propagation ;
 end propagation ;
 ;
 begin reception ;
-    receiver -int-,-float-,-float-,-float- ; Define the receiver location index,x,y,z (m) 
+    ; ----------------------------------------------------------------------------------
+    ; Define the receiver point(s) in this block
+    ; ----------------------------------------------------------------------------------
+    begin receiver ;
+        index -int- ; indexing number >=0
+        pos -float-,-float-,-float- ; location x,y,z (m)
+        rotation -float- ; Head rotation of the receiver (deg)
+    end receiver ;
 end reception ;
 ;
 begin reconstruction ;

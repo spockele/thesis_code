@@ -79,7 +79,11 @@ begin propagation ;
 end propagation ;
 ;
 begin reception ;
-    receiver 0,0,-60,-1.7 ; Define the receiver location index,x,y,z (m)
+    begin receiver ;
+        index 0 ; indexing number >=0
+        pos 0,-60,-1.7 ; location x,y,z (m)
+        rotation 0 ; Head rotation of the receiver (deg)
+    end receiver ;
     ; --- WIP ---
 end reception ;
 ;

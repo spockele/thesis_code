@@ -144,7 +144,6 @@ class CaseLoader:
         Parse the conditions block into the conditions dictionary
         :param lines: list of lines containing auralisation input code
         """
-        self.conditions_dict = dict()
         for line in lines[1:-1]:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
@@ -203,76 +202,91 @@ class CaseLoader:
         Parse the source block
         :param lines: list of lines containing auralisation input code
         """
-        for line in lines[1:-1]:
-            if not (line.startswith(';') or line.startswith('\n')):
-                key, value, *_ = line.split(' ')
+        blocks = self._get_blocks(lines[1:-1])
+        for key, value in blocks.items():
+            if key in ('blade_percent', 'radius_factor'):
+                self.source_dict[key] = float(value)
 
-                if key in ('blade_percent', 'radius_factor'):
-                    self.source_dict[key] = float(value)
+            elif key in ('n_rays',):
+                self.source_dict[key] = int(value)
 
-                elif key in ('n_rays',):
-                    self.source_dict[key] = int(value)
-
-                else:
-                    self.source_dict[key] = value
+            else:
+                self.source_dict[key] = value
 
     def _parse_propagation(self, lines: list):
         """
         Parse the propagation block
         :param lines: list of lines containing auralisation input code
         """
-        for line in lines[1:-1]:
-            if not (line.startswith(';') or line.startswith('\n')):
-                key, value, *_ = line.split(' ')
+        blocks = self._get_blocks(lines[1:-1])
+        for key, value in blocks.items():
+            if key in ('delta_t', ):
+                self.propagation_dict[key] = float(value)
 
-                if key in ('delta_t', ):
-                    self.propagation_dict[key] = float(value)
+            elif key in ('n_threads', ):
+                self.propagation_dict[key] = int(value)
 
-                elif key in ('n_threads', ):
-                    self.propagation_dict[key] = int(value)
+            else:
+                self.propagation_dict[key] = value
 
-                else:
-                    self.propagation_dict[key] = value
+    def _parse_receiver(self, lines: list):
+        """
+        Parse a reception > receiver block
+        :param lines: list of lines containing auralisation input code
+        """
+        blocks = self._get_blocks(lines[1:-1])
+
+        parse_dict = {}
+        for key, value in blocks.items():
+            if key in ('rotation', ):
+                parse_dict[key] = float(value)
+
+            elif key in ('index', ):
+                parse_dict[key] = int(value)
+
+            elif key in ('pos', ):
+                parse_dict['pos'] = (float(val) for val in value.split(','))
+
+            else:
+                parse_dict[key] = value
+
+        self.receiver_dict[parse_dict['index']] = rm.Receiver(parse_dict)
 
     def _parse_reception(self, lines: list):
         """
         Parse the reception block
         :param lines: list of lines containing auralisation input code
         """
-        for line in lines[1:-1]:
-            if not (line.startswith(';') or line.startswith('\n')):
-                key, value, *_ = line.split(' ')
+        blocks = self._get_blocks(lines[1:-1])
 
-                if key in ():
-                    self.reception_dict[key] = float(value)
+        for key, block in blocks.items():
+            if key in ():
+                self.reception_dict[key] = float(block)
 
-                elif key in ():
-                    self.reception_dict[key] = int(value)
+            elif key in ():
+                self.reception_dict[key] = int(block)
 
-                elif key == 'receiver':
-                    idx, x, y, z = value.split(',')
-                    self.receiver_dict[int(idx)] = rm.Receiver(int(idx), float(x), float(y), float(z))
+            elif key == 'receiver':
+                self._parse_receiver(block)
 
-                else:
-                    self.reception_dict[key] = value
+            else:
+                self.reception_dict[key] = block
 
     def _parse_reconstruction(self, lines: list):
         """
         Parse the reconstruction block
         :param lines: list of lines containing auralisation input code
         """
-        for line in lines[1:-1]:
-            if not (line.startswith(';') or line.startswith('\n')):
-                key, value, *_ = line.split(' ')
+        blocks = self._get_blocks(lines[1:-1])
+        for key, value in blocks.items():
+            if key in ():
+                self.reconstruction_dict[key] = float(value)
 
-                if key in ():
-                    self.reconstruction_dict[key] = float(value)
+            elif key in ():
+                self.reconstruction_dict[key] = int(value)
 
-                elif key in ():
-                    self.reconstruction_dict[key] = int(value)
-
-                else:
-                    self.reconstruction_dict[key] = value
+            else:
+                self.reconstruction_dict[key] = value
 
 
 class Case(CaseLoader):
@@ -334,12 +348,12 @@ class Case(CaseLoader):
         Run the HAWC2 simulations for this case.
         """
         ''' Preprocessing '''
-        # Make sure an observer sphere is generated
-        if self.h2result_sphere is None:
-            self.generate_hawc2_sphere()
         # Make sure the HAWC2 path is valid
         if not os.path.isfile(self.hawc2_path):
             raise FileNotFoundError('Invalid file path given for HAWC2.')
+        # Make sure an observer sphere is generated
+        if self.h2result_sphere is None:
+            self.generate_hawc2_sphere()
 
         # Set the aero_noise simulation mode to 2, meaning to run and store the needed parameters
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
@@ -401,23 +415,28 @@ class Case(CaseLoader):
 
         ray_queue: queue.Queue = propagation_model.run(which=0)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-        colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}
+        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        # colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}
 
         while not ray_queue.empty():
             ray: pm.SoundRay = ray_queue.get()
-            pos_array = ray.pos_array()
             if ray.received:
-                if 10 * np.log10(np.mean(ray.gaussian_factor)) >= -30.:
-                    ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
+                ray.receive(self.receiver_dict[0])
 
-        ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
-        ax.set_zlabel('z (m)')
+                # lvl = np.trapz(ray.spectrum['gaussian'], ray.spectrum.index)
+                # if 10 * np.log10(lvl) >= -12.:
+                #     pos_array = ray.pos_array()
+                #     ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
 
-        ax.set_xlim(-100, 100)
-        ax.set_ylim(-100, 100)
-        ax.set_zlim(-200, 0)
-        ax.set_box_aspect([1, 1, 1])
+        print(self.receiver_dict[0].spectrogram)
 
-        plt.show()
+        # ax.set_xlabel('x (m)')
+        # ax.set_ylabel('y (m)')
+        # ax.set_zlabel('z (m)')
+        #
+        # ax.set_xlim(-100, 100)
+        # ax.set_ylim(-100, 100)
+        # ax.set_zlim(-200, 0)
+        # ax.set_box_aspect([1, 1, 1])
+        #
+        # plt.show()
