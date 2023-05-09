@@ -43,6 +43,7 @@ class Receiver(hf.Cartesian):
         return f'<Receiver {self.index}: {str(self)}>'
 
     def receive(self, sound: ReceivedSound):
+        sound.t = round(sound.t, 2)
         if sound.t in self.received.keys():
             self.received[sound.t].append(sound)
 
@@ -56,6 +57,11 @@ class Receiver(hf.Cartesian):
             return []
 
     def sum_spectra(self):
+        self.received = dict(sorted(self.received.items()))
+        sums = {}
         for t, sounds in self.received.items():
             spectra = [sound.sound_spectrum for sound in sounds]
-            self.spectrogram[t] = sum(spectra)
+            sums[t] = sum(spectra)
+
+        self.spectrogram = pd.concat(sums.values(), axis=1)
+        self.spectrogram.columns = self.received.keys()

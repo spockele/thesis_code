@@ -1,4 +1,5 @@
 import os
+import queue
 import pandas as pd
 import numpy as np
 
@@ -42,17 +43,37 @@ class Source(hf.Cartesian):
         return hf.Cartesian(*self.vec)
 
     def generate_rays(self, aur_conditions_dict: dict, aur_source_dict: dict, atmosphere: hf.Atmosphere,
-                      dist: float):
+                      dist: float, rays: queue.Queue, delta_t: float):
         """
         Generate sound rays over the whole time series for this source point
         :param aur_conditions_dict: conditions_dict from the Case class
         :param aur_source_dict: source_dict from the Case class
         :param atmosphere: atmosphere defined in hf.Atmosphere()
         :param dist: estimate of inter-ray distance to determine beam width (m)
-        :return: a list of Dataframes (per source point) of shape (t, 4) with sound rays (per time step per blade)
+        :return: a queue with all the SoundRay instances
         """
         # Set the source origin radius
         radius = aur_source_dict['blade_percent'] * aur_conditions_dict['rotor_radius'] / 100
+        # Interpolation to simulation time step
+        sim_time = np.round(np.arange(self.time_series.index[0], self.time_series.index[-1] + delta_t, delta_t), 10)
+
+        self.time_series.index = np.round(self.time_series.index, 10)
+        self.time_series = self.time_series.reindex(index=sim_time)
+        self.time_series.interpolate(axis='index', inplace=True)
+
+        self.psd['blade_0'].columns = np.round(self.time_series.index, 10)
+        self.psd['blade_0'] = self.psd['blade_0'].reindex(columns=sim_time)
+        self.psd['blade_0'].interpolate(axis='columns', inplace=True)
+        self.psd['blade_1'].columns = np.round(self.time_series.index, 10)
+        self.psd['blade_1'] = self.psd['blade_1'].reindex(columns=sim_time)
+        self.psd['blade_1'].interpolate(axis='columns', inplace=True)
+        self.psd['blade_2'].columns = np.round(self.time_series.index, 10)
+        self.psd['blade_2'] = self.psd['blade_2'].reindex(columns=sim_time)
+        self.psd['blade_2'].interpolate(axis='columns', inplace=True)
+        self.psd['blade_3'].columns = np.round(self.time_series.index, 10)
+        self.psd['blade_3'] = self.psd['blade_3'].reindex(columns=sim_time)
+        self.psd['blade_3'].interpolate(axis='columns', inplace=True)
+
         # Loop over time steps
         for t in self.time_series.index:
             # Set the hub point as origin for the cylindrical blade coordinates
@@ -67,12 +88,10 @@ class Source(hf.Cartesian):
             self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
                                                                 origin).to_cartesian()
 
-        # Create empty pd.DataFrame to store sound rays temporarily
-        rays = pd.DataFrame(index=self.time_series.index, columns=['blade_0', 'blade_1', 'blade_2', 'blade_3'])
         # Loop over time steps
-        for t in rays.index:
+        for t in self.time_series.index:
             # Loop over blades
-            for blade in rays.columns:
+            for blade in self.psd.keys():
                 # Set initial position of sound ray
                 pos_0 = self.to_cartesian()
                 # Determine initial ray direction and initial travel distance
@@ -88,8 +107,7 @@ class Source(hf.Cartesian):
                 amplitude_spectrum = self.psd[blade].loc[:, t]
 
                 # Create the SoundRay and put it in the pd.DataFrame
-                rays.loc[t, blade] = pm.SoundRay(pos_0, vel_0, s_0, beam_width, atmosphere,
-                                                 amplitude_spectrum, t_0=t, label=blade)
+                rays.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, atmosphere, amplitude_spectrum, t_0=t, label=blade))
 
         # Return the whole pd.DataFrame
         return rays
@@ -233,19 +251,19 @@ class SourceModel:
                                           self.params['radius_factor'] * self.conditions_dict['rotor_radius'],
                                           self.conditions_dict['hub_pos'])
 
-    def run(self):
+    def run(self, delta_t: float):
         """
         Run the source model
         """
-        ray_list = []
+        ray_queue = queue.Queue()
         source: Source
         p_thread = hf.ProgressThread(len(self.source_sphere), 'Generating sound rays')
         p_thread.start()
         for source in self.source_sphere:
-            rays = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, self.source_sphere.dist)
-            ray_list.append(rays)
+            ray_queue = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, self.source_sphere.dist,
+                                             ray_queue, delta_t)
             p_thread.update()
 
         p_thread.stop()
 
-        return ray_list
+        return ray_queue

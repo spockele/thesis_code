@@ -408,10 +408,10 @@ class Case(CaseLoader):
         Run everything except HAWC2
         """
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        ray_list: list = source_model.run()
+        ray_queue: queue.Queue = source_model.run(self.propagation_dict['delta_t'])
 
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
-                                                self.receiver_dict, ray_list)
+                                                self.receiver_dict, ray_queue)
 
         ray_queue: queue.Queue = propagation_model.run(which=0)
 
@@ -428,7 +428,22 @@ class Case(CaseLoader):
                 #     pos_array = ray.pos_array()
                 #     ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
 
-        print(self.receiver_dict[0].spectrogram)
+        self.receiver_dict[0].sum_spectra()
+
+        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
+        print(spectrogram.columns)
+        print(spectrogram.index)
+        dbhz = 10 * np.log10(np.abs(spectrogram) / hf.p_ref ** 2)
+        ctrf = plt.contourf(spectrogram.columns, spectrogram.index, dbhz, levels=512, vmin=0)
+        plt.colorbar(ctrf)
+git
+        plt.show()
+
+        dat = spectrogram.to_numpy()
+        f: np.array = spectrogram.index
+        f_stacked = np.hstack((f.reshape((f.size, 1)), dat))
+        t_mod = np.hstack(([-1], spectrogram.columns))
+        hf.write_to_file(np.vstack((t_mod, f_stacked)), os.path.abspath('./NTK/test_spectrogram.csv'))
 
         # ax.set_xlabel('x (m)')
         # ax.set_ylabel('y (m)')

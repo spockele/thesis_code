@@ -264,19 +264,19 @@ class SoundRay(Ray):
 
 
 class PropagationModel:
-    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, aur_receiver_dict: dict, ray_list: list):
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, aur_receiver_dict: dict, ray_queue: queue.Queue):
         """
         ================================================================================================================
         Class that manages the whole propagation model
         ================================================================================================================
         :param aur_conditions_dict: conditions_dict from the Case class
         :param aur_propagation_dict: propagation_dict from the Case class
-        :param ray_list: list of DataFrames containing all the SoundRays to propagate
+        :param ray_queue: queue with SoundRay instances to propagate
         """
         self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
         self.receivers = aur_receiver_dict
-        self.ray_list = ray_list
+        self.ray_queue = ray_queue
 
     def run_receiver(self, receiver_key: int, receiver_pos: rm.Receiver):
         """
@@ -285,35 +285,17 @@ class PropagationModel:
         :param receiver_pos: the receiver point in Cartesian coordinates (m, m, m)
         :return: a queue.Queue instance containing all propagated SoundRays
         """
-        # Initialise the queue.Queue()s
-        in_queue = queue.Queue()
+        # Initialise the output queue.Queue()s
         out_queue = queue.Queue()
-        # Start a ProgressThread to follow filling the in_queue
-        p_thread_0 = hf.ProgressThread(len(self.ray_list), 'Reading sound rays')
-        p_thread_0.start()
-
-        # Type definition
-        ray_dataframe: pd.DataFrame
-        # Go over the list with SoundRays
-        for ray_dataframe in self.ray_list:
-            # Update the ProgressThread
-            p_thread_0.update()
-
-            # Fill all Rays into the in_queue
-            for t in ray_dataframe.index:
-                for blade in ray_dataframe.columns:
-                    in_queue.put(ray_dataframe.loc[t, blade].copy())
-        # Stop the ProgressThread
-        p_thread_0.stop()
 
         # Set the time limit to limit compute time
-        t_limit = 2 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
+        t_limit = 3 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_key}')
+        p_thread = hf.ProgressThread(self.ray_queue.qsize(), f'Propagating to receiver {receiver_key}')
         p_thread.start()
         # Create the PropagationThreads
-        threads = [PropagationThread(in_queue, out_queue, self.params['delta_t'], receiver_pos, p_thread, t_limit)
+        threads = [PropagationThread(self.ray_queue, out_queue, self.params['delta_t'], receiver_pos, p_thread, t_limit)
                    for _ in range(self.params['n_threads'])]
         # Start the threads and hold until all are done
         [thread.start() for thread in threads]
