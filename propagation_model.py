@@ -87,8 +87,6 @@ class Ray:
         # Set fixed parameters
         self.bw = beam_width
         self.atmosphere = atmosphere
-        # Preset Gaussian reception spectrum
-        self.gaussian_factor = None
 
     def update_ray_velocity(self, delta_t: float) -> (hf.Cartesian, hf.Cartesian):
         """
@@ -181,27 +179,6 @@ class Ray:
         # If all else fails: this ray has not yet passed, probably
         return False
 
-    def gaussian_reception(self, frequency: np.array, receiver: rm.Receiver):
-        """
-        Calculate the Gaussian beam reception transfer function
-        :param frequency: array of frequencies to determine transfer function at (Hz)
-        :param receiver: the receiver point in Cartesian coordinates (m, m, m)
-        :return: transfer function values at the given frequencies
-        """
-        # Determine the perpendicular plane just before the receiver
-        plane = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
-        # Determine distance from that plane to the receiver
-        dist1 = plane.distance_to_point(receiver)
-        # Determine the distance between the ray-plane intersection and the receiver
-        dist2 = self.pos[-2].dist(receiver)
-        # Determine the distance between the ray and the receiver
-        n_sq = dist2**2 - dist1**2
-        # Determine the distance along the ray to the intersecting line
-        s = self.s[-2] + dist1
-
-        # Determine the filter and clip to between 0 and 1
-        return np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * frequency))), 0, 1)
-
     def propagate(self, delta_t: float, receiver: rm.Receiver, t_lim: float = 1.):
         """
         Propagate the Ray until received or kill condition is reached
@@ -218,9 +195,6 @@ class Ray:
 
             if self.t[-1] - self.t[0] > t_lim:
                 kill = True
-
-        if self.received:
-            self.gaussian_factor = self.gaussian_reception(hf.octave_band_fc(1), receiver)
 
     def pos_array(self) -> np.array:
         """
@@ -252,15 +226,41 @@ class SoundRay(Ray):
         super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
 
         self.label = label
-        self.spectrum = amplitude_spectrum
-        # self.spectrum['p'] = 0.
+        self.spectrum = pd.DataFrame(amplitude_spectrum)
+        self.spectrum['p'] = 0.
+        self.spectrum['gaussian'] = 0.
+        self.spectrum.columns = ['a', 'p', 'gaussian']
 
     def copy(self):
         """
         Create a copy of this Soundray
         """
-        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.spectrum,
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.spectrum['a'],
                         self.t[0], self.label)
+
+    def gaussian_factor(self, receiver: rm.Receiver):
+        """
+        Calculate the Gaussian beam reception transfer function
+        :param receiver: an instance of rm.Receiver
+        """
+        # Determine the perpendicular plane just before the receiver
+        plane = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
+        # Determine distance from that plane to the receiver
+        dist1 = plane.distance_to_point(receiver)
+        # Determine the distance between the ray-plane intersection and the receiver
+        dist2 = self.pos[-2].dist(receiver)
+        # Determine the distance between the ray and the receiver
+        n_sq = dist2**2 - dist1**2
+        # Determine the distance along the ray to the intersecting line
+        s = self.s[-2] + dist1
+
+        # Determine the filter and clip to between 0 and 1
+        self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
+
+    def receive(self, receiver: rm.Receiver):
+        self.gaussian_factor(receiver)
+        received_sound = rm.ReceivedSound(self.t[-1], receiver.rotation, self.dir[-1], self.spectrum)
+        receiver.receive(received_sound)
 
 
 class PropagationModel:
