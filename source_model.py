@@ -50,6 +50,8 @@ class Source(hf.Cartesian):
         :param aur_source_dict: source_dict from the Case class
         :param atmosphere: atmosphere defined in hf.Atmosphere()
         :param dist: estimate of inter-ray distance to determine beam width (m)
+        :param rays:
+        :param delta_t:
         :return: a queue with all the SoundRay instances
         """
         # Set the source origin radius
@@ -61,16 +63,19 @@ class Source(hf.Cartesian):
         self.time_series = self.time_series.reindex(index=sim_time)
         self.time_series.interpolate(axis='index', inplace=True)
 
-        self.psd['blade_0'].columns = np.round(self.time_series.index, 10)
+        self.psd['blade_0'].columns = np.round(self.psd['blade_0'].columns, 10)
         self.psd['blade_0'] = self.psd['blade_0'].reindex(columns=sim_time)
         self.psd['blade_0'].interpolate(axis='columns', inplace=True)
-        self.psd['blade_1'].columns = np.round(self.time_series.index, 10)
+
+        self.psd['blade_1'].columns = np.round(self.psd['blade_1'].columns, 10)
         self.psd['blade_1'] = self.psd['blade_1'].reindex(columns=sim_time)
         self.psd['blade_1'].interpolate(axis='columns', inplace=True)
-        self.psd['blade_2'].columns = np.round(self.time_series.index, 10)
+
+        self.psd['blade_2'].columns = np.round(self.psd['blade_2'].columns, 10)
         self.psd['blade_2'] = self.psd['blade_2'].reindex(columns=sim_time)
         self.psd['blade_2'].interpolate(axis='columns', inplace=True)
-        self.psd['blade_3'].columns = np.round(self.time_series.index, 10)
+
+        self.psd['blade_3'].columns = np.round(self.psd['blade_3'].columns, 10)
         self.psd['blade_3'] = self.psd['blade_3'].reindex(columns=sim_time)
         self.psd['blade_3'].interpolate(axis='columns', inplace=True)
 
