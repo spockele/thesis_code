@@ -59,9 +59,13 @@ class Receiver(hf.Cartesian):
     def sum_spectra(self):
         self.received = dict(sorted(self.received.items()))
         sums = {}
+        p_thread = hf.ProgressThread(len(self.received.keys()), 'Summing received sound')
+        p_thread.start()
         for t, sounds in self.received.items():
             spectra = [sound.sound_spectrum for sound in sounds]
             sums[t] = sum(spectra)
+            p_thread.update()
 
         self.spectrogram = pd.concat(sums.values(), axis=1)
         self.spectrogram.columns = self.received.keys()
+        p_thread.stop()

@@ -415,43 +415,13 @@ class Case(CaseLoader):
 
         ray_queue: queue.Queue = propagation_model.run(which=0)
 
-        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-        # colors = {'blade_0': 'tab:blue', 'blade_1': 'tab:orange', 'blade_2': 'tab:red', 'blade_3': 'tab:brown'}
-
         while not ray_queue.empty():
             ray: pm.SoundRay = ray_queue.get()
             if ray.received:
                 ray.receive(self.receiver_dict[0])
 
-                # lvl = np.trapz(ray.spectrum['gaussian'], ray.spectrum.index)
-                # if 10 * np.log10(lvl) >= -12.:
-                #     pos_array = ray.pos_array()
-                #     ax.plot(pos_array[:, 0], pos_array[:, 1], pos_array[:, 2], color=colors[ray.label])
-
         self.receiver_dict[0].sum_spectra()
 
         spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        print(spectrogram.columns)
-        print(spectrogram.index)
-        dbhz = 10 * np.log10(np.abs(spectrogram) / hf.p_ref ** 2)
-        ctrf = plt.contourf(spectrogram.columns, spectrogram.index, dbhz, levels=512, vmin=0)
-        plt.colorbar(ctrf)
-git
-        plt.show()
 
-        dat = spectrogram.to_numpy()
-        f: np.array = spectrogram.index
-        f_stacked = np.hstack((f.reshape((f.size, 1)), dat))
-        t_mod = np.hstack(([-1], spectrogram.columns))
-        hf.write_to_file(np.vstack((t_mod, f_stacked)), os.path.abspath('./NTK/test_spectrogram.csv'))
-
-        # ax.set_xlabel('x (m)')
-        # ax.set_ylabel('y (m)')
-        # ax.set_zlabel('z (m)')
-        #
-        # ax.set_xlim(-100, 100)
-        # ax.set_ylim(-100, 100)
-        # ax.set_zlim(-200, 0)
-        # ax.set_box_aspect([1, 1, 1])
-        #
-        # plt.show()
+        spectrogram.to_csv(os.path.join(self.project_path, 'spectrogram', f'spectrogram_{self.case_name}_rec_{0}.csv'))
