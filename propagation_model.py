@@ -1,9 +1,11 @@
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import threading
 import queue
 import time
+import compress_pickle as pickle
 
 import helper_functions as hf
 import reception_model as rm
@@ -20,7 +22,7 @@ import reception_model as rm
 
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: rm.Receiver,
-                 p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
+                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
         """
         ================================================================================================================
         Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function
@@ -29,6 +31,7 @@ class PropagationThread(threading.Thread):
         :param out_queue: queue.Queue instance where propagated SoundRays will be put
         :param delta_t: time step (s)
         :param receiver: the receiver point in Cartesian coordinates (m, m, m).
+        :param atmosphere:
         :param p_thread: ProgressThread instance to track progress of the propagation model
         :param t_lim: propagation time limit (s)
         """
@@ -38,6 +41,7 @@ class PropagationThread(threading.Thread):
 
         self.delta_t = delta_t
         self.receiver = receiver
+        self.atmosphere = atmosphere
 
         self.t_lim = t_lim
 
@@ -52,7 +56,7 @@ class PropagationThread(threading.Thread):
             # Take a SoundRay from the queue
             ray: Ray = self.in_queue.get()
             # Propagate this Ray with given parameters
-            ray.propagate(self.delta_t, self.receiver, self.t_lim)
+            ray.propagate(self.delta_t, self.receiver, self.atmosphere, self.t_lim)
             # When that is done, put the ray in the output queue
             self.out_queue.put(ray)
             # Update the progress thread so the counter goes up
@@ -65,7 +69,7 @@ class PropagationThread(threading.Thread):
 
 class Ray:
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 atmosphere: hf.Atmosphere, t_0: float = 0.) -> None:
+                 t_0: float = 0.) -> None:
         """
         ================================================================================================================
         Class for the propagation sound ray model.
@@ -74,7 +78,6 @@ class Ray:
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
-        :param atmosphere: atmosphere defined in hf.Atmosphere()
         :param t_0: the start time of the ray propagation (s)
         """
         # Set initial conditions
@@ -86,24 +89,27 @@ class Ray:
         self.received = False
         # Set fixed parameters
         self.bw = beam_width
-        self.atmosphere = atmosphere
 
-    def update_ray_velocity(self, delta_t: float) -> (hf.Cartesian, hf.Cartesian):
+    def __repr__(self):
+        return f'<Ray at {self.pos[-1]}, received={self.received}>'
+
+    def update_ray_velocity(self, delta_t: float, atmosphere: hf.Atmosphere) -> (hf.Cartesian, hf.Cartesian):
         """
         Update the ray velocity and direction forward by time step delta_t
         :param delta_t: time step (s)
+        :param atmosphere:
         :return: Updated Cartesian velocity (m/s, m/s, m/s) and direction (m/s, m/s, m/s) vectors of the sound ray
         """
         # Get height from last position
         height = -self.pos[-1][2]
         # Determine direction change
-        speed_of_sound_gradient = self.atmosphere.get_speed_of_sound_gradient(height)
+        speed_of_sound_gradient = atmosphere.get_speed_of_sound_gradient(height)
         direction_change: hf.Cartesian = self.vel[-1].len() * hf.Cartesian(0, 0, speed_of_sound_gradient)
         direction: hf.Cartesian = self.dir[-1] + direction_change * delta_t
 
         # Get wind speed and speed of sound at height
-        wind_speed = self.atmosphere.get_wind_speed(height)
-        speed_of_sound = self.atmosphere.get_speed_of_sound(height)
+        wind_speed = atmosphere.get_wind_speed(height)
+        speed_of_sound = atmosphere.get_speed_of_sound(height)
 
         # Determine new ray velocity v = u + c * direction
         if direction.len() > 0:
@@ -134,14 +140,15 @@ class Ray:
 
         return pos_new, delta_s
 
-    def ray_step(self, delta_t: float, ) -> (hf.Cartesian, hf.Cartesian, hf.Cartesian, float):
+    def ray_step(self, delta_t: float, atmosphere: hf.Atmosphere) -> (hf.Cartesian, hf.Cartesian, hf.Cartesian, float):
         """
         Logic for time stepping the sound rays forward one time step
         :param delta_t: time step (s)
+        :param atmosphere:
         :return: Updated Cartesian velocity (m/s, m/s, m/s) and direction (m/s, m/s, m/s) vectors of the sound ray,
                  updated sound ray position (m, m, m), and the ray path step (m)
         """
-        vel, direction = self.update_ray_velocity(delta_t)
+        vel, direction = self.update_ray_velocity(delta_t, atmosphere)
         pos, delta_s = self.update_ray_position(delta_t, vel, direction)
 
         # Propagate time
@@ -179,18 +186,19 @@ class Ray:
         # If all else fails: this ray has not yet passed, probably
         return False
 
-    def propagate(self, delta_t: float, receiver: rm.Receiver, t_lim: float = 1.):
+    def propagate(self, delta_t: float, receiver: rm.Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.):
         """
         Propagate the Ray until received or kill condition is reached
         :param delta_t: time step (s)
         :param receiver: the receiver point in Cartesian coordinates (m, m, m)
+        :param atmosphere:
         :param t_lim: propagation time limit (s)
         """
         self.received = False
         kill = self.pos[0][2] >= 0
 
         while not (self.received or kill):
-            vel, direction, pos, delta_s = self.ray_step(delta_t)
+            vel, direction, pos, delta_s = self.ray_step(delta_t, atmosphere)
             self.received = self.check_reception(receiver, delta_s)
 
             if self.t[-1] - self.t[0] > t_lim:
@@ -210,7 +218,7 @@ class Ray:
 
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 atmosphere: hf.Atmosphere, amplitude_spectrum: pd.DataFrame, t_0: float = 0., label: str = None):
+                 amplitude_spectrum: pd.DataFrame, t_0: float = 0., label: str = None):
         """
         ================================================================================================================
         Class for the propagation sound ray model. With the sound spectral effects.
@@ -219,11 +227,10 @@ class SoundRay(Ray):
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
-        :param atmosphere: atmosphere defined in hf.Atmosphere()
         :param t_0: the start time of the ray propagation (s)
         :param label: a string label for SoundRay
         """
-        super().__init__(pos_0, vel_0, s_0, beam_width, atmosphere, t_0)
+        super().__init__(pos_0, vel_0, s_0, beam_width, t_0)
 
         self.label = label
         self.spectrum = pd.DataFrame(amplitude_spectrum)
@@ -233,10 +240,9 @@ class SoundRay(Ray):
 
     def copy(self):
         """
-        Create a copy of this Soundray
+        Create a not-yet-propagated copy of this SoundRay
         """
-        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.atmosphere, self.spectrum['a'],
-                        self.t[0], self.label)
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.spectrum['a'], self.t[0], self.label)
 
     def gaussian_factor(self, receiver: rm.Receiver):
         """
@@ -264,7 +270,8 @@ class SoundRay(Ray):
 
 
 class PropagationModel:
-    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, aur_receiver_dict: dict, ray_queue: queue.Queue):
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, atmosphere: hf.Atmosphere,
+                 aur_receiver_dict: dict, ray_queue: queue.Queue):
         """
         ================================================================================================================
         Class that manages the whole propagation model
@@ -275,6 +282,7 @@ class PropagationModel:
         """
         self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
+        self.atmosphere = atmosphere
         self.receivers = aur_receiver_dict
         self.ray_queue = ray_queue
 
@@ -285,6 +293,17 @@ class PropagationModel:
         :param receiver_pos: the receiver point in Cartesian coordinates (m, m, m)
         :return: a queue.Queue instance containing all propagated SoundRays
         """
+        print(f' -- Running propagation model for receiver {receiver_key}')
+        # Create a copy of the ray queue to allow for multiple receivers
+        p_thread = hf.ProgressThread(self.ray_queue.qsize(), 'Copying sound rays')
+        p_thread.start()
+        ray_queue = queue.Queue()
+        for ray in self.ray_queue.queue:
+            ray_queue.put(ray.copy())
+            p_thread.update()
+
+        p_thread.stop()
+
         # Initialise the output queue.Queue()s
         out_queue = queue.Queue()
 
@@ -292,10 +311,11 @@ class PropagationModel:
         t_limit = 3 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(self.ray_queue.qsize(), f'Propagating to receiver {receiver_key}')
+        p_thread = hf.ProgressThread(ray_queue.qsize(), f'Propagating to receiver {receiver_key}')
         p_thread.start()
         # Create the PropagationThreads
-        threads = [PropagationThread(self.ray_queue, out_queue, self.params['delta_t'], receiver_pos, p_thread, t_limit)
+        threads = [PropagationThread(ray_queue, out_queue, self.conditions_dict['delta_t'],
+                                     receiver_pos, self.atmosphere, p_thread, t_limit)
                    for _ in range(self.params['n_threads'])]
         # Start the threads and hold until all are done
         [thread.start() for thread in threads]
@@ -323,3 +343,32 @@ class PropagationModel:
         # We don't do negative numbers here
         else:
             raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
+
+    @staticmethod
+    def pickle_ray_queue(ray_queue: queue.Queue, copy=True):
+        folder = os.path.abspath('ray_cache')
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+
+        p_thread = hf.ProgressThread(ray_queue.qsize(), 'Pickle-ing sound rays')
+        p_thread.start()
+
+        copy_queue = queue.Queue()
+        while not ray_queue.empty():
+            ray_file = open(os.path.join(folder, f'SoundRay_{p_thread.step}.pickle.gz'), 'wb')
+            ray: SoundRay = ray_queue.get()
+            pickle.dump(ray, ray_file)
+            ray_file.close()
+
+            if copy:
+                copy_queue.put(ray.copy())
+
+            p_thread.update()
+
+        p_thread.stop()
+
+        return copy_queue
+
+    @staticmethod
+    def interactive_ray_plot(ray_queue: queue.Queue):
+        raise NotImplementedError('Yeah, nah mate :/')

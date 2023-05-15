@@ -8,3 +8,4 @@ librosa
 pysofaconventions
 pytest
 wetb
+compress-pickle

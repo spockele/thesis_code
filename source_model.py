@@ -89,7 +89,7 @@ class Source(hf.Cartesian):
                 amplitude_spectrum = self.psd[blade].loc[:, t]
 
                 # Create the SoundRay and put it in the pd.DataFrame
-                rays.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, atmosphere, amplitude_spectrum, t_0=t, label=blade))
+                rays.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, amplitude_spectrum, t_0=t, label=blade))
 
                 p_thread.update()
 

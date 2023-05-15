@@ -137,6 +137,7 @@ samples/
 # Excluding all wav files, because they big bois
 *.wav
 
-# Exclude the NTK model
+# Exclude the NTK model and results
 H2model/
 spectrograms/
+ray_cache/

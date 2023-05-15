@@ -410,20 +410,20 @@ class Case(CaseLoader):
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
         ray_queue: queue.Queue = source_model.run()
 
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere,
+                                                self.receiver_dict, ray_queue)
+
+        ray_queue: queue.Queue = propagation_model.run(which=0)
+
         ray_queue = pm.PropagationModel.pickle_ray_queue(ray_queue)
 
-        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
-        #                                         self.receiver_dict, ray_queue)
-        #
-        # ray_queue: queue.Queue = propagation_model.run(which=0)
-        #
-        # while not ray_queue.empty():
-        #     ray: pm.SoundRay = ray_queue.get()
-        #     if ray.received:
-        #         ray.receive(self.receiver_dict[0])
-        #
-        # self.receiver_dict[0].sum_spectra()
-        #
-        # spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        #
-        # spectrogram.to_csv(os.path.join(self.project_path, 'spectrogram', f'spectrogram_{self.case_name}_rec_{0}.csv'))
+        while not ray_queue.empty():
+            ray: pm.SoundRay = ray_queue.get()
+            if ray.received:
+                ray.receive(self.receiver_dict[0])
+
+        self.receiver_dict[0].sum_spectra()
+
+        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
+
+        spectrogram.to_csv(os.path.join(self.project_path, 'spectrogram', f'spectrogram_{self.case_name}_rec_{0}.csv'))

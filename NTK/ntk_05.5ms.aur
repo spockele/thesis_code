@@ -81,7 +81,9 @@ end propagation ;
 begin reception ;
     begin receiver ;
         index 0 ; indexing number >=0
-        pos 0,-60,-1.7 ; location x,y,z (m)
+        ; pos 0,-60,-1.7 ; location x,y,z (m)
+        ; pos 0,-1000,-1.7 ;
+        pos 41.05200831270,-18.43223747940,-0.050 ; = X(=+E) Y(=-N)  for Mic.no.4
         rotation 0 ; Head rotation of the receiver (deg)
     end receiver ;
     ; --- WIP ---
