@@ -139,3 +139,4 @@ samples/
 
 # Exclude the NTK model
 H2model/
+spectrograms/

@@ -148,7 +148,7 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ('wsp', 'groundtemp', 'groundpres', 'rotor_radius', 'z0_wsp', 'z_wsp'):
+                if key in ('wsp', 'groundtemp', 'groundpres', 'rotor_radius', 'z0_wsp', 'z_wsp', 'delta_t'):
                     self.conditions_dict[key] = float(value)
 
                 elif key in ():
@@ -220,7 +220,7 @@ class CaseLoader:
         """
         blocks = self._get_blocks(lines[1:-1])
         for key, value in blocks.items():
-            if key in ('delta_t', ):
+            if key in ():
                 self.propagation_dict[key] = float(value)
 
             elif key in ('n_threads', ):
@@ -408,20 +408,22 @@ class Case(CaseLoader):
         Run everything except HAWC2
         """
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        ray_queue: queue.Queue = source_model.run(self.propagation_dict['delta_t'])
+        ray_queue: queue.Queue = source_model.run()
 
-        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
-                                                self.receiver_dict, ray_queue)
+        ray_queue = pm.PropagationModel.pickle_ray_queue(ray_queue)
 
-        ray_queue: queue.Queue = propagation_model.run(which=0)
-
-        while not ray_queue.empty():
-            ray: pm.SoundRay = ray_queue.get()
-            if ray.received:
-                ray.receive(self.receiver_dict[0])
-
-        self.receiver_dict[0].sum_spectra()
-
-        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-
-        spectrogram.to_csv(os.path.join(self.project_path, 'spectrogram', f'spectrogram_{self.case_name}_rec_{0}.csv'))
+        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict,
+        #                                         self.receiver_dict, ray_queue)
+        #
+        # ray_queue: queue.Queue = propagation_model.run(which=0)
+        #
+        # while not ray_queue.empty():
+        #     ray: pm.SoundRay = ray_queue.get()
+        #     if ray.received:
+        #         ray.receive(self.receiver_dict[0])
+        #
+        # self.receiver_dict[0].sum_spectra()
+        #
+        # spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
+        #
+        # spectrogram.to_csv(os.path.join(self.project_path, 'spectrogram', f'spectrogram_{self.case_name}_rec_{0}.csv'))

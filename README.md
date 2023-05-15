@@ -55,6 +55,7 @@ begin conditions ;
     groundtemp -float- ;    Ground level air temperature (celcius)
     groundpres -float- ;    Ground level air pressure (Pa)
     ;
+    delta_t -float- ; Defines the auralisation time step (s)
 end conditions ;
 ;
 begin HAWC2;
@@ -106,7 +107,6 @@ end source ;
 ;
 begin propagation ;
     n_threads -int- ; Defines the number of compute threads used for propagating sound rays
-    delta_t -float- ; Defines the propagation time step (s)
 end propagation ;
 ;
 begin reception ;
