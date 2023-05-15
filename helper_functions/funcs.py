@@ -11,6 +11,8 @@ import sys
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ["c", "p_ref", "g", "r_air", "t_0", "gamma_air",
+           "limit_angle", "a_weighting", "ProgressThread", "octave_band_fc", ]
 
 
 c = 343  # Speed of Sound [m/s]

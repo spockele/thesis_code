@@ -9,6 +9,7 @@ from . import limit_angle
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ["Coordinates", "Cartesian", "NonCartesian", "Spherical", "Cylindrical", "HeadRelatedSpherical", ]
 
 
 class Coordinates:

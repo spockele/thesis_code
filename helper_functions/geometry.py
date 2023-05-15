@@ -10,6 +10,7 @@ import warnings
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ["uniform_spherical_grid", "PerpendicularPlane3D", ]
 
 
 def uniform_spherical_grid(n_points: int):

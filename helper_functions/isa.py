@@ -11,6 +11,7 @@ from . import t_0, r_air, g, gamma_air, write_to_file, read_from_file
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ["Atmosphere", ]
 
 
 class Atmosphere:
