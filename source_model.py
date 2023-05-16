@@ -255,6 +255,7 @@ class SourceModel:
         self.h2_result_path = h2_result_path
         self.atmosphere = atmosphere
 
+        # TODO: SourceModel.__init__ > should this part be in run maybe? It is an initialisation though...
         print(f' -- Initialising Source Model')
         self.h2_sphere = H2Sphere(self.h2_result_path, self.params['scope'], self.conditions_dict['delta_t'])
         self.source_sphere = SourceSphere(self.params['n_rays'], self.h2_sphere,

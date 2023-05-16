@@ -11,10 +11,10 @@ import scipy.fft as spfft
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-__all__ = ["MitHrtf", ]
+__all__ = ["MITHrtf", ]
 
 
-class MitHrtf:
+class MITHrtf:
     def __init__(self, large=False):
         """
         Class that reads and stores the MIT HRTF function from the sofa file
@@ -47,6 +47,10 @@ class MitHrtf:
             self.hrtf_r[pi] = spfft.fft(hrir_r)[:n // 2]
 
     def get_hrtf(self):
+        """
+        TODO: MITHrtf.get_hrtf > write the function to get the HRTF
+        :return:
+        """
         raise NotImplementedError("HAHA, f*** you")
 
     def plot_horizontal(self):
