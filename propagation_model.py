@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import threading
 import queue
 import time
+import warnings
 import compress_pickle as pickle
 
 import helper_functions as hf
@@ -166,9 +167,9 @@ class Ray:
     def check_reception(self, receiver: rm.Receiver, delta_s: float):
         """
         Check if the ray went past a receiver point.
-        :param receiver: the receiver point in Cartesian coordinates (m, m, m).
-        :param delta_s: the last ray path step (m).
-        :return: boolean indicating whether the receiver has been passed.
+        :param receiver: The receiver point in Cartesian coordinates (m, m, m).
+        :param delta_s: The last ray path step (m).
+        :return: Boolean indicating whether the receiver has been passed.
         """
         # Cannot check if less than two points
         if self.pos.size < 2:
@@ -206,7 +207,7 @@ class Ray:
 
     def pos_array(self) -> np.array:
         """
-        Convert awful position history to an easily readable array of shape (self.pos.size, 3)
+        Convert position history to an easily readable array of shape (self.pos.size, 3)
         :return: numpy array with full position history unpacked
         """
         arr = np.empty((self.pos.size, 3))
@@ -264,6 +265,12 @@ class SoundRay(Ray):
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
 
     def receive(self, receiver: rm.Receiver):
+        """
+        TODO: SoundRay.receive > write docstring and comments
+        TODO: Maybe do reception of ray queue in rm.Receiver??
+        :param receiver:
+        :return:
+        """
         self.gaussian_factor(receiver)
         received_sound = rm.ReceivedSound(self.t[-1], receiver.rotation, self.dir[-1], self.spectrum)
         receiver.receive(received_sound)
@@ -288,10 +295,10 @@ class PropagationModel:
 
     def run_receiver(self, receiver_key: int, receiver_pos: rm.Receiver):
         """
-        Run the propagation model for one receiver
-        :param receiver_key: key of the receiver in self.receivers
-        :param receiver_pos: the receiver point in Cartesian coordinates (m, m, m)
-        :return: a queue.Queue instance containing all propagated SoundRays
+        Run the propagation model for one receiver.
+        :param receiver_key: Key of the receiver in self.receivers.
+        :param receiver_pos: The receiver point in Cartesian coordinates (m, m, m).
+        :return: A queue.Queue instance containing all propagated SoundRays.
         """
         print(f' -- Running propagation model for receiver {receiver_key}')
         # Create a copy of the ray queue to allow for multiple receivers
@@ -325,9 +332,10 @@ class PropagationModel:
 
         return out_queue
 
-    def run(self, which: int = -1):
+    def run(self, which: int = -1) -> queue.Queue:
         """
         Run the propagation model
+        TODO: PropagationModel.run > change this function, because I want to always run all receivers in .aur file
         :param which: key of the receiver to which to propagate the sound
         """
         # Run for all receivers
@@ -345,29 +353,57 @@ class PropagationModel:
             raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
 
     @staticmethod
-    def pickle_ray_queue(ray_queue: queue.Queue, copy=True):
-        folder = os.path.abspath('ray_cache')
-        if not os.path.isdir(folder):
-            os.mkdir(folder)
+    def pickle_ray_queue(ray_queue: queue.Queue) -> None:
+        """
+        TODO: PropagationModel.pickle_ray_queue > write docstring and comments
+        TODO: PropagationModel.pickle_ray_queue > look into picle of whole queue instead of 1 per ray
+        :param ray_queue:
+        :return:
+        """
+        ray_cache_path = os.path.abspath('ray_cache')
+        if not os.path.isdir(ray_cache_path):
+            os.mkdir(ray_cache_path)
+
+        warnings.warn("Pickle files may take up a lot of storage! Requires up to ~1MB per ray!")
 
         p_thread = hf.ProgressThread(ray_queue.qsize(), 'Pickle-ing sound rays')
         p_thread.start()
 
-        copy_queue = queue.Queue()
-        while not ray_queue.empty():
-            ray_file = open(os.path.join(folder, f'SoundRay_{p_thread.step}.pickle.gz'), 'wb')
-            ray: SoundRay = ray_queue.get()
+        ray: SoundRay
+        for ray in ray_queue.queue:
+            ray_file = open(os.path.join(ray_cache_path, f'SoundRay_{p_thread.step}.pickle.gz'), 'wb')
             pickle.dump(ray, ray_file)
             ray_file.close()
-
-            if copy:
-                copy_queue.put(ray.copy())
 
             p_thread.update()
 
         p_thread.stop()
 
-        return copy_queue
+    @staticmethod
+    def unpickle_ray_queue() -> queue.Queue:
+        """
+        TODO: PropagationModel.unpickle_ray_queue > write docstring and comments
+        :return:
+        """
+        ray_cache_path = os.path.abspath('ray_cache')
+        if not os.path.isdir(ray_cache_path):
+            raise FileNotFoundError(f'No ./ray_cache directory found. Cannot un-pickle ray queue')
+
+        ray_queue = queue.Queue()
+        ray_paths = [ray_path for ray_path in os.listdir(ray_cache_path) if '.pickle' in ray_path]
+
+        p_thread = hf.ProgressThread(len(ray_paths), 'Un-pickle-ing sound rays')
+        p_thread.start()
+
+        for ray_path in ray_paths:
+            ray_file = open(os.path.join(ray_cache_path, ray_path), 'rb')
+            ray_queue.put(pickle.load(ray_file))
+            ray_file.close()
+            p_thread.update()
+
+        p_thread.stop()
+
+        return ray_queue
 
     @staticmethod
     def interactive_ray_plot(ray_queue: queue.Queue):
