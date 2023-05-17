@@ -420,14 +420,49 @@ class Case(CaseLoader):
         print(f' -- Running Reception Model for receiver {0}')
         p_thread = hf.ProgressThread(ray_queue.qsize(), 'Receiving sound rays')
         p_thread.start()
+
+        ray_db = {}
         while not ray_queue.empty():
             ray: pm.SoundRay = ray_queue.get()
-            if ray.received:
+            if ray.received and ray.label != 'blade_0':
                 ray.receive(self.receiver_dict[0])
+
+                spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
+                energy = 10 * np.log10(np.trapz(spectrum, spectrum.index) / hf.p_ref ** 2)
+                t = round(ray.t[-1], 10)
+                if t in ray_db.keys():
+                    ray_db[t].append(energy)
+                else:
+                    ray_db[t] = [energy, ]
 
             p_thread.update()
 
         p_thread.stop()
+        p_thread.join()
+
+        t_rdb = [round(t, 10) for t in sorted(ray_db.keys())]
+        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        for t in t_rdb:
+            for energy in ray_db[t]:
+                bin_e = 2 * int(energy // 2) + 1
+                if bin_e in histogram.index:
+                    histogram.loc[bin_e, t] += 1
+
+        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        cbr = plt.colorbar(ctr)
+
+        plt.xlabel('t(s)')
+        plt.ylabel('OSPL of Sound Rays (dB) (binned per 2 dB)')
+        cbr.set_label('Number of Sound Rays (-)')
+        plt.show()
+
+        received: dict = self.receiver_dict[0].received
+
+        t = sorted(received.keys())
+        n = np.array([len(received[t]) for t in sorted(received.keys())])
+
+        plt.plot(t, n)
+        plt.show()
 
         self.receiver_dict[0].sum_spectra()
 
