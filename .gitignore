@@ -131,11 +131,13 @@ dmypy.json
 # Pycharm
 .idea/
 
-# The samples folder (because the music is that bad)
+## PROJECT SPECIFIC
+# The samples folder
 samples/
 
-# Excluding all wav files, because they big bois
+# Excluding all sound files
 *.wav
+*.mp3
 
 # Exclude the NTK model and results
 H2model/
