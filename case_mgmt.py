@@ -351,9 +351,12 @@ class Case(CaseLoader):
         # Make sure the HAWC2 path is valid
         if not os.path.isfile(self.hawc2_path):
             raise FileNotFoundError('Invalid file path given for HAWC2.')
+
+        print(' -- HAWC2')
         # Make sure an observer sphere is generated
         if self.h2result_sphere is None:
             self.generate_hawc2_sphere()
+            print('Generating observer sphere: Done!')
 
         # Set the aero_noise simulation mode to 2, meaning to run and store the needed parameters
         self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
@@ -413,7 +416,7 @@ class Case(CaseLoader):
         # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere,
         #                                         self.receiver_dict, ray_queue)
         # ray_queue: queue.Queue = propagation_model.run(which=0)
-
+        #
         # propagation_model.pickle_ray_queue(ray_queue)
         ray_queue = pm.PropagationModel.unpickle_ray_queue()
 
@@ -424,7 +427,7 @@ class Case(CaseLoader):
         rays = {}
         ray: pm.SoundRay
         for ray in ray_queue.queue:
-            if ray.received and ray.label != 'blade_0':
+            if ray.received:
                 ray.receive(self.receiver_dict[0])
 
                 t = round(ray.t[-1], 10)
@@ -438,38 +441,42 @@ class Case(CaseLoader):
         p_thread.stop()
         p_thread.join()
 
-        pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0])
 
-        # t_rdb = [round(t, 10) for t in sorted(rays.keys())]
-        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        # for t in t_rdb:
-        #     for ray in rays[t]:
-        #         spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
-        #         energy = 10 * np.log10(np.trapz(spectrum, spectrum.index) / hf.p_ref ** 2)
-        #
-        #         bin_e = 2 * int(energy // 2) + 1
-        #         if bin_e in histogram.index:
-        #             histogram.loc[bin_e, t] += 1
-        #
-        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        # cbr = plt.colorbar(ctr)
-        #
-        # plt.xlabel('t (s)')
-        # plt.ylabel('OSPL of Sound Rays (dB) (binned per 2 dB)')
-        # cbr.set_label('Number of Sound Rays (-)')
+        t_rdb = [round(t, 10) for t in sorted(rays.keys())]
+        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        for t in t_rdb:
+            for ray in rays[t]:
+                spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
+                energy = np.trapz(spectrum, spectrum.index)
+                if energy > 0:
+                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
+
+                    bin_e = 2 * int(energy // 2) + 1
+                    if bin_e in histogram.index:
+                        histogram.loc[bin_e, t] += 1
+        plt.figure(10)
+        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        cbr = plt.colorbar(ctr)
+
+        plt.xlabel('t (s)')
+        plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+        cbr.set_label('Number of Received Sound Rays (-)')
         # plt.show()
-        #
-        # received: dict = self.receiver_dict[0].received
-        #
-        # t = sorted(received.keys())
-        # n = np.array([len(received[t]) for t in sorted(received.keys())])
-        #
-        # plt.plot(t, n)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('$N_{rays}$ (-)')
+
+        received: dict = self.receiver_dict[0].received
+
+        t = sorted(received.keys())
+        n = np.array([len(received[t]) for t in sorted(received.keys())])
+
+        plt.figure(11)
+        plt.plot(t, n)
+        plt.xlabel('t (s)')
+        plt.ylabel('$N_{rays}$ (-)')
         # plt.show()
-        #
-        # self.receiver_dict[0].sum_spectra()
-        #
-        # spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        # spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec_{0}.csv'))
+
+        self.receiver_dict[0].sum_spectra()
+
+        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
+        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec_{0}.csv'))
+
+        pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0])

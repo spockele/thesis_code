@@ -1,6 +1,5 @@
 import os
 import queue
-import pandas as pd
 import numpy as np
 
 import helper_functions as hf
@@ -16,176 +15,109 @@ import propagation_model as pm
 """
 
 
-class Source(hf.Cartesian):
-    def __init__(self, pos: np.array, time_series, turbine_psd, blade_1_psd, blade_2_psd, blade_3_psd):
-        """
-        ================================================================================================================
-        class containing all information at a single source point
-        ================================================================================================================
-        :param pos: Position vector of the source point x,y,z (m)
-        :param time_series: Time series information as loaded by helper_functions.read_hawc2_aero_noise()
-        :param turbine_psd: Power spectral density spectrogram of the whole turbine (Pa^2 / Hz)
-        :param blade_1_psd: Power spectral density spectrogram of the first blade (Pa^2 / Hz)
-        :param blade_2_psd: Power spectral density spectrogram of the second blade (Pa^2 / Hz)
-        :param blade_3_psd: Power spectral density spectrogram of the third blade (Pa^2 / Hz)
-        """
-        super().__init__(*pos)
-        self.time_series = time_series
-        self.psd = {'blade_0': turbine_psd, 'blade_1': blade_1_psd, 'blade_2': blade_2_psd, 'blade_3': blade_3_psd}
-
-    def __repr__(self):
-        return f'<Sound source: {str(self)}>'
-
-    def to_cartesian(self):
-        """
-        Output the coordinates of this point as a Cartesian object
-        """
-        return hf.Cartesian(*self.vec)
-
-    def generate_rays(self, aur_conditions_dict: dict, aur_source_dict: dict, atmosphere: hf.Atmosphere,
-                      dist: float, rays: queue.Queue, p_thread):
-        """
-        Generate sound rays over the whole time series for this source point
-        :param aur_conditions_dict: conditions_dict from the Case class
-        :param aur_source_dict: source_dict from the Case class
-        :param atmosphere: atmosphere defined in hf.Atmosphere()
-        :param dist: estimate of inter-ray distance to determine beam width (m)
-        :param rays:
-        :return: a queue with all the SoundRay instances
-        """
-        # Set the source origin radius
-        radius = aur_source_dict['blade_percent'] * aur_conditions_dict['rotor_radius'] / 100
-
-        # Loop over time steps
-        for t in self.time_series.index:
-            # Set the hub point as origin for the cylindrical blade coordinates
-            origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
-            # Assign the hub coordinate
-            self.time_series.loc[t, 'blade_0'] = origin
-            # Assign the coordinates of blades 1 through 3, from their rotational angle value from the HAWC2 output file
-            self.time_series.loc[t, 'blade_1'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_1'], 0,
-                                                                origin).to_cartesian()
-            self.time_series.loc[t, 'blade_2'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_2'], 0,
-                                                                origin).to_cartesian()
-            self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
-                                                                origin).to_cartesian()
-
-        # Loop over time steps
-        for t in self.time_series.index:
-            # Loop over blades
-            for blade in self.psd.keys():
-                # Set initial position of sound ray
-                pos_0 = self.to_cartesian()
-                # Determine initial ray direction and initial travel distance
-                dir_0 = self.to_cartesian() - self.time_series.loc[t, blade]
-                s_0 = dir_0.len()
-                # Determine beam width
-                beam_width = 2 * np.arcsin(dist / s_0 / 2)
-                # Determine local speed of sound
-                speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
-                # Set the initial velocity vector
-                vel_0 = speed_of_sound * dir_0 / dir_0.len()
-                # Get the relevant amplitude spectrum
-                amplitude_spectrum = self.psd[blade].loc[:, t]
-
-                # Create the SoundRay and put it in the pd.DataFrame
-                rays.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, amplitude_spectrum, t_0=t, label=blade))
-
-                p_thread.update()
-
-        # Return the whole pd.DataFrame
-        return rays
-
-
 class H2Observer(hf.Cartesian):
-    def __init__(self, fname: str, scope: str, delta_t: float):
+    def __init__(self, file_path: str, scope: str, delta_t: float):
         """
         ================================================================================================================
         Class to wrap the HAWC2 result at a single observer point. Subclass of Cartesian for ease of use
         ================================================================================================================
-        :param fname: path to the result file for this observer point
-        :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
-        :param delta_t:
+        :param file_path: path to the result file for this observer point.
+        :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP').
+        :param delta_t: simulation time step (s) to interpolate the HAWC2 results to.
         """
         # Read the given HAWC2 noise output file
-        pos, time_series, psd = hf.read_hawc2_aero_noise(fname, scope=scope)
+        pos, time_series, psd = hf.read_hawc2_aero_noise(file_path, scope=scope)
         # Set the point position
         super().__init__(*pos)
         # Store the time series and the spectrograms
         self.time_series = time_series
-        self.turbine_psd = psd[0]
-        self.blade_1_psd = psd[1]
-        self.blade_2_psd = psd[2]
-        self.blade_3_psd = psd[3]
+        self.psd = psd
 
-        # Set the initial time of the time series and spectrogram to 0
-        # as the time shift is not relevant for this project
+        # Set the initial time of the time series and spectrograms to 0
+        # as the absolute time is not relevant for this project
         self.time_series.index = self.time_series.index - self.time_series.index[0]
-        self.turbine_psd.columns = self.time_series.index
-        self.blade_1_psd.columns = self.time_series.index
-        self.blade_2_psd.columns = self.time_series.index
-        self.blade_3_psd.columns = self.time_series.index
+        self.psd[0].columns = self.time_series.index
+        self.psd[1].columns = self.time_series.index
+        self.psd[2].columns = self.time_series.index
+        self.psd[3].columns = self.time_series.index
 
         # Interpolation to simulation time step
         sim_time = np.round(np.arange(self.time_series.index[0], self.time_series.index[-1] + delta_t, delta_t), 10)
-
+        #  of the time series
         self.time_series.index = np.round(self.time_series.index, 10)
         self.time_series = self.time_series.reindex(index=sim_time)
         self.time_series.interpolate(axis='index', inplace=True)
-
-        self.turbine_psd.columns = np.round(self.turbine_psd.columns, 10)
-        self.turbine_psd = self.turbine_psd.reindex(columns=sim_time)
-        self.turbine_psd.interpolate(axis='columns', inplace=True)
-
-        self.blade_1_psd.columns = np.round(self.blade_1_psd.columns, 10)
-        self.blade_1_psd = self.blade_1_psd.reindex(columns=sim_time)
-        self.blade_1_psd.interpolate(axis='columns', inplace=True)
-
-        self.blade_2_psd.columns = np.round(self.blade_2_psd.columns, 10)
-        self.blade_2_psd = self.blade_2_psd.reindex(columns=sim_time)
-        self.blade_2_psd.interpolate(axis='columns', inplace=True)
-
-        self.blade_3_psd.columns = np.round(self.blade_3_psd.columns, 10)
-        self.blade_3_psd = self.blade_3_psd.reindex(columns=sim_time)
-        self.blade_3_psd.interpolate(axis='columns', inplace=True)
+        #  of the turbine psd
+        self.psd[0].columns = np.round(self.psd[0].columns, 10)
+        self.psd[0] = self.psd[0].reindex(columns=sim_time)
+        self.psd[0].interpolate(axis='columns', inplace=True)
+        #  of the blade_1 psd
+        self.psd[1].columns = np.round(self.psd[1].columns, 10)
+        self.psd[1] = self.psd[1].reindex(columns=sim_time)
+        self.psd[1].interpolate(axis='columns', inplace=True)
+        #  of the blade_2 psd
+        self.psd[2].columns = np.round(self.psd[2].columns, 10)
+        self.psd[2] = self.psd[2].reindex(columns=sim_time)
+        self.psd[2].interpolate(axis='columns', inplace=True)
+        #  of the blade_3 psd
+        self.psd[3].columns = np.round(self.psd[3].columns, 10)
+        self.psd[3] = self.psd[3].reindex(columns=sim_time)
+        self.psd[3].interpolate(axis='columns', inplace=True)
 
     def __repr__(self):
         return f'<HAWC2 Observer: {str(self)}>'
 
 
-class H2Sphere(list):
-    def __init__(self, h2_result_path: str, scope: str, delta_t: float):
+class H2Sphere(list[H2Observer]):
+    def __init__(self, h2_result_path: str, aur_source_dict: dict, aur_conditions_dict: dict):
         """
         ================================================================================================================
         Class that saves the sphere that comes from the HAWC2 simulation.
         ================================================================================================================
-        Subclass of list, where the items are H2Observer instances
-        :param h2_result_path: path to the folder with all the HAWC2 noise .out files
-        :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
-        :param delta_t:
+        Subclass of list, where the items are H2Observer instances.
+        :param h2_result_path: Path to the directory with all the HAWC2 noise .out files.
+        :param aur_source_dict: source_dict from the Case class.
+        :param aur_conditions_dict: conditions_dict from the Case class.
         """
+        # Check the .out files directory does exist
+        if not os.path.isdir(h2_result_path):
+            raise NotADirectoryError('Given directory for HAWC2 results does not exist.')
+        # Initialise list class
         super().__init__()
+        # Set the results path and scope
         self.h2_result_path = h2_result_path
-        self.scope = scope
+        self.scope = aur_source_dict['scope']
+        # Set the radius and origin point of the sphere
+        self.radius = aur_conditions_dict['rotor_radius']
+        self.origin = aur_conditions_dict['hub_pos']
 
         # Obtain all the filenames of the HAWC2 noise output
-        out_files = [os.path.join(self.h2_result_path, fname)
-                     for fname in os.listdir(self.h2_result_path) if fname.endswith('.out')]
+        out_files = [os.path.join(self.h2_result_path, file_name)
+                     for file_name in os.listdir(self.h2_result_path) if file_name.endswith('.out')]
+
+        # Check HAWC2 result files actually exist
+        if len(out_files) <= 0:
+            raise FileNotFoundError('No HAWC2 noise results found in results folder.')
 
         # Load the sphere from the HAWC2 output files
         p_thread = hf.ProgressThread(len(out_files), 'Loading HAWC2 results')
         p_thread.start()
-        for fname in out_files:
-            self.append(H2Observer(fname, self.scope, delta_t))
+        for file_path in out_files:
+            self.append(H2Observer(file_path, self.scope, aur_conditions_dict['delta_t']))
             p_thread.update()
         p_thread.stop()
 
-    def interpolate_sound(self, pos: hf.Cartesian, ):
+        self.time_series = self[0].time_series
+
+    def interpolate_sound(self, pos: hf.Cartesian, blade_idx: int, t: float):
         """
-        Triangular interpolation of closest 3 points to given position
-        :param pos: point to interpolate to
-        :return: a Source instance with all information at the given point
+        Triangular interpolation of the sound spectrum.
+        :param pos: Point to interpolate to.
+        :param blade_idx: Index of the blade (0: turbine, 1-3: blade 1-3) of which to interpolate the psd.
+        :param t: Time step (s) at which to interpolate.
+        :return: The interpolated spectrum of the selected blade and timestep.
         """
+        observer: H2Observer
         # Determine the distances to the H2Observer points
         dist = np.array([pos.dist(observer) for observer in self])
         # Sorting index for dist (and thus the H2Observers)
@@ -196,87 +128,151 @@ class H2Sphere(list):
 
         # Determine the interpolation denominator
         den = sum(1 / closest_dist)
+
         # Weighted triangular interpolation of the sound spectra
-        time_series = sum([observer.time_series / closest_dist[io] for io, observer in enumerate(closest)]) / den
-        turbine_psd = sum([observer.turbine_psd / closest_dist[io] for io, observer in enumerate(closest)]) / den
-        blade_1_psd = sum([observer.blade_1_psd / closest_dist[io] for io, observer in enumerate(closest)]) / den
-        blade_2_psd = sum([observer.blade_2_psd / closest_dist[io] for io, observer in enumerate(closest)]) / den
-        blade_3_psd = sum([observer.blade_3_psd / closest_dist[io] for io, observer in enumerate(closest)]) / den
+        psd = sum([observer.psd[blade_idx][t] / closest_dist[io] for io, observer in enumerate(closest)]) / den
 
-        # Return a Source instance with this interpolated data
-        return Source(pos, time_series, turbine_psd, blade_1_psd, blade_2_psd, blade_3_psd)
+        return psd
 
 
-class SourceSphere(list):
-    def __init__(self, n_rays: int, h2_sphere: H2Sphere, radius: float, offset: hf.Cartesian):
+class Source(hf.Cartesian):
+    def __init__(self, x: float, y: float, z: float, sphere: list[hf.Cartesian],
+                 sphere_dist: float, t: float, blade: str):
         """
         ================================================================================================================
-        Class to store the sphere from which SoundRays will be emitted
+
         ================================================================================================================
-        Subclass of list, where the items are Source instances
-        :param n_rays: Number of sound rays to emit
-        :param h2_sphere: The H2Sphere object to derive the sources from
-        :param radius: radius of the source sphere (m)
-        :param offset: spatial offset where to place the source sphere x,y,z (m)
+        TODO: Source.__init__ > write docstring and comments
+        :param x: Coordinate on the x-axis (m).
+        :param y: Coordinate on the y-axis (m).
+        :param z: Coordinate on the z-axis (m).
+        :param sphere:
+        :param sphere_dist:
+        :param t:
+        :param blade:
         """
-        super().__init__()
-        self.h2_sphere = h2_sphere
+        super().__init__(x, y, z)
 
-        # Generate the unit sphere (to be scaled by 'radius' and moved by 'offset')
-        points, fail, self.dist = hf.uniform_spherical_grid(n_rays)
-        if fail:
-            raise ValueError(f'Parameter n_rays = {n_rays} resulted in incomplete sphere. Try a different value.')
-        self.dist *= radius
+        self.sphere = [point + self for point in sphere]
+        self.sphere_dist = sphere_dist
+        self.blade = blade
+        self.t = t
 
-        # Interpolate the H2Sphere to this sphere
-        p_thread = hf.ProgressThread(len(points), 'Interpolating results')
-        p_thread.start()
-        for point in points:
-            self.append(h2_sphere.interpolate_sound(radius * point + offset))
+    def __repr__(self):
+        return f'<Source: {str(self)}, t = {self.t} s>'
+
+    def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue,
+                      p_thread: hf.ProgressThread):
+        """
+        TODO: Source.generate_rays > write docstring
+        :param h2_sphere:
+        :param atmosphere:
+        :param ray_queue:
+        :param p_thread:
+        :return:
+        """
+        for point in self.sphere:
+            # determinant of line-sphere intersection
+            nabla = np.sum(((point - self) * (self - h2_sphere.origin)).vec)**2 - (
+                    h2_sphere.origin.dist(self)**2 - h2_sphere.radius**2)
+            # distance from self to edge of sphere in direction of sphere
+            dist = -np.sum(((point - self) * (self - h2_sphere.origin)).vec) + np.sqrt(nabla)
+            # point on sphere at end of initial ray
+            pos_0 = self + (point - self) * dist
+
+            # determine initial ray direction and initial travel distance
+            dir_0 = pos_0 - self
+            s_0 = dir_0.len()
+            # Determine beam width
+            beam_width = 2 * np.arcsin(self.sphere_dist / point.dist(self) / 2)
+            # Determine local speed of sound
+            speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
+            # Set the initial velocity vector
+            vel_0 = speed_of_sound * dir_0 / dir_0.len()
+            # Get the relevant amplitude spectrum
+            spectrum = h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t)
+
+            ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, t_0=self.t, label=self.blade))
             p_thread.update()
-        p_thread.stop()
+
+        return ray_queue
 
 
 class SourceModel:
     def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict,
-                 h2_result_path: str, atmosphere: hf.Atmosphere):
+                 h2_result_path: str, atmosphere: hf.Atmosphere, simple: bool = False):
         """
         ================================================================================================================
         Class that manages the whole source model
         ================================================================================================================
-        :param aur_conditions_dict: conditions_dict from the Case class
-        :param aur_source_dict: source_dict from the Case class
+        :param aur_conditions_dict: conditions_dict from the Case class.
+        :param aur_source_dict: source_dict from the Case class.
         :param h2_result_path: path where the HAWC2 results are stored
         :param atmosphere: atmosphere defined in hf.Atmosphere()
+        :param simple: Boolean to select the simple source model
         """
         # Store the input parameters
         self.conditions_dict = aur_conditions_dict
         self.params = aur_source_dict
         self.h2_result_path = h2_result_path
         self.atmosphere = atmosphere
+        self.simple = simple
 
-        # TODO: SourceModel.__init__ > should this part be in run maybe? It is an initialisation though...
-        print(f' -- Initialising Source Model')
-        self.h2_sphere = H2Sphere(self.h2_result_path, self.params['scope'], self.conditions_dict['delta_t'])
-        self.source_sphere = SourceSphere(self.params['n_rays'], self.h2_sphere,
-                                          self.params['radius_factor'] * self.conditions_dict['rotor_radius'],
-                                          self.conditions_dict['hub_pos'])
+        print(f' -- Source Model')
+        self.h2_sphere = H2Sphere(self.h2_result_path, self.params, self.conditions_dict)
+        self.time_series = self.h2_sphere.time_series
 
-    def run(self):
+        # Set the source origin radius
+        radius = self.params['blade_percent'] * self.conditions_dict['rotor_radius'] / 100
+        # Loop over time steps
+        for t in self.time_series.index:
+            # Set the hub point as origin for the cylindrical blade coordinates
+            origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
+
+            if self.simple:
+                # Assign the hub coordinate
+                self.time_series.loc[t, 'blade_0'] = origin
+
+                raise NotImplementedError('Simple source model not implemented yet.')
+
+            else:
+                # Assign the coordinates of blades 1 through 3, from their rotation from the HAWC2 output file
+                self.time_series.loc[t, 'blade_1'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_1'], 0,
+                                                                    origin).to_cartesian()
+                self.time_series.loc[t, 'blade_2'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_2'], 0,
+                                                                    origin).to_cartesian()
+                self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
+                                                                    origin).to_cartesian()
+
+        self.sources = []
+
+    def generate_rays(self):
+        """
+        TODO: SourceModel.generate_rays > write docstring and comments
+        :return: a queue containing the generated SoundRays
+        """
+        ray_queue = queue.Queue()
+        points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
+
+        estimate = self.time_series.index.size * len(points)
+        estimate *= 1 if self.simple else 3
+        p_thread = hf.ProgressThread(estimate, 'Generating sound rays')
+        p_thread.start()
+
+        for key in self.time_series.columns:
+            if 'blade' in key:
+                for t in self.time_series.index:
+                    x, y, z = self.time_series.loc[t, key].vec
+                    source = Source(x, y, z, points, dist, t, key)
+                    ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, p_thread)
+
+                    self.sources.append(source)
+
+        p_thread.stop()
+        return ray_queue
+
+    def run(self) -> queue.Queue:
         """
         Run the source model
         """
-        print(f' -- Running Source Model')
-        ray_queue = queue.Queue()
-        source: Source
-
-        estimate_amount = len(self.source_sphere) * len(self.source_sphere[0].time_series.index) * 4
-        p_thread = hf.ProgressThread(estimate_amount, 'Generating sound rays')
-        p_thread.start()
-        for source in self.source_sphere:
-            ray_queue = source.generate_rays(self.conditions_dict, self.params, self.atmosphere, self.source_sphere.dist,
-                                             ray_queue, p_thread)
-
-        p_thread.stop()
-
-        return ray_queue
+        return self.generate_rays()

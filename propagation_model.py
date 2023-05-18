@@ -268,13 +268,14 @@ class SoundRay(Ray):
 
     def receive(self, receiver: rm.Receiver):
         """
-        TODO: SoundRay.receive > write docstring and comments
-        TODO: Maybe do reception of ray queue in rm.Receiver??
-        :param receiver:
-        :return:
+        Function that adds the SoundRay to the receiver
+        :param receiver: instance of rm.Receiver
         """
+        # Determine the Gaussian beam attenuation spectrum
         self.gaussian_factor(receiver)
+        # Create the received sound
         received_sound = rm.ReceivedSound(self.t[-1], receiver.rotation, self.dir[-1], self.spectrum)
+        # Receive sound with the receiver
         receiver.receive(received_sound)
 
 
@@ -358,7 +359,7 @@ class PropagationModel:
     def pickle_ray_queue(ray_queue: queue.Queue) -> None:
         """
         TODO: PropagationModel.pickle_ray_queue > write docstring and comments
-        TODO: PropagationModel.pickle_ray_queue > look into picle of whole queue instead of 1 per ray
+        TODO: PropagationModel.pickle_ray_queue > look into pickle of whole queue instead of 1 per ray
         :param ray_queue:
         :return:
         """
@@ -389,7 +390,7 @@ class PropagationModel:
         """
         ray_cache_path = os.path.abspath('ray_cache')
         if not os.path.isdir(ray_cache_path):
-            raise FileNotFoundError(f'No ./ray_cache directory found. Cannot un-pickle ray queue')
+            raise NotADirectoryError(f'No ./ray_cache directory found. Cannot un-pickle ray queue')
 
         ray_queue = queue.Queue()
         ray_paths = [ray_path for ray_path in os.listdir(ray_cache_path) if '.pickle' in ray_path]
@@ -409,6 +410,12 @@ class PropagationModel:
 
     @staticmethod
     def interactive_ray_plot(ray_queue: queue.Queue, receiver: rm.Receiver):
+        """
+        TODO: PropagationModel.interactive_ray_plot > write docstring and comments
+        :param ray_queue:
+        :param receiver:
+        :return:
+        """
         # raise NotImplementedError('Yeah, nah mate :/')
         rays = {}
         ray: SoundRay
@@ -421,6 +428,11 @@ class PropagationModel:
                     rays[t] = [ray, ]
 
         def update_plot(t_plt: float):
+            """
+            TODO: PropagationModel.interactive_ray_plot.update_plot > write docstring and comments
+            :param t_plt:
+            :return:
+            """
             ray_lst = rays[t_plt]
 
             ax.clear()
@@ -432,13 +444,15 @@ class PropagationModel:
                 pos_array = r.pos_array()
 
                 spectrum = r.spectrum['a'] * r.spectrum['gaussian']
-                energy = 10 * np.log10(np.trapz(spectrum, spectrum.index) / hf.p_ref ** 2)
-                energy_bin = 10 * int(energy // 10) + 5
-                cmap_lvl = np.float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
+                energy = np.trapz(spectrum, spectrum.index)
+                if energy > 0:
+                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
+                    energy_bin = 10 * int(energy // 10) + 5
+                    cmap_lvl = np.float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
 
-                color = cmap(cmap_lvl)
+                    color = cmap(cmap_lvl)
 
-                ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
+                    ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
 
         # create the main plot
         fig = plt.figure()
