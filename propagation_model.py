@@ -420,41 +420,13 @@ class PropagationModel:
                 else:
                     rays[t] = [ray, ]
 
-        # create the main plot
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        # adjust the main plot to make room for the sliders
-        fig.subplots_adjust(bottom=0.2, right=0.25)
-
-        # Make a horizontal slider to control the time.
-        ax_time = fig.add_axes([0.1, 0.1, 0.65, 0.05])
-        valstep = list(sorted(rays.keys()))
-        slider = Slider(
-            ax=ax_time,
-            label='Time (s)',
-            valmin=valstep[0],
-            valmax=valstep[-1],
-            valstep=valstep,
-            valinit=1.,
-        )
-
-        levels = np.arange(5, 95 + 10, 10)
-        ticks = np.arange(0, 100 + 10, 10)
-        cmap = mpl.colormaps['viridis'].resampled(10)
-
-        ax_cbar = fig.add_axes([.8, 0.1, 0.1, 0.8])
-        norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
-        plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
-                     cax=ax_cbar,
-                     extend='both',
-                     orientation='vertical',
-                     label='SPL (dB) (Binned per 10 dB)'
-                     )
-
         def update_plot(t_plt: float):
             ray_lst = rays[t_plt]
 
             ax.clear()
+            ax.set_xlabel('-x (m)')
+            ax.set_ylabel('y (m)')
+            ax.set_zlabel('-z (m)')
             ax.scatter(-receiver[0], receiver[1], -receiver[2])
             for r in ray_lst:
                 pos_array = r.pos_array()
@@ -468,5 +440,37 @@ class PropagationModel:
 
                 ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
 
+        # create the main plot
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        # adjust the main plot to make room for the sliders
+        fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
+
+        # Make a horizontal slider to control the time.
+        ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
+        valstep = list(sorted(rays.keys()))
+        slider = Slider(
+            ax=ax_time,
+            label='Time (s)',
+            valmin=valstep[0],
+            valmax=valstep[-1],
+            valstep=valstep,
+            valinit=valstep[0],
+        )
+
+        levels = np.arange(5, 95 + 10, 10)
+        ticks = np.arange(0, 100 + 10, 10)
+        cmap = mpl.colormaps['viridis'].resampled(10)
+
+        ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
+        norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
+        plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
+                     cax=ax_cbar,
+                     extend='both',
+                     orientation='vertical',
+                     label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
+                     )
+
+        update_plot(valstep[0])
         slider.on_changed(update_plot)
         plt.show()
