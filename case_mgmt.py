@@ -4,6 +4,9 @@ import numpy as np
 import shutil as sh
 import matplotlib.pyplot as plt
 import pandas as pd
+import scipy.fft as spfft
+import scipy.signal as spsig
+import scipy.io as spio
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
@@ -410,15 +413,15 @@ class Case(CaseLoader):
         """
         Run everything except HAWC2
         """
-        # source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        # ray_queue: queue.Queue = source_model.run()
-        #
-        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere,
-        #                                         self.receiver_dict, ray_queue)
-        # ray_queue: queue.Queue = propagation_model.run(which=0)
-        #
+        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
+        ray_queue: queue.Queue = source_model.run()
+
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere,
+                                                self.receiver_dict, ray_queue)
+        ray_queue: queue.Queue = propagation_model.run(which=0)
+
         # propagation_model.pickle_ray_queue(ray_queue)
-        ray_queue = pm.PropagationModel.unpickle_ray_queue()
+        # ray_queue = pm.PropagationModel.unpickle_ray_queue()
 
         print(f' -- Running Reception Model for receiver {0}')
         p_thread = hf.ProgressThread(ray_queue.qsize(), 'Receiving sound rays')
@@ -441,42 +444,73 @@ class Case(CaseLoader):
         p_thread.stop()
         p_thread.join()
 
-
-        t_rdb = [round(t, 10) for t in sorted(rays.keys())]
-        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        for t in t_rdb:
-            for ray in rays[t]:
-                spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
-                energy = np.trapz(spectrum, spectrum.index)
-                if energy > 0:
-                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
-
-                    bin_e = 2 * int(energy // 2) + 1
-                    if bin_e in histogram.index:
-                        histogram.loc[bin_e, t] += 1
-        plt.figure(10)
-        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        cbr = plt.colorbar(ctr)
-
-        plt.xlabel('t (s)')
-        plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
-        cbr.set_label('Number of Received Sound Rays (-)')
+        # t_rdb = [round(t, 10) for t in sorted(rays.keys())]
+        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        # for t in t_rdb:
+        #     for ray in rays[t]:
+        #         spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
+        #         energy = np.trapz(spectrum, spectrum.index)
+        #         if energy > 0:
+        #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
+        #
+        #             bin_e = 2 * int(energy // 2) + 1
+        #             if bin_e in histogram.index:
+        #                 histogram.loc[bin_e, t] += 1
+        # plt.figure(10)
+        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        # cbr = plt.colorbar(ctr)
+        #
+        # plt.xlabel('t (s)')
+        # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+        # cbr.set_label('Number of Received Sound Rays (-)')
         # plt.show()
 
-        received: dict = self.receiver_dict[0].received
-
-        t = sorted(received.keys())
-        n = np.array([len(received[t]) for t in sorted(received.keys())])
-
-        plt.figure(11)
-        plt.plot(t, n)
-        plt.xlabel('t (s)')
-        plt.ylabel('$N_{rays}$ (-)')
+        # received: dict = self.receiver_dict[0].received
+        #
+        # t = sorted(received.keys())
+        # n = np.array([len(received[t]) for t in sorted(received.keys())])
+        #
+        # plt.figure(11)
+        # plt.plot(t, n)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('$N_{rays}$ (-)')
         # plt.show()
 
         self.receiver_dict[0].sum_spectra()
 
         spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec_{0}.csv'))
+        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'))
 
-        pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0])
+        # pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0])
+
+        spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
+                                  header=0, index_col=0).applymap(complex)
+        spectrogram.columns = spectrogram.columns.astype(float)
+        spectrogram.index = spectrogram.index.astype(float)
+
+        n_base = 512
+        n_fft = n_base * 8
+        n_perseg = n_base * 2
+        x_fft = 1j * np.empty((spectrogram.columns.size, n_fft // 2))
+        f_s_desired = n_base * 1e2
+        f = spfft.fftfreq(n_fft, 1 / f_s_desired)[:n_fft // 2]
+        f_octave = hf.octave_band_fc(1)
+        for ti, t in enumerate(spectrogram.columns):
+            x_spectrogram = spectrogram.loc[:, t].to_numpy()
+            x_fft[ti] = np.sqrt(np.interp(f, f_octave, x_spectrogram)) * np.exp(
+                1j * np.random.uniform(0, 2 * np.pi, f.size))
+
+        t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_fft, nperseg=n_perseg, noverlap=n_perseg - n_base,
+                           window=('tukey', .75))
+
+        # Longer sound files :)
+        rotation_time = 60 / 27.1  # 1 / RPM
+
+        x_rotation = x[t >= t[-1] - rotation_time]
+        t_rotation = t[t >= t[-1] - rotation_time] - (t[-1] - rotation_time)
+
+        x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
+        x_long = np.tile(x_rotation, 10)
+
+        wav_dat = (x_long / np.max(np.abs(x_long)) * 32767).astype(np.int16)
+        spio.wavfile.write(f'{self.case_name}_rec{0}.wav', int(f_s_desired), wav_dat)

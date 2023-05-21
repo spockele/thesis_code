@@ -105,91 +105,100 @@ if __name__ == '__main__':
 #     (n_sensor, f_sampling, n_samples), data = hf.read_ntk_data(
 #         '../Stuff/samples/NTK/NTK_Oct2016/nordtank_20150901_122400.tim',
 #         '../Stuff/samples/NTK/NTK_Oct2016/calib.txt')
-#     # Sampling period
-#     t_sampling = 1 / f_sampling
-#     # Set the window sample size for the fft
-#     n_fft = 512
-#     # Determine the frequency list of the fft with this window size
-#     f_fft = spfft.fftfreq(n_fft, t_sampling)[:n_fft // 2]
-#     delta_f = f_fft[1] - f_fft[0]
-#     # Determine the A-weighting function for the frequency list
-#     a_weighting = -145.528 + 98.262 * np.log10(f_fft) - 19.509 * np.log10(f_fft) ** 2 + 0.975 * np.log10(f_fft) ** 3
+#     idx = int(f_sampling * 2.35)
+#     p = data[:idx, 2]
 #
-#     # Determine the start and end indexes of the windows
-#     samples = np.arange(0, n_samples, n_fft)
-#
-#     # Specify the list of time data points
-#     time = np.arange(0, n_samples / f_sampling, 1 / f_sampling)
-#     # With these indexes, create the time-frequency grid for the pcolormesh plot of the spectogram
-#     time_grd, f_grd = np.meshgrid(time[samples], np.append(f_fft, f_fft[-1] + f_fft[1] - f_fft[0]))
-#
-#     shape = (f_fft.size, time[samples].size)
-#     x_fft = 1j * np.empty(shape)
-#     psl = np.empty(shape)
-#     psd = np.empty(shape)
-#     pbl = np.empty(shape)
-#     pbl_a = np.empty(shape)
-#     ospl_f = np.empty(samples.size - 1)
-#     oaspl_f = np.empty(samples.size - 1)
-#
-#     # Create the hanning window of size n_fft
-#     hanning = spsig.get_window('hann', n_fft)
-#     # for si in range(n_sensor):
-#     si = 3
-#     # Cycle through the windows using the indexes in the list "samples"
-#     for ii, idx in enumerate(samples[:-1]):
-#         # Determine X_m for the positive frequencies
-#         x_fft[:, ii] = spfft.fft(data[idx:idx + n_fft, si] * hanning)[:n_fft // 2]
-#         # Determine P_m = |X_m|^2 * delta_t / N
-#         psd[:, ii] = (np.abs(x_fft[:, ii]) ** 2) * t_sampling / np.sum(hanning)
-#         # Determine the PSL = 10 log(P_m / p_e0^2) where p_e0 = 2e-5 Pa
-#         psl[:, ii] = 10 * np.log10(2 * psd[:, ii] / 4e-10)
-#         # Determine the PBL using the PSL
-#         pbl[:, ii] = psl[:, ii] + 10 * np.log10(delta_f)
-#         pbl_a[:, ii] = pbl[:, ii] + a_weighting
-#         # Determine the OSPLs with the PBLs of the signal
-#         ospl_f[ii] = 10 * np.log10(np.sum(10 ** (pbl[:, ii] / 10)))
-#         oaspl_f[ii] = 10 * np.log10(np.sum(10 ** (pbl_a[:, ii] / 10)))
-#
-#     time_pe = (time[samples][:-1] + time[samples][1:]) / 2
-#     # All determined above in the loop for the spectogram, so just plot here
-#     plt.figure(10 * si + 1)
-#     plt.plot(time_pe, ospl_f, label="Normal")
-#     plt.plot(time_pe, oaspl_f, label="A-weighted")
-#     plt.xlabel('$t$ (s)')
-#     plt.xlim(0, 2.5)
-#     plt.ylabel('$OSPL$ (dB)')
-#     plt.grid()
-#     plt.legend()
-#     # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/NTK_sensor{si + 1}.pdf')
-#
-#     # Plot the spectogram
-#     plt.figure(10 * si + 2)
-#     # Setting the lower and upper boundary value for the SPL
-#     print(f'max(PSL) = {round(np.max(psl), 1)} dB / Hz')
-#     vmin, vmax = -20, 30
-#     # Create the spectogram and its colorbar
-#     spectrogram = plt.pcolor(time[samples], f_fft / 1e3, psl, vmin=vmin, vmax=vmax)
-#     cbar = plt.colorbar(spectrogram)
-#     # Set the tick values on the colorbar with 5 dB/Hz separation
-#     cbar.set_ticks(np.arange(vmin, vmax + 5, 5))
-#     # Set all the labels
-#     cbar.set_label('$PSL$ (dB / Hz)')
-#     plt.xlabel('$t$ (s)')
-#     plt.xlim(0, 2.5)
-#     plt.ylim(0, 18)
-#     plt.yscale('log')
-#     plt.ylabel('$f$ (kHz)')
-#     # plt.ylim(0, 16000)
-#     # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/NTK_sensor{si + 1}.png')
-#
-#     # plt.show()
-#     plt.close('all')
+#     plt.figure(6)
+#     f_stft, t_stft, x_stft = spsig.stft(p, f_sampling)
+#     ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=0, vmax=40)
+#     cbar = plt.colorbar(ctr)
+#     plt.xlabel('t (s)')
+#     plt.ylabel('f (Hz)')
+#     cbar.set_label('PSL (dB / Hz)')
+
+    # # Sampling period
+    # t_sampling = 1 / f_sampling
+    # # Set the window sample size for the fft
+    # n_fft = 512
+    # # Determine the frequency list of the fft with this window size
+    # f_fft = spfft.fftfreq(n_fft, t_sampling)[:n_fft // 2]
+    # delta_f = f_fft[1] - f_fft[0]
+    # # Determine the A-weighting function for the frequency list
+    # a_weighting = -145.528 + 98.262 * np.log10(f_fft) - 19.509 * np.log10(f_fft) ** 2 + 0.975 * np.log10(f_fft) ** 3
+    #
+    # # Determine the start and end indexes of the windows
+    # samples = np.arange(0, n_samples, n_fft)
+    #
+    # # Specify the list of time data points
+    # time = np.arange(0, n_samples / f_sampling, 1 / f_sampling)
+    # # With these indexes, create the time-frequency grid for the pcolormesh plot of the spectogram
+    # time_grd, f_grd = np.meshgrid(time[samples], np.append(f_fft, f_fft[-1] + f_fft[1] - f_fft[0]))
+    #
+    # shape = (f_fft.size, time[samples].size)
+    # x_fft = 1j * np.empty(shape)
+    # psl = np.empty(shape)
+    # psd = np.empty(shape)
+    # pbl = np.empty(shape)
+    # pbl_a = np.empty(shape)
+    # ospl_f = np.empty(samples.size - 1)
+    # oaspl_f = np.empty(samples.size - 1)
+    #
+    # # for si in range(n_sensor):
+    # si = 3
+    # # Cycle through the windows using the indexes in the list "samples"
+    # for ii, idx in enumerate(samples[:-1]):
+    #     # Determine X_m for the positive frequencies
+    #     x_fft[:, ii] = spfft.fft(data[idx:idx + n_fft, si])[:n_fft // 2]
+    #     # Determine P_m = |X_m|^2 * delta_t / N
+    #     psd[:, ii] = (np.abs(x_fft[:, ii]) ** 2) * t_sampling / n_fft
+    #     # Determine the PSL = 10 log(P_m / p_e0^2) where p_e0 = 2e-5 Pa
+    #     psl[:, ii] = 10 * np.log10(2 * psd[:, ii] / 4e-10)
+    #     # Determine the PBL using the PSL
+    #     pbl[:, ii] = psl[:, ii] + 10 * np.log10(delta_f)
+    #     pbl_a[:, ii] = pbl[:, ii] + a_weighting
+    #     # Determine the OSPLs with the PBLs of the signal
+    #     ospl_f[ii] = 10 * np.log10(np.sum(10 ** (pbl[:, ii] / 10)))
+    #     oaspl_f[ii] = 10 * np.log10(np.sum(10 ** (pbl_a[:, ii] / 10)))
+    #
+    # time_pe = (time[samples][:-1] + time[samples][1:]) / 2
+    # # All determined above in the loop for the spectogram, so just plot here
+    # plt.figure(10 * si + 1)
+    # plt.plot(time_pe, ospl_f, label="Normal")
+    # plt.plot(time_pe, oaspl_f, label="A-weighted")
+    # plt.xlabel('$t$ (s)')
+    # plt.xlim(0, 2.5)
+    # plt.ylabel('$OSPL$ (dB)')
+    # plt.grid()
+    # plt.legend()
+    # # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/NTK_sensor{si + 1}.pdf')
+    #
+    # # Plot the spectogram
+    # plt.figure(10 * si + 2)
+    # # Setting the lower and upper boundary value for the SPL
+    # print(f'max(PSL) = {round(np.max(psl), 1)} dB / Hz')
+    # vmin, vmax = 0, 40
+    # # Create the spectogram and its colorbar
+    # spectrogram = plt.pcolor(time[samples], f_fft / 1e3, psl, vmin=vmin, vmax=vmax)
+    # cbar = plt.colorbar(spectrogram)
+    # # Set the tick values on the colorbar with 5 dB/Hz separation
+    # # cbar.set_ticks(np.arange(vmin, vmax + 5, 5))
+    # # Set all the labels
+    # cbar.set_label('$PSL$ (dB / Hz)')
+    # plt.xlabel('$t$ (s)')
+    # plt.xlim(0, 2.5)
+    # # plt.ylim(0, 18)
+    # # plt.yscale('log')
+    # plt.ylabel('$f$ (kHz)')
+    # # plt.ylim(0, 16000)
+    # # plt.savefig(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/Demo_stuff/NTK_sensor{si + 1}.png')
+    #
+    # # plt.show()
+    # # plt.close('all')
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Post-Processing of Spectrogram output of reception model
 # ----------------------------------------------------------------------------------------------------------------------
-    spectrogram = pd.read_csv(os.path.join(proj.project_path, 'spectrograms', 'spectrogram_055ms_rec_0.csv'),
+    spectrogram = pd.read_csv(os.path.join(proj.project_path, 'spectrograms', 'spectrogram_055ms_rec0.csv'),
                               header=0, index_col=0).applymap(complex)
     spectrogram.columns = spectrogram.columns.astype(float)
     spectrogram.index = spectrogram.index.astype(float)
@@ -237,18 +246,18 @@ if __name__ == '__main__':
 
     # plt.close('all')
     plt.show()
-
-    # Longer sound files :)
-    rotation_time = 60 / 27.1  # 1 / RPM
-
-    x_rotation = x[t >= t[-1] - rotation_time]
-    t_rotation = t[t >= t[-1] - rotation_time] - (t[-1] - rotation_time)
-
-    x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
-    x_long = np.tile(x_rotation, 10)
-    plt.plot(x_long)
-    plt.plot(x)
-    plt.show()
-
-    wav_dat = (x_long / np.max(np.abs(x_long)) * 32767).astype(np.int16)
-    spio.wavfile.write('055ms_rec0.wav', int(f_s_desired), wav_dat)
+#
+#     # Longer sound files :)
+#     rotation_time = 60 / 27.1  # 1 / RPM
+#
+#     x_rotation = x[t >= t[-1] - rotation_time]
+#     t_rotation = t[t >= t[-1] - rotation_time] - (t[-1] - rotation_time)
+#
+#     x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
+#     x_long = np.tile(x_rotation, 10)
+#     plt.plot(x_long)
+#     plt.plot(x)
+#     plt.show()
+#
+#     wav_dat = (x_long / np.max(np.abs(x_long)) * 32767).astype(np.int16)
+#     spio.wavfile.write('055ms_rec0.wav', int(f_s_desired), wav_dat)
