@@ -71,8 +71,7 @@ class PropagationThread(threading.Thread):
 
 
 class Ray:
-    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 t_0: float = 0.) -> None:
+    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, t_0: float = 0.) -> None:
         """
         ================================================================================================================
         Class for the propagation sound ray model.
@@ -80,7 +79,6 @@ class Ray:
         :param pos_0: initial position in cartesian coordinates (m, m, m)
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
-        :param beam_width: initial beam width angle (rad)
         :param t_0: the start time of the ray propagation (s)
         """
         # Set initial conditions
@@ -90,8 +88,6 @@ class Ray:
         self.t = np.array([t_0, ])
         self.s = np.array([s_0])
         self.received = False
-        # Set fixed parameters
-        self.bw = beam_width
 
     def __repr__(self):
         return f'<Ray at {self.pos[-1]}, received={self.received}>'
@@ -233,13 +229,14 @@ class SoundRay(Ray):
         :param t_0: the start time of the ray propagation (s)
         :param label: a string label for SoundRay
         """
-        super().__init__(pos_0, vel_0, s_0, beam_width, t_0)
+        super().__init__(pos_0, vel_0, s_0, t_0)
 
         self.label = label
         self.spectrum = pd.DataFrame(amplitude_spectrum)
         self.spectrum['p'] = 0.
         self.spectrum['gaussian'] = 0.
         self.spectrum.columns = ['a', 'p', 'gaussian']
+        self.bw = beam_width
 
     def copy(self):
         """
@@ -305,11 +302,16 @@ class PropagationModel:
         """
         print(f' -- Running propagation model for receiver {receiver_key}')
         # Create a copy of the ray queue to allow for multiple receivers
-        p_thread = hf.ProgressThread(self.ray_queue.qsize(), 'Copying sound rays')
+        p_thread = hf.ProgressThread(self.ray_queue.qsize(), 'Selecting rays')
         p_thread.start()
         ray_queue = queue.Queue()
         for ray in self.ray_queue.queue:
-            ray_queue.put(ray.copy())
+            # Limit the propagation to rays that are sort of headed towards the receiver
+            dir_ray: hf.Spherical = (ray.vel[-1] / ray.vel[-1].len()).to_spherical(hf.Cartesian(0, 0, 0))
+            dir_rec = (receiver_pos - ray.pos[-1]).to_spherical(hf.Cartesian(0, 0, 0))
+
+            if abs(dir_ray[1] - dir_rec[1]) <= 5 * ray.bw and abs(dir_ray[2] - dir_rec[2]) <= 5 * ray.bw:
+                ray_queue.put(ray.copy())
             p_thread.update()
 
         p_thread.stop()
