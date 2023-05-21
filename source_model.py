@@ -256,7 +256,7 @@ class SourceModel:
 
         estimate = self.time_series.index.size * len(points)
         estimate *= 1 if self.simple else 3
-        p_thread = hf.ProgressThread(estimate, 'Generating sound rays')
+        p_thread = hf.ProgressThread(estimate, 'Generating rays')
         p_thread.start()
 
         for key in self.time_series.columns:
