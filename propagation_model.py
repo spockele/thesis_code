@@ -1,14 +1,14 @@
 import os
+import queue
+import warnings
+import threading
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
-import threading
-import queue
-import time
-import warnings
 import compress_pickle as pickle
+
+from matplotlib.widgets import Slider
 
 import helper_functions as hf
 import reception_model as rm
@@ -57,7 +57,7 @@ class PropagationThread(threading.Thread):
         # Loop as long as the input queue has SoundRays
         while threading.main_thread().is_alive() and not self.in_queue.empty():
             # Take a SoundRay from the queue
-            ray: Ray = self.in_queue.get()
+            ray: SoundRay = self.in_queue.get()
             # Propagate this Ray with given parameters
             ray.propagate(self.delta_t, self.receiver, self.atmosphere, self.t_lim)
             # When that is done, put the ray in the output queue
@@ -428,9 +428,9 @@ class PropagationModel:
                     ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
 
             for key in time_series.columns:
-                if 'blade' in key:
+                if 'blade' in key and t_plt in time_series.index:
                     x, y, z = time_series.loc[t_plt, key].vec
-                    ax.scatter(x, y, z, s=5, color='k', marker='8')
+                    ax.scatter(-x, y, -z, s=5, color='k', marker='8')
 
         # adjust the main plot to make room for the sliders
         fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
