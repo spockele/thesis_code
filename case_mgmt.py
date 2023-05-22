@@ -210,7 +210,7 @@ class CaseLoader:
             if key in ('blade_percent', 'radius_factor'):
                 self.source_dict[key] = float(value)
 
-            elif key in ('n_rays',):
+            elif key in ('n_rays', 'n_threads'):
                 self.source_dict[key] = int(value)
 
             else:
@@ -414,11 +414,11 @@ class Case(CaseLoader):
         Run everything except HAWC2
         """
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        ray_queue: queue.Queue = source_model.run()
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
 
-        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere,
-                                                self.receiver_dict, ray_queue)
-        ray_queue: queue.Queue = propagation_model.run(which=0)
+        print(f' -- Running propagation model for receiver {0}')
+        ray_queue: queue.Queue = source_model.run(self.receiver_dict[0])
+        ray_queue: queue.Queue = propagation_model.run(0, self.receiver_dict[0], ray_queue)
 
         # propagation_model.pickle_ray_queue(ray_queue)
         # ray_queue = pm.PropagationModel.unpickle_ray_queue()
@@ -443,6 +443,10 @@ class Case(CaseLoader):
 
         p_thread.stop()
         p_thread.join()
+        self.receiver_dict[0].sum_spectra()
+
+        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
+        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'))
 
         # t_rdb = [round(t, 10) for t in sorted(rays.keys())]
         # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
@@ -476,15 +480,10 @@ class Case(CaseLoader):
         # plt.ylabel('$N_{rays}$ (-)')
         # plt.show()
 
-        self.receiver_dict[0].sum_spectra()
+        pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0], source_model.time_series)
 
-        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'))
-
-        # pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0])
-
-        spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
-                                  header=0, index_col=0).applymap(complex)
+        # spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
+        #                           header=0, index_col=0).applymap(complex)
         spectrogram.columns = spectrogram.columns.astype(float)
         spectrogram.index = spectrogram.index.astype(float)
 
@@ -512,5 +511,6 @@ class Case(CaseLoader):
         x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
         x_long = np.tile(x_rotation, 10)
 
-        wav_dat = (x_long / np.max(np.abs(x_long)) * 32767).astype(np.int16)
+        # Normalise to 80 dB
+        wav_dat = (np.clip(x_long / 2e-1, -1, 1) * 32767).astype(np.int16)
         spio.wavfile.write(f'{self.case_name}_rec{0}.wav', int(f_s_desired), wav_dat)

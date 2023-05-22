@@ -277,45 +277,27 @@ class SoundRay(Ray):
 
 
 class PropagationModel:
-    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, atmosphere: hf.Atmosphere,
-                 aur_receiver_dict: dict, ray_queue: queue.Queue):
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, atmosphere: hf.Atmosphere):
         """
         ================================================================================================================
         Class that manages the whole propagation model
         ================================================================================================================
         :param aur_conditions_dict: conditions_dict from the Case class
         :param aur_propagation_dict: propagation_dict from the Case class
-        :param ray_queue: queue with SoundRay instances to propagate
+        :param atmosphere:
         """
         self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
         self.atmosphere = atmosphere
-        self.receivers = aur_receiver_dict
-        self.ray_queue = ray_queue
 
-    def run_receiver(self, receiver_key: int, receiver_pos: rm.Receiver):
+    def run(self, receiver_key: int, receiver_pos: rm.Receiver, in_queue: queue.Queue):
         """
         Run the propagation model for one receiver.
         :param receiver_key: Key of the receiver in self.receivers.
         :param receiver_pos: The receiver point in Cartesian coordinates (m, m, m).
+        :param in_queue:
         :return: A queue.Queue instance containing all propagated SoundRays.
         """
-        print(f' -- Running propagation model for receiver {receiver_key}')
-        # Create a copy of the ray queue to allow for multiple receivers
-        p_thread = hf.ProgressThread(self.ray_queue.qsize(), 'Selecting rays')
-        p_thread.start()
-        ray_queue = queue.Queue()
-        for ray in self.ray_queue.queue:
-            # Limit the propagation to rays that are sort of headed towards the receiver
-            dir_ray: hf.Spherical = (ray.vel[-1] / ray.vel[-1].len()).to_spherical(hf.Cartesian(0, 0, 0))
-            dir_rec = (receiver_pos - ray.pos[-1]).to_spherical(hf.Cartesian(0, 0, 0))
-
-            if abs(dir_ray[1] - dir_rec[1]) <= 5 * ray.bw and abs(dir_ray[2] - dir_rec[2]) <= 5 * ray.bw:
-                ray_queue.put(ray.copy())
-            p_thread.update()
-
-        p_thread.stop()
-
         # Initialise the output queue.Queue()s
         out_queue = queue.Queue()
 
@@ -323,10 +305,10 @@ class PropagationModel:
         t_limit = 3 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(ray_queue.qsize(), f'Propagating to receiver {receiver_key}')
+        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_key}')
         p_thread.start()
         # Create the PropagationThreads
-        threads = [PropagationThread(ray_queue, out_queue, self.conditions_dict['delta_t'],
+        threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
                                      receiver_pos, self.atmosphere, p_thread, t_limit)
                    for _ in range(self.params['n_threads'])]
         # Start the threads and hold until all are done
@@ -336,26 +318,6 @@ class PropagationModel:
         p_thread.stop()
 
         return out_queue
-
-    def run(self, which: int = -1) -> queue.Queue:
-        """
-        Run the propagation model
-        TODO: PropagationModel.run > change this function, because I want to always run all receivers in .aur file
-        :param which: key of the receiver to which to propagate the sound
-        """
-        # Run for all receivers
-        if which == -1:
-            raise NotImplementedError('Multiple observer running not implemented yet!')
-            # for receiver_idx, receiver_pos in self.receivers.items():
-            #     self.run_receiver(receiver_idx, receiver_pos)
-
-        # Run for specified receiver
-        elif which >= 0:
-            return self.run_receiver(which, self.receivers[which])
-
-        # We don't do negative numbers here
-        else:
-            raise ValueError("Parameter 'which' should be: which >= 0 or which == -1")
 
     @staticmethod
     def pickle_ray_queue(ray_queue: queue.Queue) -> None:
@@ -411,7 +373,7 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: queue.Queue, receiver: rm.Receiver):
+    def interactive_ray_plot(ray_queue: queue.Queue, receiver: rm.Receiver, time_series: pd.DataFrame):
         """
         TODO: PropagationModel.interactive_ray_plot > write docstring and comments
         :param ray_queue:
@@ -429,6 +391,10 @@ class PropagationModel:
                 else:
                     rays[t] = [ray, ]
 
+        # create the main plot
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
         def update_plot(t_plt: float):
             """
             TODO: PropagationModel.interactive_ray_plot.update_plot > write docstring and comments
@@ -438,6 +404,11 @@ class PropagationModel:
             ray_lst = rays[t_plt]
 
             ax.clear()
+            ax.set_aspect('equal')
+            ax.set_xlim(-75, 75)
+            ax.set_ylim(-75, 75)
+            ax.set_zlim(0, 150)
+
             ax.set_xlabel('-x (m)')
             ax.set_ylabel('y (m)')
             ax.set_zlabel('-z (m)')
@@ -456,9 +427,11 @@ class PropagationModel:
 
                     ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
 
-        # create the main plot
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
+            for key in time_series.columns:
+                if 'blade' in key:
+                    x, y, z = time_series.loc[t_plt, key].vec
+                    ax.scatter(x, y, z, s=5, color='k', marker='8')
+
         # adjust the main plot to make room for the sliders
         fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
 

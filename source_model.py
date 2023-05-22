@@ -1,9 +1,11 @@
 import os
 import queue
 import numpy as np
+import threading
 
 import helper_functions as hf
 import propagation_model as pm
+import reception_model as rm
 
 
 """
@@ -162,38 +164,42 @@ class Source(hf.Cartesian):
         return f'<Source: {str(self)}, t = {self.t} s>'
 
     def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue,
-                      p_thread: hf.ProgressThread):
+                      receiver: rm.Receiver):
         """
         TODO: Source.generate_rays > write docstring
         :param h2_sphere:
         :param atmosphere:
         :param ray_queue:
-        :param p_thread:
+        :param receiver:
         :return:
         """
         for point in self.sphere:
-            # determinant of line-sphere intersection
-            nabla = np.sum(((point - self) * (self - h2_sphere.origin)).vec)**2 - (
-                    h2_sphere.origin.dist(self)**2 - h2_sphere.radius**2)
-            # distance from self to edge of sphere in direction of sphere
-            dist = -np.sum(((point - self) * (self - h2_sphere.origin)).vec) + np.sqrt(nabla)
-            # point on sphere at end of initial ray
-            pos_0 = self + (point - self) * dist
-
-            # determine initial ray direction and initial travel distance
-            dir_0 = pos_0 - self
-            s_0 = dir_0.len()
             # Determine beam width
-            beam_width = 2 * np.arcsin(self.sphere_dist / point.dist(self) / 2)
-            # Determine local speed of sound
-            speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
-            # Set the initial velocity vector
-            vel_0 = speed_of_sound * dir_0 / dir_0.len()
-            # Get the relevant amplitude spectrum
-            spectrum = h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t)
+            beam_width = 2 * np.arcsin(self.sphere_dist / (2 * point.dist(self)))
 
-            ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, t_0=self.t, label=self.blade))
-            p_thread.update()
+            dir_ray = ((point - self) / (point - self).len()).to_spherical(hf.Cartesian(0, 0, 0))
+            dir_rec = ((receiver - self) / (receiver - self).len()).to_spherical(hf.Cartesian(0, 0, 0))
+
+            if abs(dir_ray[1] - dir_rec[1]) <= 5 * beam_width and abs(dir_ray[2] - dir_rec[2]) <= 5 * beam_width:
+                # determinant of line-sphere intersection
+                nabla = np.sum(((point - self) * (self - h2_sphere.origin)).vec)**2 - (
+                        h2_sphere.origin.dist(self)**2 - h2_sphere.radius**2)
+                # distance from self to edge of sphere in direction of sphere
+                dist = -np.sum(((point - self) * (self - h2_sphere.origin)).vec) + np.sqrt(nabla)
+                # point on sphere at end of initial ray
+                pos_0 = self + (point - self) * dist
+
+                # determine initial ray direction and initial travel distance
+                dir_0 = pos_0 - self
+                s_0 = dir_0.len()
+                # Determine local speed of sound
+                speed_of_sound = atmosphere.get_speed_of_sound(-pos_0[2])
+                # Set the initial velocity vector
+                vel_0 = speed_of_sound * dir_0 / dir_0.len()
+                # Get the relevant amplitude spectrum
+                spectrum = h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t)
+
+                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, t_0=self.t, label=self.blade))
 
         return ray_queue
 
@@ -244,19 +250,13 @@ class SourceModel:
                 self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
                                                                     origin).to_cartesian()
 
-        self.sources = []
-
-    def generate_rays(self):
-        """
-        TODO: SourceModel.generate_rays > write docstring and comments
-        :return: a queue containing the generated SoundRays
-        """
-        ray_queue = queue.Queue()
+        self.source_queue = queue.Queue()
+        # Generate the sound sources
         points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
 
-        estimate = self.time_series.index.size * len(points)
+        estimate = self.time_series.index.size
         estimate *= 1 if self.simple else 3
-        p_thread = hf.ProgressThread(estimate, 'Generating rays')
+        p_thread = hf.ProgressThread(estimate, 'Generating sources')
         p_thread.start()
 
         for key in self.time_series.columns:
@@ -264,15 +264,27 @@ class SourceModel:
                 for t in self.time_series.index:
                     x, y, z = self.time_series.loc[t, key].vec
                     source = Source(x, y, z, points, dist, t, key)
-                    ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, p_thread)
 
-                    self.sources.append(source)
+                    self.source_queue.put(source)
+                    p_thread.update()
+
+        p_thread.stop()
+
+    def run(self, receiver: rm.Receiver) -> queue.Queue:
+        """
+        TODO: SourceModel.generate_rays > write docstring and comments
+        :param receiver:
+        :return: a queue containing the generated SoundRays
+        """
+        ray_queue = queue.Queue()
+
+        estimate = self.source_queue.qsize()
+        p_thread = hf.ProgressThread(estimate, 'Generating rays')
+        p_thread.start()
+
+        for source in self.source_queue.queue:
+            ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver)
+            p_thread.update()
 
         p_thread.stop()
         return ray_queue
-
-    def run(self) -> queue.Queue:
-        """
-        Run the source model
-        """
-        return self.generate_rays()
