@@ -1,7 +1,10 @@
 import os
 import queue
 import numpy as np
-import threading
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+from matplotlib.widgets import Slider
 
 import helper_functions as hf
 import propagation_model as pm
@@ -288,3 +291,75 @@ class SourceModel:
 
         p_thread.stop()
         return ray_queue
+
+    def interactive_source_plot(self):
+        """
+        TODO: SourceModel.interactive_source_plot > write docstring and comments
+        :return:
+        """
+        # raise NotImplementedError('Yeah, nah mate :/')
+        sources = {}
+        source: Source
+        for source in self.source_queue.queue:
+            t = round(source.t, 10)
+            if t in sources.keys():
+                sources[t].append(source)
+            else:
+                sources[t] = [source, ]
+
+        # create the main plot
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
+        def update_plot(t_plt: float):
+            """
+            TODO: PropagationModel.interactive_ray_plot.update_plot > write docstring and comments
+            :param t_plt:
+            :return:
+            """
+            source_lst = sources[t_plt]
+
+            ax.clear()
+            ax.set_aspect('equal')
+            ax.set_xlim(-75, 75)
+            ax.set_ylim(-75, 75)
+            ax.set_zlim(0, 150)
+
+            ax.set_xlabel('-x (m)')
+            ax.set_ylabel('y (m)')
+            ax.set_zlabel('-z (m)')
+            for src in source_lst:
+                x, y, z = src.vec
+                ax.scatter(-x, y, -z, s=5, color='k', marker='8')
+
+        # adjust the main plot to make room for the sliders
+        fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
+
+        # Make a horizontal slider to control the time.
+        ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
+        valstep = list(sorted(sources.keys()))
+        slider = Slider(
+            ax=ax_time,
+            label='Time (s)',
+            valmin=valstep[0],
+            valmax=valstep[-1],
+            valstep=valstep,
+            valinit=valstep[0],
+        )
+
+        levels = np.arange(5, 95 + 10, 10)
+        ticks = np.arange(0, 100 + 10, 10)
+        cmap = mpl.colormaps['viridis'].resampled(10)
+
+        ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
+        norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
+        plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
+                     cax=ax_cbar,
+                     extend='both',
+                     orientation='vertical',
+                     label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
+                     )
+
+        update_plot(valstep[0])
+        slider.on_changed(update_plot)
+        plt.show()

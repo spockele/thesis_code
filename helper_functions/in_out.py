@@ -94,7 +94,7 @@ def read_hawc2_aero_noise(path: str, scope: str = 'All'):
         # Extract hub wind speed
         hub_vel = float(info[2].split('  ')[1])
         # Extract azimuth of each blade
-        blade_azim = [limit_angle(np.radians(float(num))) for num in info[4].split(' ')[2:-1]]
+        blade_azim = [np.radians(float(num)) for num in info[4].split(' ')[2:-1]]
         # Fill this info into the time series DataFrame
         time_series_data.loc[t] = [*hub_pos, hub_vel, *blade_azim]
 
@@ -109,6 +109,10 @@ def read_hawc2_aero_noise(path: str, scope: str = 'All'):
                 psd_idx = 5 * n_blade + 1
                 psd[n_blade].loc[psd_line[0], t] = psd_line[psd_idx + scope_idxs[scope]]
 
+    # Unwrap from the range [0,2pi] to avoid interpolation issues at the domain gap
+    time_series_data.loc[:, 'psi_1'] = np.unwrap(time_series_data.loc[:, 'psi_1'])
+    time_series_data.loc[:, 'psi_2'] = np.unwrap(time_series_data.loc[:, 'psi_2'])
+    time_series_data.loc[:, 'psi_3'] = np.unwrap(time_series_data.loc[:, 'psi_3'])
     # Return all the extracted data ;|
     return observer_pos, time_series_data, psd
 
