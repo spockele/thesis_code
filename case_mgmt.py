@@ -448,42 +448,46 @@ class Case(CaseLoader):
         spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
         spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'))
 
-        # t_rdb = [round(t, 10) for t in sorted(rays.keys())]
-        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        # for t in t_rdb:
-        #     for ray in rays[t]:
-        #         spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
-        #         energy = np.trapz(spectrum, spectrum.index)
-        #         if energy > 0:
-        #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
-        #
-        #             bin_e = 2 * int(energy // 2) + 1
-        #             if bin_e in histogram.index:
-        #                 histogram.loc[bin_e, t] += 1
-        # plt.figure(10)
-        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        # cbr = plt.colorbar(ctr)
-        #
-        # plt.xlabel('t (s)')
-        # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
-        # cbr.set_label('Number of Received Sound Rays (-)')
-        # plt.show()
+        # --------------------------------------------------------------------------------------------------------------
+        # Histogram plot(s)
+        # --------------------------------------------------------------------------------------------------------------
+        t_rdb = [round(t, 10) for t in sorted(rays.keys())]
+        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        for t in t_rdb:
+            for ray in rays[t]:
+                spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
+                energy = np.trapz(spectrum, spectrum.index)
+                if energy > 0:
+                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
 
-        # received: dict = self.receiver_dict[0].received
-        #
-        # t = sorted(received.keys())
-        # n = np.array([len(received[t]) for t in sorted(received.keys())])
-        #
-        # plt.figure(11)
-        # plt.plot(t, n)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('$N_{rays}$ (-)')
-        # plt.show()
+                    bin_e = 2 * int(energy // 2) + 1
+                    if bin_e in histogram.index:
+                        histogram.loc[bin_e, t] += 1
+        plt.figure(10)
+        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        cbr = plt.colorbar(ctr)
 
+        plt.xlabel('t (s)')
+        plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+        cbr.set_label('Number of Received Sound Rays (-)')
+
+        received: dict = self.receiver_dict[0].received
+
+        t = sorted(received.keys())
+        n = np.array([len(received[t]) for t in sorted(received.keys())])
+
+        plt.figure(11)
+        plt.plot(t, n)
+        plt.xlabel('t (s)')
+        plt.ylabel('$N_{rays}$ (-)')
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Sound reconstruction
+        # --------------------------------------------------------------------------------------------------------------
         pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0], source_model.time_series)
 
-        # spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
-        #                           header=0, index_col=0).applymap(complex)
+        spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
+                                  header=0, index_col=0).applymap(complex)
         spectrogram.columns = spectrogram.columns.astype(float)
         spectrogram.index = spectrogram.index.astype(float)
 
@@ -499,8 +503,39 @@ class Case(CaseLoader):
             x_fft[ti] = np.sqrt(np.interp(f, f_octave, x_spectrogram)) * np.exp(
                 1j * np.random.uniform(0, 2 * np.pi, f.size))
 
+        # --------------------------------------------------------------------------------------------------------------
+        # Spectrograms and sound plots
+        # --------------------------------------------------------------------------------------------------------------
+        plt.figure(1)
+        ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=0, vmax=40)
+        cbar = plt.colorbar(ctr)
+        plt.xlabel('t (s)')
+        plt.ylabel('f (Hz)')
+        cbar.set_label('PSL (dB / Hz)')
+
         t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_fft, nperseg=n_perseg, noverlap=n_perseg - n_base,
                            window=('tukey', .75))
+        plt.figure(3)
+        plt.plot(t, x)
+        plt.xlabel('t (s)')
+        plt.ylabel('p (Pa)')
+
+        plt.figure(4)
+        plt.plot(t, 20 * np.log10(np.abs(x) / hf.p_ref))
+        plt.xlabel('t (s)')
+        plt.ylabel('Pressure level (dB)')
+        plt.ylim(-60, 80)
+
+        plt.figure(2)
+        f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
+        ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=0, vmax=40)
+        cbar = plt.colorbar(ctr)
+        plt.xlabel('t (s)')
+        plt.ylabel('f (Hz)')
+        cbar.set_label('PSL (dB / Hz)')
+
+        # plt.close('all')
+        plt.show()
 
         # Longer sound files :)
         rotation_time = 60 / 27.1  # 1 / RPM
@@ -511,6 +546,6 @@ class Case(CaseLoader):
         x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
         x_long = np.tile(x_rotation, 10)
 
-        # Normalise to 80 dB
+        # Normalise to 80 dB (2e-1 Pa)
         wav_dat = (np.clip(x_long / 2e-1, -1, 1) * 32767).astype(np.int16)
         spio.wavfile.write(f'{self.case_name}_rec{0}.wav', int(f_s_desired), wav_dat)
