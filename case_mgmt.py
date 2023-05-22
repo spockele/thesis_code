@@ -384,6 +384,7 @@ class Case(CaseLoader):
 
         # Stop the progress thread
         p_thread.stop()
+        del p_thread
 
         ''' Postprocessing '''
         # Remove the temp htc file
@@ -442,7 +443,7 @@ class Case(CaseLoader):
             p_thread.update()
 
         p_thread.stop()
-        p_thread.join()
+        del p_thread
         self.receiver_dict[0].sum_spectra()
 
         spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
@@ -484,7 +485,6 @@ class Case(CaseLoader):
         # --------------------------------------------------------------------------------------------------------------
         # Sound reconstruction
         # --------------------------------------------------------------------------------------------------------------
-        pm.PropagationModel.interactive_ray_plot(ray_queue, self.receiver_dict[0], source_model.time_series)
 
         spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
                                   header=0, index_col=0).applymap(complex)
@@ -494,7 +494,7 @@ class Case(CaseLoader):
         n_base = 512
         n_fft = n_base * 8
         n_perseg = n_base * 2
-        x_fft = 1j * np.empty((spectrogram.columns.size, n_fft // 2))
+        x_fft = 1j * np.zeros((spectrogram.columns.size, n_fft // 2))
         f_s_desired = n_base * 1e2
         f = spfft.fftfreq(n_fft, 1 / f_s_desired)[:n_fft // 2]
         f_octave = hf.octave_band_fc(1)

@@ -56,7 +56,7 @@ class Receiver(hf.Cartesian):
 
     def receive(self, sound: ReceivedSound):
         """
-        TODO: Receiver.receive > write docstring and comments
+        TODO: Receiver.receive > write docstring and comments.
         :param sound:
         :return:
         """
@@ -100,3 +100,4 @@ class Receiver(hf.Cartesian):
         self.spectrogram.columns = self.received.keys()
 
         p_thread.stop()
+        del p_thread

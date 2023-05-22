@@ -30,6 +30,7 @@ class Project:
         ================================================================================================================
 
         ================================================================================================================
+        TODO: Project.__init__ > write docstring
         :param project_path:
         """
         # Check if project folder exists.
@@ -59,7 +60,7 @@ class Project:
 
     def run(self):
         """
-
+        TODO Project.run > write docstring and comments
         """
         for ci, case in enumerate(self.cases):
             print(f'==================== Simulating case {ci + 1}/{len(self.cases)} ====================')

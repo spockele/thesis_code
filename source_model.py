@@ -111,6 +111,7 @@ class H2Sphere(list[H2Observer]):
             self.append(H2Observer(file_path, self.scope, aur_conditions_dict['delta_t']))
             p_thread.update()
         p_thread.stop()
+        del p_thread
 
         self.time_series = self[0].time_series
 
@@ -272,6 +273,7 @@ class SourceModel:
                     p_thread.update()
 
         p_thread.stop()
+        del p_thread
 
     def run(self, receiver: rm.Receiver) -> queue.Queue:
         """
@@ -290,6 +292,7 @@ class SourceModel:
             p_thread.update()
 
         p_thread.stop()
+        del p_thread
         return ray_queue
 
     def interactive_source_plot(self):

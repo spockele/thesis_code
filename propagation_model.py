@@ -208,7 +208,7 @@ class Ray:
         Convert position history to an easily readable array of shape (self.pos.size, 3)
         :return: numpy array with full position history unpacked
         """
-        arr = np.empty((self.pos.size, 3))
+        arr = np.zeros((self.pos.size, 3))
         for pi, pos in enumerate(self.pos):
             arr[pi] = pos.vec
 
@@ -316,6 +316,7 @@ class PropagationModel:
         [thread.join() for thread in threads]
         # Stop the ProgressThread
         p_thread.stop()
+        del p_thread
 
         return out_queue
 
@@ -345,6 +346,7 @@ class PropagationModel:
             p_thread.update()
 
         p_thread.stop()
+        del p_thread
 
     @staticmethod
     def unpickle_ray_queue() -> queue.Queue:
@@ -369,6 +371,7 @@ class PropagationModel:
             p_thread.update()
 
         p_thread.stop()
+        del p_thread
 
         return ray_queue
 
