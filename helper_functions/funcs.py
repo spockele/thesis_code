@@ -59,7 +59,7 @@ class ProgressThread(threading.Thread):
     """
     def __init__(self, total: int, task: str):
         super().__init__(name='ProgressThread')
-        self.step = 1
+        self.step = 0
         self.total = total
         self.task = task
         self.work = True
