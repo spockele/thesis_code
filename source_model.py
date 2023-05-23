@@ -18,6 +18,7 @@ import reception_model as rm
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ['H2Observer', 'H2Sphere', 'Source', 'SourceModel']
 
 
 class H2Observer(hf.Cartesian):
@@ -168,13 +169,14 @@ class Source(hf.Cartesian):
         return f'<Source: {str(self)}, t = {self.t} s>'
 
     def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue,
-                      receiver: rm.Receiver):
+                      receiver: rm.Receiver, models: tuple):
         """
         TODO: Source.generate_rays > write docstring
         :param h2_sphere:
         :param atmosphere:
         :param ray_queue:
         :param receiver:
+        :param models:
         :return:
         """
         for point in self.sphere:
@@ -203,7 +205,8 @@ class Source(hf.Cartesian):
                 # Get the relevant amplitude spectrum
                 spectrum = h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t)
 
-                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, t_0=self.t, label=self.blade))
+                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, models,
+                                          t_0=self.t, label=self.blade))
 
         return ray_queue
 
@@ -275,10 +278,11 @@ class SourceModel:
         p_thread.stop()
         del p_thread
 
-    def run(self, receiver: rm.Receiver) -> queue.Queue:
+    def run(self, receiver: rm.Receiver, models: tuple) -> queue.Queue:
         """
         TODO: SourceModel.generate_rays > write docstring and comments
         :param receiver:
+        :param models:
         :return: a queue containing the generated SoundRays
         """
         ray_queue = queue.Queue()
@@ -288,7 +292,7 @@ class SourceModel:
         p_thread.start()
 
         for source in self.source_queue.queue:
-            ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver)
+            ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models)
             p_thread.update()
 
         p_thread.stop()

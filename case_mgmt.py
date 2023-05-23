@@ -151,7 +151,7 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ('wsp', 'groundtemp', 'groundpres', 'rotor_radius', 'z0_wsp', 'z_wsp', 'delta_t'):
+                if key in ('rotor_radius', 'wsp', 'z_wsp', 'z0_wsp', 'groundtemp', 'groundpres', 'humidity', 'delta_t'):
                     self.conditions_dict[key] = float(value)
 
                 elif key in ():
@@ -206,6 +206,7 @@ class CaseLoader:
         :param lines: list of lines containing auralisation input code
         """
         blocks = self._get_blocks(lines[1:-1])
+
         for key, value in blocks.items():
             if key in ('blade_percent', 'radius_factor'):
                 self.source_dict[key] = float(value)
@@ -228,6 +229,9 @@ class CaseLoader:
 
             elif key in ('n_threads', ):
                 self.propagation_dict[key] = int(value)
+
+            elif key == 'models':
+                self.propagation_dict[key] = tuple(value.split(','))
 
             else:
                 self.propagation_dict[key] = value
@@ -315,12 +319,14 @@ class Case(CaseLoader):
         # Generate atmosphere if it does not exist yet
         if not os.path.isfile(self.atmosphere_path):
             self.atmosphere = hf.Atmosphere(self.conditions_dict['z_wsp'], self.conditions_dict['wsp'],
-                                            self.conditions_dict['z0_wsp'], 1., self.conditions_dict['groundtemp'],
-                                            self.conditions_dict['groundpres'], atm_path=self.atmosphere_path)
+                                            self.conditions_dict['humidity'], wind_z0=self.conditions_dict['z0_wsp'],
+                                            delta_h=1., t_0m=self.conditions_dict['groundtemp'],
+                                            p_0m=self.conditions_dict['groundpres'], atm_path=self.atmosphere_path)
         # Otherwise, load the cache file
         else:
             self.atmosphere = hf.Atmosphere(self.conditions_dict['z_wsp'], self.conditions_dict['wsp'],
-                                            self.conditions_dict['z0_wsp'], atm_path=self.atmosphere_path)
+                                            self.conditions_dict['humidity'], wind_z0=self.conditions_dict['z0_wsp'],
+                                            atm_path=self.atmosphere_path)
 
     def generate_hawc2_sphere(self):
         """
@@ -416,46 +422,30 @@ class Case(CaseLoader):
         """
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
+        reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
 
-        print(f' -- Running propagation model for receiver {0}')
-        ray_queue: queue.Queue = source_model.run(self.receiver_dict[0])
-        ray_queue: queue.Queue = propagation_model.run(0, self.receiver_dict[0], ray_queue)
+        receiver: rm.Receiver = self.receiver_dict[0]
+
+        print(f' -- Running Propagation Model for receiver {0}')
+        ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
+        ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
 
         # propagation_model.pickle_ray_queue(ray_queue)
         # ray_queue = pm.PropagationModel.unpickle_ray_queue()
 
         print(f' -- Running Reception Model for receiver {0}')
-        p_thread = hf.ProgressThread(ray_queue.qsize(), 'Receiving sound rays')
-        p_thread.start()
+        reception_model.run(receiver, ray_queue)
 
-        rays = {}
-        ray: pm.SoundRay
-        for ray in ray_queue.queue:
-            if ray.received:
-                ray.receive(self.receiver_dict[0])
-
-                t = round(ray.t[-1], 10)
-                if t in rays.keys():
-                    rays[t].append(ray)
-                else:
-                    rays[t] = [ray, ]
-
-            p_thread.update()
-
-        p_thread.stop()
-        del p_thread
-        self.receiver_dict[0].sum_spectra()
-
-        spectrogram: pd.DataFrame = self.receiver_dict[0].spectrogram
-        spectrogram.to_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'))
+        spectrogram_path = os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv')
+        receiver.spectrogram.to_csv(spectrogram_path)
 
         # --------------------------------------------------------------------------------------------------------------
         # Histogram plot(s)
         # --------------------------------------------------------------------------------------------------------------
-        t_rdb = [round(t, 10) for t in sorted(rays.keys())]
+        t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
         histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
         for t in t_rdb:
-            for ray in rays[t]:
+            for ray in reception_model.rays[t]:
                 spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
                 energy = np.trapz(spectrum, spectrum.index)
                 if energy > 0:
@@ -472,7 +462,7 @@ class Case(CaseLoader):
         plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
         cbr.set_label('Number of Received Sound Rays (-)')
 
-        received: dict = self.receiver_dict[0].received
+        received: dict = receiver.received
 
         t = sorted(received.keys())
         n = np.array([len(received[t]) for t in sorted(received.keys())])
@@ -501,7 +491,7 @@ class Case(CaseLoader):
         for ti, t in enumerate(spectrogram.columns):
             x_spectrogram = spectrogram.loc[:, t].to_numpy()
             x_fft[ti] = np.sqrt(np.interp(f, f_octave, x_spectrogram)) * np.exp(
-                1j * np.random.uniform(0, 2 * np.pi, f.size))
+                1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
 
         # --------------------------------------------------------------------------------------------------------------
         # Spectrograms and sound plots

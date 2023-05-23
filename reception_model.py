@@ -1,7 +1,10 @@
+import queue
+
 import numpy as np
 import pandas as pd
 
 import helper_functions as hf
+from propagation_model import *
 
 
 """
@@ -11,26 +14,21 @@ import helper_functions as hf
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-# TODO: write ReceptionModel class to handle the reception model
+__all__ = ['ReceivedSound', 'Receiver', 'ReceptionModel']
 
 
 class ReceivedSound:
-    def __init__(self, t_received: float, head_rotation: float, last_dir: hf.Cartesian, spectrum: pd.DataFrame):
+    def __init__(self, t_received: float, last_dir: hf.Cartesian, spectrum: pd.DataFrame, head_rotation: float):
         """
         TODO: ReceivedSound.__init__ > write docstring and comments
         :param t_received:
-        :param head_rotation:
         :param last_dir:
         :param spectrum:
+        :param head_rotation:
         """
-        if 'gaussian' not in spectrum.columns:
-            raise RuntimeError('Sound spectrum DataFrame does not contain the Gaussian reception transfer function.')
-
         self.t = t_received
         self.head_rotation = head_rotation
         self.spectrum = spectrum
-
-        self.sound_spectrum = spectrum['gaussian'] * spectrum['a'] * np.exp(1j * spectrum['p'])
 
         # Incoming direction is the inverse of the last travel direction, adjusted for the head rotation
         coming_from_cartesian = - last_dir
@@ -90,8 +88,9 @@ class Receiver(hf.Cartesian):
         p_thread = hf.ProgressThread(len(self.received.keys()), 'Summing received sound')
         p_thread.start()
 
+        sound: ReceivedSound
         for t, sounds in self.received.items():
-            spectra = [sound.sound_spectrum for sound in sounds]
+            spectra = [sound.spectrum['a'] * np.exp(1j * sound.spectrum['p']) for sound in sounds]
             sums[t] = sum(spectra)
 
             p_thread.update()
@@ -101,3 +100,43 @@ class Receiver(hf.Cartesian):
 
         p_thread.stop()
         del p_thread
+
+
+class ReceptionModel:
+    def __init__(self, aur_conditions_dict: dict, aur_reception_dict: dict):
+        """
+        TODO: ReceptionModel.__init__ > write docstring and comments
+        :param aur_conditions_dict:
+        :param aur_reception_dict:
+        """
+        self.conditions_dict = aur_conditions_dict
+        self.params = aur_reception_dict
+
+        self.rays = {}
+
+    def run(self, receiver: Receiver, in_queue: queue.Queue):
+        """
+        TODO: ReceptionModel.run > write docstring and comments
+        :param receiver:
+        :param in_queue:
+        """
+        p_thread = hf.ProgressThread(in_queue.qsize(), 'Receiving sound rays')
+        p_thread.start()
+
+        ray: SoundRay
+        for ray in in_queue.queue:
+            if ray.received:
+                sound = ReceivedSound(*ray.receive(receiver), receiver.rotation)
+                receiver.receive(sound)
+
+                t = round(ray.t[-1], 10)
+                if t in self.rays.keys():
+                    self.rays[t].append(ray)
+                else:
+                    self.rays[t] = [ray, ]
+
+            p_thread.update()
+
+        p_thread.stop()
+        del p_thread
+        receiver.sum_spectra()

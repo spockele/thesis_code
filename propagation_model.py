@@ -11,7 +11,7 @@ import compress_pickle as pickle
 from matplotlib.widgets import Slider
 
 import helper_functions as hf
-import reception_model as rm
+from reception_model import *
 
 
 """
@@ -21,10 +21,11 @@ import reception_model as rm
 ===                                                                                                                  ===
 ========================================================================================================================
 """
+__all__ = ['PropagationThread', 'Ray', 'SoundRay', 'PropagationModel', ]
 
 
 class PropagationThread(threading.Thread):
-    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: rm.Receiver,
+    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: Receiver,
                  atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
         """
         ================================================================================================================
@@ -162,7 +163,7 @@ class Ray:
 
         return vel, direction, pos, delta_s
 
-    def check_reception(self, receiver: rm.Receiver, delta_s: float):
+    def check_reception(self, receiver: Receiver, delta_s: float):
         """
         Check if the ray went past a receiver point.
         :param receiver: The receiver point in Cartesian coordinates (m, m, m).
@@ -185,7 +186,14 @@ class Ray:
         # If all else fails: this ray has not yet passed, probably
         return False
 
-    def propagate(self, delta_t: float, receiver: rm.Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.):
+    def propagation_effects(self, atmosphere: hf.Atmosphere):
+        """
+        TODO: Ray.propagation_effects > write docstring and comments
+        :param atmosphere:
+        """
+        pass
+
+    def propagate(self, delta_t: float, receiver: Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.):
         """
         Propagate the Ray until received or kill condition is reached
         :param delta_t: time step (s)
@@ -195,10 +203,12 @@ class Ray:
         """
         self.received = False
         kill = self.pos[0][2] >= 0
+        self.propagation_effects(atmosphere)
 
         while not (self.received or kill):
             vel, direction, pos, delta_s = self.ray_step(delta_t, atmosphere)
             self.received = self.check_reception(receiver, delta_s)
+            self.propagation_effects(atmosphere)
 
             if self.t[-1] - self.t[0] > t_lim:
                 kill = True
@@ -217,7 +227,7 @@ class Ray:
 
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 amplitude_spectrum: pd.DataFrame, t_0: float = 0., label: str = None):
+                 amplitude_spectrum: pd.DataFrame, models: tuple, t_0: float = 0., label: str = None):
         """
         ================================================================================================================
         Class for the propagation sound ray model. With the sound spectral effects.
@@ -231,23 +241,67 @@ class SoundRay(Ray):
         """
         super().__init__(pos_0, vel_0, s_0, t_0)
 
-        self.label = label
-        self.spectrum = pd.DataFrame(amplitude_spectrum)
-        self.spectrum['p'] = 0.
-        self.spectrum['gaussian'] = 0.
-        self.spectrum.columns = ['a', 'p', 'gaussian']
         self.bw = beam_width
+        self.label = label
+
+        self.spectrum = pd.DataFrame(amplitude_spectrum)
+        self.spectrum.columns = ['a']
+        self.spectrum['p'] = 0.
+        self.spectrum['gaussian'] = 1.
+        self.spectrum['spherical'] = 1.
+        self.spectrum['atmospheric'] = 1.
+
+        self.models = models
 
     def copy(self):
         """
         Create a not-yet-propagated copy of this SoundRay
         """
-        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.spectrum['a'], self.t[0], self.label)
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.spectrum['a'],
+                        self.models, self.t[0], self.label)
 
-    def gaussian_factor(self, receiver: rm.Receiver):
+    def propagation_effects(self, atmosphere: hf.Atmosphere):
+        """
+        TODO: SoundRay.propagation_effects > write docstring and comments
+        :param atmosphere:
+        :return:
+        """
+        t_current, p_current, _, c_current, _ = atmosphere.get_conditions(-self.pos[-1][2])
+
+        if 'spherical' in self.models and self.t.size > 2:
+            c_previous = atmosphere.get_speed_of_sound(-self.pos[-2][2])
+            # Spherical spreading factor
+            self.spectrum['spherical'] *= (self.s[-1] / self.s[-2]) * np.sqrt(c_previous / c_current)
+
+        if 'atmosphere' in self.models and self.t.size >= 2:
+            # Reference values
+            t_0, p_0 = 293.15, 101325
+            # Extract frequencies from spectrum
+            f = self.spectrum.index
+            # Determine saturation pressure
+            p_sat = 622.2 * np.exp(17.67 * (t_current - 273.15) / (t_current - 29.65))
+            # Determine absolute humidity from relative
+            humidity_abs = atmosphere.humidity * p_sat / p_current
+            # Determine gas resonance frequencies
+            f_rn = (p_current / p_0) * ((t_0 / t_current) ** .5) * (
+                    9. + 280. * humidity_abs * np.exp(-4.17 * ((t_0 / t_current) ** (1 / 3) - 1)))
+            f_ro = (p_current / p_0) * (24. + 4.04e4 * humidity_abs * (.02 + humidity_abs) / (.391 + humidity_abs))
+
+            # Determine the individual terms of the absorption coefficient
+            term_1 = 1.84e-11 / ((p_current / p_0) * (t_0 / t_current) ** .5)
+            term_2 = .1068 * np.exp(-3352 / t_current) * f_rn / (f ** 2 + f_rn ** 2)
+            term_3 = .01278 * np.exp(-2239.1 / t_current) * f_ro / (f ** 2 + f_ro ** 2)
+            # Determine the absorption coefficient
+            alpha = (term_1 + (term_2 + term_3) * (t_0 / t_current) ** 2.5) * f**2
+
+            delta_s = self.s[-1] - self.s[-2]
+            # More absorption :)
+            self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
+
+    def gaussian_factor(self, receiver: Receiver):
         """
         Calculate the Gaussian beam reception transfer function
-        :param receiver: an instance of rm.Receiver
+        :param receiver: an instance of Receiver
         """
         # Determine the perpendicular plane just before the receiver
         plane = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
@@ -263,17 +317,23 @@ class SoundRay(Ray):
         # Determine the filter and clip to between 0 and 1
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
 
-    def receive(self, receiver: rm.Receiver):
+    def receive(self, receiver: Receiver):
         """
         Function that adds the SoundRay to the receiver
-        :param receiver: instance of rm.Receiver
+        :param receiver: instance of Receiver
         """
         # Determine the Gaussian beam attenuation spectrum
         self.gaussian_factor(receiver)
-        # Create the received sound
-        received_sound = rm.ReceivedSound(self.t[-1], receiver.rotation, self.dir[-1], self.spectrum)
-        # Receive sound with the receiver
-        receiver.receive(received_sound)
+        # Take the amplitude and phase spectra
+        spectrum = self.spectrum[['a', 'p']].copy()
+        # Add the Gaussian beam attenuation
+        spectrum['a'] *= self.spectrum['gaussian']
+        # Add attenuation from selected models
+        for model in self.models:
+            spectrum['a'] *= self.spectrum[model]
+
+        # Return what is needed to create a ReceivedSound instance
+        return self.t[-1], self.dir[-1], spectrum
 
 
 class PropagationModel:
@@ -290,11 +350,11 @@ class PropagationModel:
         self.params = aur_propagation_dict
         self.atmosphere = atmosphere
 
-    def run(self, receiver_key: int, receiver_pos: rm.Receiver, in_queue: queue.Queue):
+    def run(self, receiver: Receiver, in_queue: queue.Queue):
         """
         Run the propagation model for one receiver.
-        :param receiver_key: Key of the receiver in self.receivers.
-        :param receiver_pos: The receiver point in Cartesian coordinates (m, m, m).
+        TODO: PropagationModel.run > update docstring
+        :param receiver: Instance of Receiver.
         :param in_queue:
         :return: A queue.Queue instance containing all propagated SoundRays.
         """
@@ -302,14 +362,14 @@ class PropagationModel:
         out_queue = queue.Queue()
 
         # Set the time limit to limit compute time
-        t_limit = 3 * receiver_pos.dist(self.conditions_dict['hub_pos']) / hf.c
+        t_limit = 3 * receiver.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver {receiver_key}')
+        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver')
         p_thread.start()
         # Create the PropagationThreads
         threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
-                                     receiver_pos, self.atmosphere, p_thread, t_limit)
+                                     receiver, self.atmosphere, p_thread, t_limit)
                    for _ in range(self.params['n_threads'])]
         # Start the threads and hold until all are done
         [thread.start() for thread in threads]
@@ -376,7 +436,7 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: queue.Queue, receiver: rm.Receiver, time_series: pd.DataFrame):
+    def interactive_ray_plot(ray_queue: queue.Queue, receiver: Receiver, time_series: pd.DataFrame):
         """
         TODO: PropagationModel.interactive_ray_plot > write docstring and comments
         :param ray_queue:
