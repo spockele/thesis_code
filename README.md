@@ -107,11 +107,12 @@ end source ;
 ;
 begin propagation ;
     n_threads -int- ; Defines the number of compute threads used for propagating sound rays
+    models -str-,-str-,... ; Defines which propagation effect models to apply (spherical, atmosphere, )
 end propagation ;
 ;
 begin reception ;
     ; ----------------------------------------------------------------------------------
-    ; Define the receiver point(s) in this block
+    ; Define the receiver point(s) in this block (can be multiple)
     ; ----------------------------------------------------------------------------------
     begin receiver ;
         index -int- ; indexing number >=0

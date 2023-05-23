@@ -10,6 +10,7 @@ begin conditions ;
     ;
     groundtemp 11. ;        Ground level air temperature (celcius)
     groundpres 102210.0 ;   Ground level air pressure (Pa)
+    humidity 50. ;           Air relative humidity (%)
     ;
     delta_t .01 ; Defines the auralisation time step (s)
 end conditions ;
