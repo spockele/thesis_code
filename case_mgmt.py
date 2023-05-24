@@ -236,6 +236,9 @@ class CaseLoader:
             else:
                 self.propagation_dict[key] = value
 
+        if 'models' not in self.propagation_dict.keys():
+            self.propagation_dict['models'] = ()
+
     def _parse_receiver(self, lines: list):
         """
         Parse a reception > receiver block
@@ -430,7 +433,8 @@ class Case(CaseLoader):
         ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
         ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
 
-        # propagation_model.pickle_ray_queue(ray_queue)
+        propagation_model.pickle_ray_queue(ray_queue,
+                                           os.path.join(self.project_path, f'pickle_{self.case_name}_rec{0}'))
         # ray_queue = pm.PropagationModel.unpickle_ray_queue()
 
         print(f' -- Running Reception Model for receiver {0}')
@@ -442,40 +446,39 @@ class Case(CaseLoader):
         # --------------------------------------------------------------------------------------------------------------
         # Histogram plot(s)
         # --------------------------------------------------------------------------------------------------------------
-        t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
-        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        for t in t_rdb:
-            for ray in reception_model.rays[t]:
-                spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
-                energy = np.trapz(spectrum, spectrum.index)
-                if energy > 0:
-                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
-
-                    bin_e = 2 * int(energy // 2) + 1
-                    if bin_e in histogram.index:
-                        histogram.loc[bin_e, t] += 1
-        plt.figure(10)
-        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        cbr = plt.colorbar(ctr)
-
-        plt.xlabel('t (s)')
-        plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
-        cbr.set_label('Number of Received Sound Rays (-)')
-
-        received: dict = receiver.received
-
-        t = sorted(received.keys())
-        n = np.array([len(received[t]) for t in sorted(received.keys())])
-
-        plt.figure(11)
-        plt.plot(t, n)
-        plt.xlabel('t (s)')
-        plt.ylabel('$N_{rays}$ (-)')
+        # t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
+        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        # for t in t_rdb:
+        #     for ray in reception_model.rays[t]:
+        #         spectrum = ray.spectrum['a'] * ray.spectrum['gaussian']
+        #         energy = np.trapz(spectrum, spectrum.index)
+        #         if energy > 0:
+        #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
+        #
+        #             bin_e = 2 * int(energy // 2) + 1
+        #             if bin_e in histogram.index:
+        #                 histogram.loc[bin_e, t] += 1
+        # plt.figure(10)
+        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        # cbr = plt.colorbar(ctr)
+        #
+        # plt.xlabel('t (s)')
+        # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+        # cbr.set_label('Number of Received Sound Rays (-)')
+        #
+        # received: dict = receiver.received
+        #
+        # t = sorted(received.keys())
+        # n = np.array([len(received[t]) for t in sorted(received.keys())])
+        #
+        # plt.figure(11)
+        # plt.plot(t, n)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('$N_{rays}$ (-)')
 
         # --------------------------------------------------------------------------------------------------------------
         # Sound reconstruction
         # --------------------------------------------------------------------------------------------------------------
-
         spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
                                   header=0, index_col=0).applymap(complex)
         spectrogram.columns = spectrogram.columns.astype(float)
@@ -497,7 +500,7 @@ class Case(CaseLoader):
         # Spectrograms and sound plots
         # --------------------------------------------------------------------------------------------------------------
         plt.figure(1)
-        ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=0, vmax=40)
+        ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=-10, vmax=30)
         cbar = plt.colorbar(ctr)
         plt.xlabel('t (s)')
         plt.ylabel('f (Hz)')
@@ -518,7 +521,7 @@ class Case(CaseLoader):
 
         plt.figure(2)
         f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
-        ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=0, vmax=40)
+        ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=-10, vmax=30)
         cbar = plt.colorbar(ctr)
         plt.xlabel('t (s)')
         plt.ylabel('f (Hz)')
@@ -536,6 +539,6 @@ class Case(CaseLoader):
         x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
         x_long = np.tile(x_rotation, 10)
 
-        # Normalise to 80 dB (2e-1 Pa)
-        wav_dat = (np.clip(x_long / 2e-1, -1, 1) * 32767).astype(np.int16)
+        # Normalise to 60 dB (2e-2 Pa)
+        wav_dat = (np.clip(x_long / 2e-2, -1, 1) * 32767).astype(np.int16)
         spio.wavfile.write(f'{self.case_name}_rec{0}.wav', int(f_s_desired), wav_dat)
