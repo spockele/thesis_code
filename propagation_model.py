@@ -268,12 +268,12 @@ class SoundRay(Ray):
         """
         t_current, p_current, _, c_current, _ = atmosphere.get_conditions(-self.pos[-1][2])
 
-        if 'spherical' in self.models and self.t.size > 2:
+        if 'spherical' in self.models and self.t.size >= 2:
             c_previous = atmosphere.get_speed_of_sound(-self.pos[-2][2])
             # Spherical spreading factor
-            self.spectrum['spherical'] *= (self.s[-1] / self.s[-2]) * np.sqrt(c_previous / c_current)
+            self.spectrum['spherical'] /= (self.s[-1] / self.s[-2]) * np.sqrt(c_previous / c_current)
 
-        if 'atmosphere' in self.models and self.t.size >= 2:
+        if 'atmospheric' in self.models:
             # Reference values
             t_0, p_0 = 293.15, 101325
             # Extract frequencies from spectrum
@@ -294,7 +294,8 @@ class SoundRay(Ray):
             # Determine the absorption coefficient
             alpha = (term_1 + (term_2 + term_3) * (t_0 / t_current) ** 2.5) * f**2
 
-            delta_s = self.s[-1] - self.s[-2]
+            delta_s = self.s[-1] - self.s[-2] if self.t.size >= 2 else self.s[-1]
+
             # More absorption :)
             self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
 
@@ -330,7 +331,7 @@ class SoundRay(Ray):
         spectrum['a'] *= self.spectrum['gaussian']
         # Add attenuation from selected models
         for model in self.models:
-            spectrum['a'] *= self.spectrum[model]
+            spectrum['a'] *= self.spectrum[model] ** 2
 
         # Return what is needed to create a ReceivedSound instance
         return self.t[-1], self.dir[-1], spectrum
@@ -381,14 +382,14 @@ class PropagationModel:
         return out_queue
 
     @staticmethod
-    def pickle_ray_queue(ray_queue: queue.Queue) -> None:
+    def pickle_ray_queue(ray_queue: queue.Queue, ray_cache_path: str) -> None:
         """
         TODO: PropagationModel.pickle_ray_queue > write docstring and comments
         TODO: PropagationModel.pickle_ray_queue > look into pickle of whole queue instead of 1 per ray
         :param ray_queue:
+        :param ray_cache_path:
         :return:
         """
-        ray_cache_path = os.path.abspath('ray_cache')
         if not os.path.isdir(ray_cache_path):
             os.mkdir(ray_cache_path)
 
