@@ -76,7 +76,7 @@ end source ;
 ;
 begin propagation ;
     n_threads 32 ; Defines the number of threads used for propagating sound rays
-    ; --- WIP ---
+    models spherical,atmospheric ; Defines which propagation effect models to apply (spherical, atmosphere, )
 end propagation ;
 ;
 begin reception ;
