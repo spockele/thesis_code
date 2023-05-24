@@ -143,3 +143,4 @@ samples/
 H2model/
 spectrograms/
 ray_cache/
+pickle*/
