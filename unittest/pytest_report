@@ -8,4 +8,4 @@ helper_functions/test/test_geometry.py ..                                [ 67%]
 helper_functions/test/test_isa.py .........                              [ 85%]
 test/test_propagation_model.py .......                                   [100%]
 
-============================== 49 passed in 4.06s ==============================
+============================= 49 passed in 52.91s ==============================
