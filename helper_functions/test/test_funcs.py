@@ -87,7 +87,7 @@ class TestProgressThread(unittest.TestCase):
         # Check values for functioning
         self.assertFalse(self.mock_progress_thread.work)
         self.assertFalse(self.mock_progress_thread.is_alive())
-        self.assertEqual(2, self.mock_progress_thread.step)
+        self.assertEqual(1, self.mock_progress_thread.step)
 
     def test_interrupt(self):
         """

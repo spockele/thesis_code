@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
 import scipy.io as spio
-import librosa
-
-from . import limit_angle
 
 
 """
@@ -13,8 +10,7 @@ from . import limit_angle
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-__all__ = ["write_to_file", "read_from_file", "read_hawc2_aero_noise", "wav_to_stft",
-           "wav_to_stft_mono", "read_ntk_data", ]
+__all__ = ["write_to_file", "read_from_file", "read_hawc2_aero_noise", "read_ntk_data", ]
 
 
 def write_to_file(array, path: str):
@@ -116,47 +112,47 @@ def read_hawc2_aero_noise(path: str, scope: str = 'All'):
     # Return all the extracted data ;|
     return observer_pos, time_series_data, psd
 
+# TODO: hf.in_out implement alternative to librosa
+# def wav_to_stft(path):
+#     """
+#     Read a WAV file and output the STFT and its attributes
+#     :param path: path of the WAV file as a str
+#     :return:    The sampling frequency as a float
+#                 The timesteps of the STFT as a 1D np array
+#                 The frequency bins of the STFT as a 1D np array
+#                 The STFT of the left channel as a 2D np array
+#                 The STFT of the right channel as a 2D np array
+#     """
+#     # Load the WAV fie with scipy io
+#     freq, dat = spio.wavfile.read(path)
+#     # Use librosa to determine the stft
+#     fxx_0 = np.abs(librosa.stft(dat[:, 0] / np.max(np.abs(dat))))
+#     fxx_1 = np.abs(librosa.stft(dat[:, 1] / np.max(np.abs(dat))))
+#     # Determine the time and frequencies of the STFT
+#     t_fxx = librosa.frames_to_time(np.arange(0, fxx_0.shape[1], dtype=int), sr=freq)
+#     f_fxx = librosa.fft_frequencies(sr=freq)
+#
+#     return freq, t_fxx, f_fxx, fxx_0, fxx_1
 
-def wav_to_stft(path):
-    """
-    Read a WAV file and output the STFT and its attributes
-    :param path: path of the WAV file as a str
-    :return:    The sampling frequency as a float
-                The timesteps of the STFT as a 1D np array
-                The frequency bins of the STFT as a 1D np array
-                The STFT of the left channel as a 2D np array
-                The STFT of the right channel as a 2D np array
-    """
-    # Load the WAV fie with scipy io
-    freq, dat = spio.wavfile.read(path)
-    # Use librosa to determine the stft
-    fxx_0 = np.abs(librosa.stft(dat[:, 0] / np.max(np.abs(dat))))
-    fxx_1 = np.abs(librosa.stft(dat[:, 1] / np.max(np.abs(dat))))
-    # Determine the time and frequencies of the STFT
-    t_fxx = librosa.frames_to_time(np.arange(0, fxx_0.shape[1], dtype=int), sr=freq)
-    f_fxx = librosa.fft_frequencies(sr=freq)
 
-    return freq, t_fxx, f_fxx, fxx_0, fxx_1
-
-
-def wav_to_stft_mono(path):
-    """
-    Read a WAV file and output the STFT and its attributes
-    :param path: path of the WAV file as a str
-    :return:    The sampling frequency as a float
-                The timesteps of the STFT as a 1D np array
-                The frequency bins of the STFT as a 1D np array
-                The STFT of the channel as a 2D np array
-    """
-    # Load the WAV file with scipy io
-    freq, dat = spio.wavfile.read(path)
-    # Use librosa to determine the stft
-    fxx_0 = np.abs(librosa.stft(dat / np.max(np.abs(dat))))
-    # Determine the time and frequencies of the STFT
-    t_fxx = librosa.frames_to_time(np.arange(0, fxx_0.shape[1], dtype=int), sr=freq)
-    f_fxx = librosa.fft_frequencies(sr=freq)
-
-    return freq, t_fxx, f_fxx, fxx_0
+# def wav_to_stft_mono(path):
+#     """
+#     Read a WAV file and output the STFT and its attributes
+#     :param path: path of the WAV file as a str
+#     :return:    The sampling frequency as a float
+#                 The timesteps of the STFT as a 1D np array
+#                 The frequency bins of the STFT as a 1D np array
+#                 The STFT of the channel as a 2D np array
+#     """
+#     # Load the WAV file with scipy io
+#     freq, dat = spio.wavfile.read(path)
+#     # Use librosa to determine the stft
+#     fxx_0 = np.abs(librosa.stft(dat / np.max(np.abs(dat))))
+#     # Determine the time and frequencies of the STFT
+#     t_fxx = librosa.frames_to_time(np.arange(0, fxx_0.shape[1], dtype=int), sr=freq)
+#     f_fxx = librosa.fft_frequencies(sr=freq)
+#
+#     return freq, t_fxx, f_fxx, fxx_0
 
 
 def read_ntk_data(path, calib_path):

@@ -26,20 +26,22 @@ class TestAtmosphere(unittest.TestCase):
         # Create mock for read_from_file function to insert these values
         hf.isa.read_from_file = MagicMock(return_value=self.values)
         # Create mock atmosphere for testing
-        self.atmosphere_mock = hf.Atmosphere(1., 0.)
+        self.atmosphere_mock = hf.Atmosphere(1., 0., 50.)
 
         # Create a mocked atmosphere with wind
-        self.atmosphere_wind = hf.Atmosphere(1., 1., wind_z0=1/np.e)
+        self.atmosphere_wind = hf.Atmosphere(1., 1., 50., wind_z0=1/np.e)
 
     def test_generation(self):
         """
         Test the generator of the ISA class
         """
         # Mock some functions
+        np_arange = hf.isa.np.arange
         hf.isa.np.arange = MagicMock(return_value=self.heights)
+        hf_write_to_file = hf.isa.write_to_file
         hf.isa.write_to_file = MagicMock()
         # Generate the atmosphere
-        atmosphere = hf.Atmosphere(1., 0., delta_h=1)
+        atmosphere = hf.Atmosphere(1., 0., 50., delta_h=1)
         # Check that mocked functions got called
         hf.isa.np.arange.assert_called_once()
         hf.isa.write_to_file.assert_called_once()
@@ -60,6 +62,9 @@ class TestAtmosphere(unittest.TestCase):
         self.assertEqual(atmosphere.ws_z0, 0.)
         self.assertEqual(self.atmosphere_wind.ws_z0, 1.)
         self.assertEqual(self.atmosphere_wind.z0, 1/np.e)
+
+        hf.isa.np.arange = np_arange
+        hf.isa.write_to_file = hf_write_to_file
 
     def test_get_temperature(self):
         """
