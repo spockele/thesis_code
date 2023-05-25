@@ -4,31 +4,40 @@ import numpy as np
 import queue
 import sys
 
+import pandas as pd
+
 import helper_functions as hf
 import propagation_model as pm
+import reception_model as rm
 
 
 class TestPropagationThread(unittest.TestCase):
     def setUp(self) -> None:
         # Create a soundray
-        self.soundray = pm.Ray(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0, hf.Atmosphere(1, 0))
+        self.soundray = pm.Ray(hf.Cartesian(0, 0, 0), hf.Cartesian(0, 0, 0), 0, 0)
+        self.atmosphere = hf.Atmosphere(1, 0, 50)
+        self.receiver = rm.Receiver({'pos': (0., 0., 0.), 'rotation': 0., 'index': 0})
 
         # Create an in and out queue
         inq = queue.Queue()
         outq = queue.Queue()
         inq.put(self.soundray)
         # Create a testing thread
-        self.prop_thread = pm.PropagationThread(inq, outq, 1, hf.Cartesian(0, 0, 0), hf.ProgressThread(0, ''))
+        self.prop_thread = pm.PropagationThread(inq, outq, 1, self.receiver, self.atmosphere,
+                                                hf.ProgressThread(0, ''), 1.)
 
         # Create another in and out queue
         inq2 = queue.Queue()
         outq2 = queue.Queue()
         inq2.put(self.soundray)
         # Create another testing thread
-        self.prop_thread_2 = pm.PropagationThread(inq2, outq2, 1, hf.Cartesian(0, 0, 0), hf.ProgressThread(1, 'test'))
+        self.prop_thread_2 = pm.PropagationThread(inq2, outq2, 1, self.receiver, self.atmosphere,
+                                                  hf.ProgressThread(1, 'test'), 1.)
 
     def tearDown(self) -> None:
         del self.soundray
+        del self.atmosphere
+        del self.receiver
         del self.prop_thread
         del self.prop_thread_2
 
@@ -42,12 +51,12 @@ class TestPropagationThread(unittest.TestCase):
         self.prop_thread.start()
         # Check whether the run does what it must
         self.assertEqual(self.prop_thread.out_queue.qsize(), 1)
-        self.soundray.propagate.assert_called_once_with(1, hf.Cartesian(0, 0, 0), 1.)
-        self.assertEqual(self.prop_thread.p_thread.step, 2)
+        self.soundray.propagate.assert_called_once_with(1, self.receiver, self.atmosphere, 1.)
+        self.assertEqual(self.prop_thread.p_thread.step, 1)
         # Run the second propagation thread
         self.prop_thread_2.start()
         # Check whether the run does what it must
-        self.assertEqual(self.prop_thread_2.p_thread.step, 2)
+        self.assertEqual(self.prop_thread_2.p_thread.step, 1)
 
     def test_interrupt(self):
         # Mock the soundray propagation and terminal output to avoid weird
@@ -73,7 +82,7 @@ class TestPropagationThread(unittest.TestCase):
         pm.threading.main_thread().is_alive = mock_before
 
 
-class TestSoundRay(unittest.TestCase):
+class TestRay(unittest.TestCase):
     def setUp(self) -> None:
         # Create general starting conditions
         self.p0 = hf.Cartesian(0, 0, 0)
@@ -86,22 +95,22 @@ class TestSoundRay(unittest.TestCase):
 
         # Create simple atmosphere
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
-        self.atm_simple = hf.Atmosphere(1, 0, )
+        self.atm_simple = hf.Atmosphere(1, 0, 50., )
         # Create simple sound ray
-        self.soundray_simple = pm.Ray(self.p0, self.c0, self.s0, self.bw, self.atm_simple)
+        self.soundray_simple = pm.Ray(self.p0, self.c0, self.s0, self.bw)
 
         # Create windy atmosphere
-        self.atm_wind = hf.Atmosphere(1, 1, wind_z0=1/np.e)
+        self.atm_wind = hf.Atmosphere(1, 1, 50., wind_z0=1/np.e)
         # Create windy sound ray
-        self.soundray_wind = pm.Ray(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw, self.atm_wind)
+        self.soundray_wind = pm.Ray(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw)
 
         # Create extreme speed of sound gradient
         atmosphere[4] = (1, 100001)
         # Create complex atmosphere
         hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
-        self.atm_complex = hf.Atmosphere(1, 0, )
+        self.atm_complex = hf.Atmosphere(1, 0, 50., )
         # Create complex sound ray
-        self.soundray_complex = pm.Ray(self.p0, self.c0, self.s0, self.bw, self.atm_complex)
+        self.soundray_complex = pm.Ray(self.p0, self.c0, self.s0, self.bw)
 
     def tearDown(self) -> None:
         del self.atm_simple
@@ -121,15 +130,15 @@ class TestSoundRay(unittest.TestCase):
         Test the ray velocity update with simple cases
         """
         # Nothing happens
-        vel, direction = self.soundray_simple.update_ray_velocity(1)
+        vel, direction = self.soundray_simple.update_ray_velocity(1, self.atm_simple)
         self.assertEqual(vel, hf.Cartesian(1, 0, 0))
         self.assertEqual(direction, hf.Cartesian(1, 0, 0))
         # Push into wind direction
-        vel, direction = self.soundray_wind.update_ray_velocity(1)
+        vel, direction = self.soundray_wind.update_ray_velocity(1, self.atm_wind)
         self.assertEqual(vel, hf.Cartesian(0, 1, 0))
         self.assertEqual(direction, hf.Cartesian(0, 0, 0))
         # Bend of direction by gradient
-        vel, direction = self.soundray_complex.update_ray_velocity(1)
+        vel, direction = self.soundray_complex.update_ray_velocity(1, self.atm_complex)
         self.assertEqual(vel, hf.Cartesian(1, 0, 1) / hf.Cartesian(1, 0, 1).len())
         self.assertEqual(direction, hf.Cartesian(1, 0, 1))
 
@@ -155,19 +164,19 @@ class TestSoundRay(unittest.TestCase):
         Test the ray velocity update with simple cases
         """
         # Nothing happens
-        vel, direction, pos, delta_s = self.soundray_simple.ray_step(1)
+        vel, direction, pos, delta_s = self.soundray_simple.ray_step(1, self.atm_simple)
         self.assertEqual(vel, hf.Cartesian(1, 0, 0))
         self.assertEqual(direction, hf.Cartesian(1, 0, 0))
         self.assertEqual(pos, hf.Cartesian(1, 0, 0))
         self.assertEqual(delta_s, 1.)
         # Push into wind direction
-        vel, direction, pos, delta_s = self.soundray_wind.ray_step(1)
+        vel, direction, pos, delta_s = self.soundray_wind.ray_step(1, self.atm_wind)
         self.assertEqual(vel, hf.Cartesian(0, 1, 0))
         self.assertEqual(direction, hf.Cartesian(0, 0, 0))
         self.assertEqual(pos, hf.Cartesian(0, 1, -1))
         self.assertEqual(delta_s, 1.)
         # Bend of direction by gradient
-        vel, direction, pos, delta_s = self.soundray_complex.ray_step(1)
+        vel, direction, pos, delta_s = self.soundray_complex.ray_step(1, self.atm_complex)
         self.assertEqual(vel, hf.Cartesian(1, 0, -1) / hf.Cartesian(1, 0, -1).len())
         self.assertEqual(direction, hf.Cartesian(1, 0, -1))
         self.assertEqual(pos, hf.Cartesian(1, 0, -1) / hf.Cartesian(1, 0, -1).len())
@@ -177,15 +186,66 @@ class TestSoundRay(unittest.TestCase):
         """
         Simple tests for the check_reception functions
         """
+        # Create dummy receivers
+        receiver_0 = rm.Receiver({'pos': (1., 0., 0.), 'rotation': 0., 'index': 0})
+        receiver_1 = rm.Receiver({'pos': (2., 0., 0.), 'rotation': 0., 'index': 0})
+        receiver_2 = rm.Receiver({'pos': (-1., 0., 0.), 'rotation': 0., 'index': 0})
         # Check with only one position saved should always be False
-        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(1, 0, 0), 1.5))
-        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(2, 0, 0), 1.5))
-        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(-1, 0, 0), 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(receiver_0, 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(receiver_1, 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(receiver_2, 1.5))
         # Check with second position should return good stuff
         self.soundray_simple.pos = np.append(self.soundray_simple.pos, [hf.Cartesian(1.5, 0, 0), ])
-        self.assertTrue(self.soundray_simple.check_reception(hf.Cartesian(1, 0, 0), 1.5))
-        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(2, 0, 0), 1.5))
-        self.assertFalse(self.soundray_simple.check_reception(hf.Cartesian(-1, 0, 0), 1.5))
+        self.assertTrue(self.soundray_simple.check_reception(receiver_0, 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(receiver_1, 1.5))
+        self.assertFalse(self.soundray_simple.check_reception(receiver_2, 1.5))
+
+
+class TestSoundRay(unittest.TestCase):
+    def setUp(self) -> None:
+        # Create general starting conditions
+        self.p0 = hf.Cartesian(0, 0, 0)
+        self.c0 = hf.Cartesian(1, 0, 0)
+        self.s0 = 0.
+        self.bw = np.pi / 36
+        # Create simple atmosphere parameters
+        atmosphere = np.ones((5, 2))
+        atmosphere[0] = (0, 100000)
+
+        spectrum = pd.DataFrame(1, columns=['a'], index=hf.octave_band_fc(1))
+        models = ('spherical', 'atmospheric')
+
+        # Create simple atmosphere
+        hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
+        self.atm_simple = hf.Atmosphere(1, 0, 50., )
+        # Create simple sound ray
+        self.soundray_simple = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, spectrum, models)
+
+        # Create windy atmosphere
+        self.atm_wind = hf.Atmosphere(1, 1, 50., wind_z0=1 / np.e)
+        # Create windy sound ray
+        self.soundray_wind = pm.SoundRay(hf.Cartesian(0, 0, -1), hf.Cartesian(0, 0, 0), self.s0, self.bw, spectrum, models)
+
+        # Create extreme speed of sound gradient
+        atmosphere[4] = (1, 100001)
+        # Create complex atmosphere
+        hf.isa.read_from_file = MagicMock(return_value=atmosphere.copy())
+        self.atm_complex = hf.Atmosphere(1, 0, 50., )
+        # Create complex sound ray
+        self.soundray_complex = pm.SoundRay(self.p0, self.c0, self.s0, self.bw, spectrum, models)
+
+    def tearDown(self) -> None:
+        del self.atm_simple
+        del self.soundray_simple
+        del self.atm_wind
+        del self.soundray_wind
+        del self.atm_complex
+        del self.soundray_complex
+
+        del self.p0
+        del self.c0
+        del self.s0
+        del self.bw
 
     def test_gaussian_reception(self):
         """
@@ -194,14 +254,14 @@ class TestSoundRay(unittest.TestCase):
         # Setup some fake case
         self.soundray_simple.pos = np.append(self.soundray_simple.pos, [hf.Cartesian(1, 0, 0), ])
         self.soundray_simple.s = np.append(self.soundray_simple.s, [1., ])
-        f = np.linspace(1, 51.2e3, 100)
+        f = hf.octave_band_fc(1)
         # Test for simple receiver position
-        rec = hf.Cartesian(0.5, 1, 0)
+        rec = rm.Receiver({'pos': (0.5, 1, 0), 'index': 0, 'rotation': 0.})
         expected = np.clip(np.exp(-1. / ((self.bw * .5)**2 + 1/(np.pi * f))), 0, 1)
-        actual = self.soundray_simple.gaussian_reception(f, rec)
-        self.assertTrue(np.all(np.round(expected, -9) == np.round(actual, -9)))
+        self.soundray_simple.gaussian_factor(rec)
+        self.assertTrue(np.all(np.round(expected, -9) == np.round(self.soundray_simple.spectrum['gaussian'], -9)))
         # Check for less simple receiver position
-        rec = hf.Cartesian(.5, 1., 1.)
+        rec = rm.Receiver({'pos': (0.5, 1, 1), 'index': 0, 'rotation': 0.})
         expected = np.clip(np.exp(-np.sqrt(2) / ((self.bw * .5) ** 2 + 1 / (np.pi * f))), 0, 1)
-        actual = self.soundray_simple.gaussian_reception(f, rec)
-        self.assertTrue(np.all(np.round(expected, -9) == np.round(actual, -9)))
+        self.soundray_simple.gaussian_factor(rec)
+        self.assertTrue(np.all(np.round(expected, -9) == np.round(self.soundray_simple.spectrum['gaussian'], -9)))
