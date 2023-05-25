@@ -1,6 +1,5 @@
 import os
 import queue
-import warnings
 import threading
 import numpy as np
 import pandas as pd
@@ -8,10 +7,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import compress_pickle as pickle
 
+from typing import Self
 from matplotlib.widgets import Slider
 
 import helper_functions as hf
-from reception_model import *
+from reception_model import Receiver
 
 
 """
@@ -26,16 +26,16 @@ __all__ = ['PropagationThread', 'Ray', 'SoundRay', 'PropagationModel', ]
 
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: Receiver,
-                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim: float = 1.) -> None:
+                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim) -> None:
         """
         ================================================================================================================
-        Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function
+        Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function.
         ================================================================================================================
         :param in_queue: queue.Queue instance containing non-propagated SoundRays
         :param out_queue: queue.Queue instance where propagated SoundRays will be put
         :param delta_t: time step (s)
-        :param receiver: the receiver point in Cartesian coordinates (m, m, m).
-        :param atmosphere:
+        :param receiver: instance of rm.Receiver
+        :param atmosphere: the hf.Atmosphere to propagate the SoundRays through
         :param p_thread: ProgressThread instance to track progress of the propagation model
         :param t_lim: propagation time limit (s)
         """
@@ -46,14 +46,13 @@ class PropagationThread(threading.Thread):
         self.delta_t = delta_t
         self.receiver = receiver
         self.atmosphere = atmosphere
-
         self.t_lim = t_lim
 
         self.p_thread = p_thread
 
     def run(self) -> None:
         """
-        Propagates all SoundRays in the in_queue
+        Propagates all SoundRays in the in_queue.
         """
         # Loop as long as the input queue has SoundRays
         while threading.main_thread().is_alive() and not self.in_queue.empty():
@@ -95,9 +94,9 @@ class Ray:
 
     def update_ray_velocity(self, delta_t: float, atmosphere: hf.Atmosphere) -> (hf.Cartesian, hf.Cartesian):
         """
-        Update the ray velocity and direction forward by time step delta_t
+        Update the ray velocity and direction forward by time step delta_t.
         :param delta_t: time step (s)
-        :param atmosphere:
+        :param atmosphere: the hf.Atmosphere to propagate the Ray through
         :return: Updated Cartesian velocity (m/s, m/s, m/s) and direction (m/s, m/s, m/s) vectors of the sound ray
         """
         # Get height from last position
@@ -121,7 +120,7 @@ class Ray:
 
     def update_ray_position(self, delta_t: float, vel: hf.Cartesian, direction: hf.Cartesian) -> (hf.Cartesian, float):
         """
-        Update the ray position forward by time step delta_t and determine path step delta_s
+        Update the ray position forward by time step delta_t and determine path step delta_s.
         :param delta_t: time step (s)
         :param vel: Cartesian velocity vector (m/s, m/s, m/s) for current time step
         :param direction: Cartesian direction vector (m/s, m/s, m/s) for current time step
@@ -142,12 +141,13 @@ class Ray:
 
     def ray_step(self, delta_t: float, atmosphere: hf.Atmosphere) -> (hf.Cartesian, hf.Cartesian, hf.Cartesian, float):
         """
-        Logic for time stepping the sound rays forward one time step
+        Logic for time stepping the sound rays forward one time step.
         :param delta_t: time step (s)
-        :param atmosphere:
-        :return: Updated Cartesian velocity (m/s, m/s, m/s) and direction (m/s, m/s, m/s) vectors of the sound ray,
+        :param atmosphere: the hf.Atmosphere to propagate the Ray through
+        :return: updated Cartesian velocity (m/s, m/s, m/s) and direction (m/s, m/s, m/s) vectors of the sound ray,
                  updated sound ray position (m, m, m), and the ray path step (m)
         """
+        # Run the above functions to update velocity and position
         vel, direction = self.update_ray_velocity(delta_t, atmosphere)
         pos, delta_s = self.update_ray_position(delta_t, vel, direction)
 
@@ -163,17 +163,17 @@ class Ray:
 
         return vel, direction, pos, delta_s
 
-    def check_reception(self, receiver: Receiver, delta_s: float):
+    def check_reception(self, receiver: Receiver, delta_s: float) -> bool:
         """
         Check if the ray went past a receiver point.
-        :param receiver: The receiver point in Cartesian coordinates (m, m, m).
-        :param delta_s: The last ray path step (m).
-        :return: Boolean indicating whether the receiver has been passed.
+        :param receiver: instance of rm.Receiver
+        :param delta_s: the last ray path step (m)
+        :return: boolean indicating whether the receiver has been passed
         """
         # Cannot check if less than two points
         if self.pos.size < 2:
             return False
-        # Determine perpendicular planes at last 2 points
+        # Determine perpendicular planes with last 2 points
         plane1 = hf.PerpendicularPlane3D(self.pos[-1], self.pos[-2])
         plane2 = hf.PerpendicularPlane3D(self.pos[-2], self.pos[-1])
         # Determine distances between planes and receiver point
@@ -186,48 +186,57 @@ class Ray:
         # If all else fails: this ray has not yet passed, probably
         return False
 
-    def propagation_effects(self, atmosphere: hf.Atmosphere):
+    def propagation_effects(self, atmosphere: hf.Atmosphere) -> None:
         """
-        TODO: Ray.propagation_effects > write docstring and comments
-        :param atmosphere:
+        TO BE OVERWRITTEN: accommodation for sound propagation effects functionality in subclasses.
+        :param atmosphere: the hf.Atmosphere to propagate the Ray through
         """
         pass
 
-    def propagate(self, delta_t: float, receiver: Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.):
+    def propagate(self, delta_t: float, receiver: Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.) -> None:
         """
-        Propagate the Ray until received or kill condition is reached
+        Propagate the Ray until received or kill condition is reached.
         :param delta_t: time step (s)
-        :param receiver: the receiver point in Cartesian coordinates (m, m, m)
-        :param atmosphere:
+        :param receiver: instance of rm.Receiver
+        :param atmosphere: the hf.Atmosphere to propagate the Ray through
         :param t_lim: propagation time limit (s)
         """
+        # Set initial loop conditions
         self.received = False
         kill = self.pos[0][2] >= 0
+        # Add initial propagation effects
         self.propagation_effects(atmosphere)
 
+        # Loop while condition holds
         while not (self.received or kill):
+            # Step the ray forward
             vel, direction, pos, delta_s = self.ray_step(delta_t, atmosphere)
+            # Check if it is received at the given receiver
             self.received = self.check_reception(receiver, delta_s)
+            # Add propagation effects
             self.propagation_effects(atmosphere)
 
-            if self.t[-1] - self.t[0] > t_lim:
-                kill = True
+            # Kill the ray when time limit is exceeded
+            kill = self.t[-1] - self.t[0] > t_lim
 
     def pos_array(self) -> np.array:
         """
-        Convert position history to an easily readable array of shape (self.pos.size, 3)
+        Convert position history to an easily readable array of shape (self.pos.size, 3).
         :return: numpy array with full position history unpacked
         """
-        arr = np.zeros((self.pos.size, 3))
+        # Create empty initial array
+        arr = np.zeros((3, self.pos.size))
+        # Loop over the list of coordinates
         for pi, pos in enumerate(self.pos):
-            arr[pi] = pos.vec
+            # Fill the position in the array
+            arr[:, pi] = pos.vec
 
         return arr
 
 
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 amplitude_spectrum: pd.DataFrame, models: tuple, t_0: float = 0., label: str = None):
+                 amplitude_spectrum: pd.DataFrame, models: tuple, t_0: float = 0., label: str = None) -> None:
         """
         ================================================================================================================
         Class for the propagation sound ray model. With the sound spectral effects.
@@ -243,29 +252,31 @@ class SoundRay(Ray):
 
         self.bw = beam_width
         self.label = label
+        self.models = models
 
+        # Initialise the sound spectrum
         self.spectrum = pd.DataFrame(amplitude_spectrum)
+        # Set the column name of the given spectrum to 'a' for amplitude
         self.spectrum.columns = ['a']
+        # Initialise phase and the attenuation effects
         self.spectrum['p'] = 0.
         self.spectrum['gaussian'] = 1.
         self.spectrum['spherical'] = 1.
         self.spectrum['atmospheric'] = 1.
 
-        self.models = models
-
-    def copy(self):
+    def copy(self) -> Self:
         """
-        Create a not-yet-propagated copy of this SoundRay
+        Create a not-yet-propagated copy of this SoundRay.
         """
         return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.spectrum['a'],
                         self.models, self.t[0], self.label)
 
-    def propagation_effects(self, atmosphere: hf.Atmosphere):
+    def propagation_effects(self, atmosphere: hf.Atmosphere) -> None:
         """
-        TODO: SoundRay.propagation_effects > write docstring and comments
-        :param atmosphere:
-        :return:
+        Add atmospheric absorption and spherical spreading to the sound spectrum.
+        :param atmosphere: the hf.Atmosphere to propagate the SoundRay through
         """
+        # Get current temperature, pressure and speed of sound from the atmosphere
         t_current, p_current, _, c_current, _ = atmosphere.get_conditions(-self.pos[-1][2])
 
         if 'spherical' in self.models and self.t.size >= 2:
@@ -299,9 +310,9 @@ class SoundRay(Ray):
             # More absorption :)
             self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
 
-    def gaussian_factor(self, receiver: Receiver):
+    def gaussian_factor(self, receiver: Receiver) -> None:
         """
-        Calculate the Gaussian beam reception transfer function
+        Calculate the Gaussian beam reception transfer function.
         :param receiver: an instance of Receiver
         """
         # Determine the perpendicular plane just before the receiver
@@ -318,9 +329,9 @@ class SoundRay(Ray):
         # Determine the filter and clip to between 0 and 1
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
 
-    def receive(self, receiver: Receiver):
+    def receive(self, receiver: Receiver) -> (float, hf.Cartesian, pd.DataFrame):
         """
-        Function that adds the SoundRay to the receiver
+        Function that adds the SoundRay to the receiver.
         :param receiver: instance of Receiver
         """
         # Determine the Gaussian beam attenuation spectrum
@@ -338,25 +349,24 @@ class SoundRay(Ray):
 
 
 class PropagationModel:
-    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, atmosphere: hf.Atmosphere):
+    def __init__(self, aur_conditions_dict: dict, aur_propagation_dict: dict, atmosphere: hf.Atmosphere) -> None:
         """
         ================================================================================================================
         Class that manages the whole propagation model
         ================================================================================================================
         :param aur_conditions_dict: conditions_dict from the Case class
         :param aur_propagation_dict: propagation_dict from the Case class
-        :param atmosphere:
+        :param atmosphere: the hf.Atmosphere to propagate the SoundRays through
         """
         self.conditions_dict = aur_conditions_dict
         self.params = aur_propagation_dict
         self.atmosphere = atmosphere
 
-    def run(self, receiver: Receiver, in_queue: queue.Queue):
+    def run(self, receiver: Receiver, in_queue: queue.Queue) -> queue.Queue:
         """
         Run the propagation model for one receiver.
-        TODO: PropagationModel.run > update docstring
-        :param receiver: Instance of Receiver.
-        :param in_queue:
+        :param receiver: instance of rm.Receiver
+        :param in_queue: queue.Queue instance containing non-propagated SoundRays
         :return: A queue.Queue instance containing all propagated SoundRays.
         """
         # Initialise the output queue.Queue()s
@@ -366,7 +376,7 @@ class PropagationModel:
         t_limit = 3 * receiver.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating to receiver')
+        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating rays')
         p_thread.start()
         # Create the PropagationThreads
         threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
@@ -382,121 +392,152 @@ class PropagationModel:
         return out_queue
 
     @staticmethod
-    def pickle_ray_queue(ray_queue: queue.Queue, ray_cache_path: str) -> None:
+    def pickle_ray_queue(ray_queue: queue.Queue[Ray], ray_cache_path: str) -> None:
         """
-        TODO: PropagationModel.pickle_ray_queue > write docstring and comments
-        TODO: PropagationModel.pickle_ray_queue > look into pickle of whole queue instead of 1 per ray
-        :param ray_queue:
-        :param ray_cache_path:
-        :return:
+        Cache a queue of Rays to compressed pickles in the given directory.
+        :param ray_queue: queue.Queue containing Rays (or SoundRays)
+        :param ray_cache_path: path to store the pickles to
         """
+        # Check the existence of the cache directory
         if not os.path.isdir(ray_cache_path):
             os.mkdir(ray_cache_path)
 
-        warnings.warn("Pickle files may take up a lot of storage! Requires up to ~1MB per ray!")
-
+        # Start a ProgressThread
         p_thread = hf.ProgressThread(ray_queue.qsize(), 'Pickle-ing sound rays')
         p_thread.start()
 
+        # Loop over the queue without emptying it
         ray: SoundRay
         for ray in ray_queue.queue:
+            # Open the pickle file
             ray_file = open(os.path.join(ray_cache_path, f'SoundRay_{p_thread.step}.pickle.gz'), 'wb')
+            # Dump the pickle
             pickle.dump(ray, ray_file)
+            # Close the pickle file
             ray_file.close()
-
+            # Update the ProgressThread
             p_thread.update()
 
+        # Stop the ProgressThread
         p_thread.stop()
         del p_thread
 
     @staticmethod
-    def unpickle_ray_queue() -> queue.Queue:
+    def unpickle_ray_queue(ray_cache_path: str) -> queue.Queue[Ray]:
         """
-        TODO: PropagationModel.unpickle_ray_queue > write docstring and comments
-        :return:
+        Read out a cache directory of compressed Ray pickles.
+        :param ray_cache_path: path to directory containing pickles
         """
-        ray_cache_path = os.path.abspath('ray_cache')
+        # Check the existence of the cache directory
         if not os.path.isdir(ray_cache_path):
-            raise NotADirectoryError(f'No ./ray_cache directory found. Cannot un-pickle ray queue')
+            raise NotADirectoryError(f'No {ray_cache_path} directory found. Cannot un-pickle ray queue.')
 
+        # Create empty queue.Queue
         ray_queue = queue.Queue()
+        # Get paths of all files in the directory with ".pickle" in them
         ray_paths = [ray_path for ray_path in os.listdir(ray_cache_path) if '.pickle' in ray_path]
 
+        # Check the existence of pickles
+        if len(ray_paths) <= 0:
+            raise FileNotFoundError(f'No pickles found in {ray_cache_path}. Cannot un-pickle ray queue.')
+
+        # Start a ProgressThread
         p_thread = hf.ProgressThread(len(ray_paths), 'Un-pickle-ing sound rays')
         p_thread.start()
-
+        # Loop over the pickles
         for ray_path in ray_paths:
+            # Open the jar
             ray_file = open(os.path.join(ray_cache_path, ray_path), 'rb')
+            # Take the pickle
             ray_queue.put(pickle.load(ray_file))
+            # Close the jar
             ray_file.close()
+            # Update the ProgressThread
             p_thread.update()
 
+        # Stop the ProgressThread
         p_thread.stop()
         del p_thread
 
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: queue.Queue, receiver: Receiver, time_series: pd.DataFrame):
+    def interactive_ray_plot(ray_queue: queue.Queue[SoundRay], receiver: Receiver, time_series: pd.DataFrame) -> None:
         """
-        TODO: PropagationModel.interactive_ray_plot > write docstring and comments
-        :param ray_queue:
-        :param receiver:
-        :return:
+        Makes an interactive plot of the SoundRays in a queue.Queue.
+        :param ray_queue: queue.Queue containing SoundRays
+        :param receiver: instance of rm.Receiver with which the SoundRays where propagated
+        :param time_series: time_series from the SourceModel
         """
-        # raise NotImplementedError('Yeah, nah mate :/')
-        rays = {}
-        ray: SoundRay
+        # Create an empty ray dictionary
+        rays = dict[float: list]()
+        # Loop over the ray_queue without removing the SoundRays
         for ray in ray_queue.queue:
-            if ray.received and ray.label != 'blade_0':
+            # Add any received rays to the dictionary
+            if ray.received:
+                # Just stupid sh!te to avoid floating point errors...
                 t = round(ray.t[-1], 10)
+                # Fill into the dictionary
                 if t in rays.keys():
                     rays[t].append(ray)
                 else:
-                    rays[t] = [ray, ]
+                    rays[t] = list[SoundRay]()
+                    rays[t].append(ray)
 
-        # create the main plot
+        # Create the main plot
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
 
         def update_plot(t_plt: float):
             """
-            TODO: PropagationModel.interactive_ray_plot.update_plot > write docstring and comments
-            :param t_plt:
-            :return:
+            Internal function to update the interactive plot with the Slider
+            :param t_plt: time input (s)
             """
-            ray_lst = rays[t_plt]
-
+            # Clear the plot
             ax.clear()
+            # Re-set the axis limits and aspect ratio
             ax.set_aspect('equal')
             ax.set_xlim(-75, 75)
             ax.set_ylim(-75, 75)
             ax.set_zlim(0, 150)
-
+            # Re-set the labels
             ax.set_xlabel('-x (m)')
             ax.set_ylabel('y (m)')
             ax.set_zlabel('-z (m)')
+            # Put the receiver point in there
             ax.scatter(-receiver[0], receiver[1], -receiver[2])
-            for r in ray_lst:
-                pos_array = r.pos_array()
 
-                spectrum = r.spectrum['a'] * r.spectrum['gaussian']
-                energy = np.trapz(spectrum, spectrum.index)
+            # Get the rays at input time
+            ray_lst = list[SoundRay](rays[t_plt])
+            # Loop over all SoundRays at input time
+            for ry in ray_lst:
+                # Obtain the pos_array for nicer plotting
+                pos_array = ry.pos_array()
+
+                # Get the sound spectrum
+                _, _, spectrum = ry.receive(receiver)
+                # Integrate to get the energy
+                energy = np.trapz(spectrum['a'], spectrum.index)
+                # Check that energy is not zero before continuing
                 if energy > 0:
+                    # dB that energy
                     energy = 10 * np.log10(energy / hf.p_ref ** 2)
+                    # Bin the energy
                     energy_bin = 10 * int(energy // 10) + 5
+                    # Apply color to that energy
                     cmap_lvl = np.float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
-
                     color = cmap(cmap_lvl)
 
-                    ax.plot(-pos_array[:, 0], pos_array[:, 1], -pos_array[:, 2], color=color)
+                    # Plot the ray
+                    ax.plot(-pos_array[0], pos_array[1], -pos_array[2], color=color)
 
+            # Plot the source points if they exist at this input time
             for key in time_series.columns:
                 if 'blade' in key and t_plt in time_series.index:
                     x, y, z = time_series.loc[t_plt, key].vec
                     ax.scatter(-x, y, -z, s=5, color='k', marker='8')
 
-        # adjust the main plot to make room for the sliders
+        # Adjust the main plot to make room for the sliders
         fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
 
         # Make a horizontal slider to control the time.
@@ -511,6 +552,7 @@ class PropagationModel:
             valinit=valstep[0],
         )
 
+        # Create the colorbar for the energy levels
         levels = np.arange(5, 95 + 10, 10)
         ticks = np.arange(0, 100 + 10, 10)
         cmap = mpl.colormaps['viridis'].resampled(10)
@@ -524,6 +566,9 @@ class PropagationModel:
                      label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
                      )
 
+        # Set the initial plot at the first available time step
         update_plot(valstep[0])
+        # Set the slider update function
         slider.on_changed(update_plot)
+        # Plot the plot
         plt.show()
