@@ -4,8 +4,8 @@ pandas
 matplotlib
 wheel
 tabulate
-librosa
 pysofaconventions
 pytest
 wetb
 compress-pickle
+pytest
