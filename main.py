@@ -1,24 +1,12 @@
 import os
-import numpy as np
-import pandas as pd
-import scipy.fft as spfft
-import scipy.signal as spsig
-import scipy.interpolate as spint
-import scipy.io as spio
-import matplotlib.pyplot as plt
-
-import helper_functions as hf
 
 import case_mgmt as cm
-import source_model as sm
-import propagation_model as pm
-import reception_model as rm
 
 
 """
 ========================================================================================================================
 ===                                                                                                                  ===
-===                                                                                                                  ===
+=== Main run code of the Auralisation Tool                                                                           ===
 ===                                                                                                                  ===
 ========================================================================================================================
 """
@@ -28,26 +16,29 @@ class Project:
     def __init__(self, project_path: str,):
         """
         ================================================================================================================
-
+        Class that manages an auralisation project
         ================================================================================================================
-        TODO: Project.__init__ > write docstring
-        :param project_path:
+        :param project_path: path of the directory containing the auralisation project
         """
         # Check if project folder exists.
         if not os.path.isdir(project_path):
-            raise NotADirectoryError('Invalid project folder path given.')
+            raise NotADirectoryError('Invalid project directory path given.')
 
         # Create paths for project and for the HAWC2 model
         self.project_path = project_path
         self.h2model_path = os.path.join(project_path, 'H2model')
 
-        # Check that the project contains a HAWC2 model
+        # Check if the project contains a HAWC2 model
         if not os.path.isdir(self.h2model_path):
-            raise NotADirectoryError('The given project folder does not contain a HAWC2 model in folder "H2model".')
+            raise NotADirectoryError('The given project directory does not contain a HAWC2 model in folder "H2model".')
 
         # Make atmosphere folder if that does not exist yet
         if not os.path.isdir(os.path.join(self.project_path, 'atm')):
             os.mkdir(os.path.join(self.project_path, 'atm'))
+
+        # Make spectrograms folder if that does not exist yet
+        if not os.path.isdir(os.path.join(self.project_path, 'spectrograms')):
+            os.mkdir(os.path.join(self.project_path, 'spectrograms'))
 
         # Obtain cases from the project folder
         self.cases = [cm.Case(self.project_path, aur_file)
@@ -60,39 +51,13 @@ class Project:
 
     def run(self):
         """
-        TODO Project.run > write docstring and comments
+        Runs all cases in the project
         """
         for ci, case in enumerate(self.cases):
             print(f'==================== Simulating case {ci + 1}/{len(self.cases)} ====================')
             # case.run_hawc2()
             case.run()
             print()
-
-
-def interpolate_octave(x_octave, f_desired, b):
-    """
-    TODO: interpolate_octave > check what to do with this function???
-    :param x_octave:
-    :param f_desired:
-    :param b:
-    :return:
-    """
-    b_min = -6 * b
-    b_max = 4 * b
-    f_desired[f_desired < 1e-99] = 1.
-
-    band_number = np.round(np.log(f_desired / 1e3) / np.log(2)).astype(int) - b_min
-
-    interpolated = 1j * np.zeros(f_desired.shape)
-
-    below_band = band_number < 0
-    band_number[below_band] = 0
-
-    in_band = np.logical_and(0 <= band_number, band_number <= b_max - b_min)
-    interpolated[in_band] = x_octave[band_number[in_band]]
-    interpolated[np.logical_not(in_band)] = np.min(interpolated[in_band]) * 1e-6
-
-    return interpolated
 
 
 if __name__ == '__main__':
