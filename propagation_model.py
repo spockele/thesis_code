@@ -26,7 +26,7 @@ __all__ = ['PropagationThread', 'Ray', 'SoundRay', 'PropagationModel', ]
 
 class PropagationThread(threading.Thread):
     def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: Receiver,
-                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim) -> None:
+                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim: float) -> None:
         """
         ================================================================================================================
         Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function.
@@ -193,7 +193,7 @@ class Ray:
         """
         pass
 
-    def propagate(self, delta_t: float, receiver: Receiver, atmosphere: hf.Atmosphere, t_lim: float = 1.) -> None:
+    def propagate(self, delta_t: float, receiver: Receiver, atmosphere: hf.Atmosphere, t_lim: float) -> None:
         """
         Propagate the Ray until received or kill condition is reached.
         :param delta_t: time step (s)
@@ -481,8 +481,7 @@ class PropagationModel:
                 if t in rays.keys():
                     rays[t].append(ray)
                 else:
-                    rays[t] = list[SoundRay]()
-                    rays[t].append(ray)
+                    rays[t] = list[SoundRay]([ray, ])
 
         # Create the main plot
         fig = plt.figure()
@@ -490,7 +489,7 @@ class PropagationModel:
 
         def update_plot(t_plt: float):
             """
-            Internal function to update the interactive plot with the Slider
+            Internal function to update the interactive plot with the Slider.
             :param t_plt: time input (s)
             """
             # Clear the plot

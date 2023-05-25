@@ -1,8 +1,8 @@
 import os
 import queue
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from matplotlib.widgets import Slider
 
@@ -22,14 +22,14 @@ __all__ = ['H2Observer', 'H2Sphere', 'Source', 'SourceModel']
 
 
 class H2Observer(hf.Cartesian):
-    def __init__(self, file_path: str, scope: str, delta_t: float):
+    def __init__(self, file_path: str, scope: str, delta_t: float) -> None:
         """
         ================================================================================================================
-        Class to wrap the HAWC2 result at a single observer point. Subclass of Cartesian for ease of use
+        Class to wrap the HAWC2 result at a single observer point. Subclass of Cartesian for ease of use.
         ================================================================================================================
-        :param file_path: path to the result file for this observer point.
-        :param scope: Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP').
-        :param delta_t: simulation time step (s) to interpolate the HAWC2 results to.
+        :param file_path: path to the result file for this observer point
+        :param scope: selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
+        :param delta_t: simulation time step (s) to interpolate the HAWC2 results to
         """
         # Read the given HAWC2 noise output file
         pos, time_series, psd = hf.read_hawc2_aero_noise(file_path, scope=scope)
@@ -40,7 +40,7 @@ class H2Observer(hf.Cartesian):
         self.psd = psd
 
         # Set the initial time of the time series and spectrograms to 0
-        # as the absolute time is not relevant for this project
+        # as the absolute time is irrelevant for this project
         self.time_series.index = self.time_series.index - self.time_series.index[0]
         self.psd[0].columns = self.time_series.index
         self.psd[1].columns = self.time_series.index
@@ -70,20 +70,20 @@ class H2Observer(hf.Cartesian):
         self.psd[3] = self.psd[3].reindex(columns=sim_time)
         self.psd[3].interpolate(axis='columns', inplace=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<HAWC2 Observer: {str(self)}>'
 
 
 class H2Sphere(list[H2Observer]):
-    def __init__(self, h2_result_path: str, aur_source_dict: dict, aur_conditions_dict: dict):
+    def __init__(self, h2_result_path: str, aur_source_dict: dict, aur_conditions_dict: dict) -> None:
         """
         ================================================================================================================
         Class that saves the sphere that comes from the HAWC2 simulation.
         ================================================================================================================
         Subclass of list, where the items are H2Observer instances.
-        :param h2_result_path: Path to the directory with all the HAWC2 noise .out files.
-        :param aur_source_dict: source_dict from the Case class.
-        :param aur_conditions_dict: conditions_dict from the Case class.
+        :param h2_result_path: path to the directory with all the HAWC2 noise .out files
+        :param aur_source_dict: source_dict from the Case class
+        :param aur_conditions_dict: conditions_dict from the Case class
         """
         # Check the .out files directory does exist
         if not os.path.isdir(h2_result_path):
@@ -116,15 +116,14 @@ class H2Sphere(list[H2Observer]):
 
         self.time_series = self[0].time_series
 
-    def interpolate_sound(self, pos: hf.Cartesian, blade_idx: int, t: float):
+    def interpolate_sound(self, pos: hf.Cartesian, blade_idx: int, t: float) -> pd.DataFrame:
         """
         Triangular interpolation of the sound spectrum.
-        :param pos: Point to interpolate to.
-        :param blade_idx: Index of the blade (0: turbine, 1-3: blade 1-3) of which to interpolate the psd.
-        :param t: Time step (s) at which to interpolate.
-        :return: The interpolated spectrum of the selected blade and timestep.
+        :param pos: Cartesian point to interpolate to
+        :param blade_idx: index of the blade (0: turbine, 1-3: blade 1-3) of which to interpolate the psd
+        :param t: time step (s) at which to interpolate
+        :return: the interpolated spectrum of the selected blade and timestep
         """
-        observer: H2Observer
         # Determine the distances to the H2Observer points
         dist = np.array([pos.dist(observer) for observer in self])
         # Sorting index for dist (and thus the H2Observers)
@@ -144,19 +143,18 @@ class H2Sphere(list[H2Observer]):
 
 class Source(hf.Cartesian):
     def __init__(self, x: float, y: float, z: float, sphere: list[hf.Cartesian],
-                 sphere_dist: float, t: float, blade: str):
+                 sphere_dist: float, t: float, blade: str) -> None:
         """
         ================================================================================================================
-
+        Class that stores a sound source. Subclass of Cartesian for ease of use.
         ================================================================================================================
-        TODO: Source.__init__ > write docstring and comments
-        :param x: Coordinate on the x-axis (m).
-        :param y: Coordinate on the y-axis (m).
-        :param z: Coordinate on the z-axis (m).
-        :param sphere:
-        :param sphere_dist:
-        :param t:
-        :param blade:
+        :param x: coordinate on the x-axis (m)
+        :param y: coordinate on the y-axis (m)
+        :param z: coordinate on the z-axis (m)
+        :param sphere: a unit sphere around (0, 0, 0) to start rays from
+        :param sphere_dist: the inter-point distance of the sphere
+        :param t: time step (s) when the sound is on the H2Sphere
+        :param blade: blade label of this sound Source
         """
         super().__init__(x, y, z)
 
@@ -165,19 +163,19 @@ class Source(hf.Cartesian):
         self.blade = blade
         self.t = t
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<Source: {str(self)}, t = {self.t} s>'
 
-    def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue,
-                      receiver: rm.Receiver, models: tuple):
+    def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue[pm.SoundRay],
+                      receiver: rm.Receiver, models: tuple) -> queue.Queue[pm.SoundRay]:
         """
-        TODO: Source.generate_rays > write docstring
-        :param h2_sphere:
-        :param atmosphere:
-        :param ray_queue:
-        :param receiver:
-        :param models:
-        :return:
+        Generate SoundRays that would come from this source and put them into the ray_queue.
+        :param h2_sphere: the sphere of HAWC2 results to obtain sound from
+        :param atmosphere: the hf.Atmosphere to propagate used for propagation
+        :param ray_queue: queue.Queue to put generated SoundRays in
+        :param receiver: instance of rm.Receiver to limit which SoundRays to keep
+        :param models: the propagation effects models to be used in propagation
+        :return: the ray_queue with more items
         """
         for point in self.sphere:
             # Determine beam width
@@ -212,17 +210,17 @@ class Source(hf.Cartesian):
 
 
 class SourceModel:
-    def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict,
-                 h2_result_path: str, atmosphere: hf.Atmosphere, simple: bool = False):
+    def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict, h2_result_path: str,
+                 atmosphere: hf.Atmosphere, simple: bool = False) -> None:
         """
         ================================================================================================================
-        Class that manages the whole source model
+        Class that manages the whole source model.
         ================================================================================================================
-        :param aur_conditions_dict: conditions_dict from the Case class.
-        :param aur_source_dict: source_dict from the Case class.
+        :param aur_conditions_dict: conditions_dict from the Case class
+        :param aur_source_dict: source_dict from the Case class
         :param h2_result_path: path where the HAWC2 results are stored
         :param atmosphere: atmosphere defined in hf.Atmosphere()
-        :param simple: Boolean to select the simple source model
+        :param simple: boolean to select the simple source model
         """
         # Store the input parameters
         self.conditions_dict = aur_conditions_dict
@@ -257,7 +255,7 @@ class SourceModel:
                 self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
                                                                     origin).to_cartesian()
 
-        self.source_queue = queue.Queue()
+        self.source_queue = queue.Queue[Source]()
         # Generate the sound sources
         points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
 
@@ -280,39 +278,44 @@ class SourceModel:
 
     def run(self, receiver: rm.Receiver, models: tuple) -> queue.Queue:
         """
-        TODO: SourceModel.generate_rays > write docstring and comments
+        Run the Source model, aka generate all rays from all Sources
         :param receiver:
         :param models:
         :return: a queue containing the generated SoundRays
         """
-        ray_queue = queue.Queue()
-
-        estimate = self.source_queue.qsize()
-        p_thread = hf.ProgressThread(estimate, 'Generating rays')
+        # Create an empty queue.Queue for the SoundRays
+        ray_queue = queue.Queue[pm.SoundRay]()
+        # Start a ProgressThread
+        p_thread = hf.ProgressThread(self.source_queue.qsize(), 'Generating rays')
         p_thread.start()
-
+        # Loop over the source_queue without popping the Sources
         for source in self.source_queue.queue:
+            # Generate the rays for the current Source
             ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models)
+            # Update the progress thread
             p_thread.update()
 
+        # Stop the ProgressThread
         p_thread.stop()
         del p_thread
+
         return ray_queue
 
     def interactive_source_plot(self):
         """
-        TODO: SourceModel.interactive_source_plot > write docstring and comments
-        :return:
+        A beautiful interactive plot of the Source locations.
         """
-        # raise NotImplementedError('Yeah, nah mate :/')
-        sources = {}
-        source: Source
+        # Create empty dictionary to store Sources per time step
+        sources = dict[float: list]()
+        # Loop over the source_queue without popping the Sources
         for source in self.source_queue.queue:
+            # Avoid stoopid floating point errors with time steps
             t = round(source.t, 10)
+            # Fill the dictionary
             if t in sources.keys():
                 sources[t].append(source)
             else:
-                sources[t] = [source, ]
+                sources[t] = list[Source]([source, ])
 
         # create the main plot
         fig = plt.figure()
@@ -320,27 +323,30 @@ class SourceModel:
 
         def update_plot(t_plt: float):
             """
-            TODO: PropagationModel.interactive_ray_plot.update_plot > write docstring and comments
-            :param t_plt:
-            :return:
+            Internal function to update the interactive plot with the Slider.
+            :param t_plt: time input (s)
             """
-            source_lst = sources[t_plt]
-
+            # Clear the plot
             ax.clear()
+            # Re-set the axis limits and aspect ratio
             ax.set_aspect('equal')
             ax.set_xlim(-75, 75)
             ax.set_ylim(-75, 75)
             ax.set_zlim(0, 150)
-
+            # Re-set the labels
             ax.set_xlabel('-x (m)')
             ax.set_ylabel('y (m)')
             ax.set_zlabel('-z (m)')
+
+            # Get the Sources at input time
+            source_lst = list[Source](sources[t_plt])
+            # Plot the source points
             for src in source_lst:
                 x, y, z = src.vec
                 ax.scatter(-x, y, -z, s=5, color='k', marker='8')
 
         # adjust the main plot to make room for the sliders
-        fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
+        fig.subplots_adjust(left=0., bottom=0.2, right=1., top=1.)
 
         # Make a horizontal slider to control the time.
         ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
@@ -354,19 +360,9 @@ class SourceModel:
             valinit=valstep[0],
         )
 
-        levels = np.arange(5, 95 + 10, 10)
-        ticks = np.arange(0, 100 + 10, 10)
-        cmap = mpl.colormaps['viridis'].resampled(10)
-
-        ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
-        norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
-        plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
-                     cax=ax_cbar,
-                     extend='both',
-                     orientation='vertical',
-                     label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
-                     )
-
+        # Set the initial plot at the first available time step
         update_plot(valstep[0])
+        # Set the slider update function
         slider.on_changed(update_plot)
+        # Plot the plot
         plt.show()
