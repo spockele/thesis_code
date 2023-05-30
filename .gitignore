@@ -144,3 +144,5 @@ H2model/
 spectrograms/
 ray_cache/
 pickle*/
+NTK_*/
+htc/
