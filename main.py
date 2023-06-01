@@ -1,6 +1,7 @@
 import os
 
 import case_mgmt as cm
+import helper_functions as hf
 
 
 """
@@ -41,8 +42,16 @@ class Project:
             os.mkdir(os.path.join(self.project_path, 'spectrograms'))
 
         # Obtain cases from the project folder
-        self.cases = [cm.Case(self.project_path, aur_file)
-                      for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
+        cases = [aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
+
+        p_thread = hf.ProgressThread(len(cases), 'Loading case files')
+        p_thread.start()
+
+        self.cases = []
+        for aur_file in cases:
+            self.cases.append(cm.Case(self.project_path, aur_file))
+            p_thread.update()
+        p_thread.stop()
 
         if len(self.cases) <= 0:
             raise FileNotFoundError('No input files found in project folder.')
