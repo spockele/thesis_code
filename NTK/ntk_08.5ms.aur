@@ -3,6 +3,7 @@ name 085ms ;
 begin conditions ;
     hub_pos 0,0,-35.5 ;     Position of the wind turbine hub x,y,z (m)
     rotor_radius 20.5 ;     Wind turbine rotor radius (m)
+    rotor_rpm 27.1 ;
     ;
     wsp 8.5 ;               Wind speed (m/s) at z_wsp height
     z_wsp 35.5 ;            Height (m)) at which wsp is defined
@@ -14,7 +15,7 @@ begin conditions ;
     ;
     delta_t .01 ; Defines the auralisation time step (s)
 end conditions ;
-
+;
 begin HAWC2 ;
     begin wind ;
         density 1.238 ;
@@ -61,7 +62,6 @@ begin HAWC2 ;
     ;
     htc_name ntk_500_41 ;
     hawc2_path C:\Users\fien\OneDrive\Documenten\EWEM\HAWC2_12-9\HAWC2MB.exe ;
-    ; hawc2_path /home/josephine/HAWC2/HAWC2MB.exe ;
     n_obs 255 ; must be <256
     ;
 end HAWC2 ;
@@ -82,14 +82,16 @@ end propagation ;
 begin reception ;
     begin receiver ;
         index 0 ; indexing number >=0
-        ; pos 0,-60,-1.7 ; location x,y,z (m)
-        ; pos 0,-1000,-1.7 ;
         pos -18.43223747940,-41.05200831270,-0.050 ; Mic no. 2
         rotation 0 ; Head rotation of the receiver (deg)
     end receiver ;
-    ; --- WIP ---
 end reception ;
 ;
 begin reconstruction ;
-    ; --- WIP ---
+    f_s_desired 51200 ; Desired sample frequency of the output audio file
+    overlap 2 ;     Amount of overlap between istft time segments
+    zeropad 8 ;     Amount of simulated zeropadding of istft time segments
+    wav_norm 1. ;  Pressure to normalise the WAV files to (Pa) (Recomended 1 Pa)
+    t_audio 120 ;   Time duration if the output audio file
+    model random ;       Select the signal reconstruction model ('Random', 'GLA', )
 end reconstruction ;

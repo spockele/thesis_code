@@ -46,7 +46,7 @@ begin conditions ;
     ; ----------------------------------------------------------------------------------
     hub_pos -float-,-float-,-float- ; Position of the wind turbine hub x,y,z (m)
     rotor_radius -float- ;            Wind turbine rotor radius (m)
-    ; rotor_rpm -float- ;             Operating rotational speed of turbine (RPM)
+    rotor_rpm -float- ;               Operating rotational speed of turbine (RPM)
     ;
     wsp -float- ;           Wind speed (m/s) at z_wsp height
     z_wsp -float- ;         Height (m)) at which wsp is defined
@@ -54,6 +54,7 @@ begin conditions ;
     ;
     groundtemp -float- ;    Ground level air temperature (celcius)
     groundpres -float- ;    Ground level air pressure (Pa)
+    humidity -float- ;      Air relative humidity (%)
     ;
     delta_t -float- ; Defines the auralisation time step (s)
 end conditions ;
@@ -78,7 +79,7 @@ begin HAWC2;
     ; All other parameters are set by the tool.
     ; ----------------------------------------------------------------------------------
     begin aero_noise ;
-       noise_start_end_time -float- -float- ; Define this to be one rotor rotation
+       noise_start_end_time -float- -float- ; Define this to be approx. (4/3) * (single rotation)
        noise_deltat -float- ;
        turbulent_inflow_noise -int- ;
        inflow_turbulence_intensity -float- ;
@@ -92,22 +93,22 @@ begin HAWC2;
     ; ----------------------------------------------------------------------------------
     ; Other parameters
     ; ----------------------------------------------------------------------------------
-    htc_name -str- ; Name of the .htc file in the H2model folder
-    hawc2_path -float- ; File path where the HAWC2 executable is located
-    n_obs -int- ; must be <256
+    htc_name -str- ;      Name of the .htc file in the H2model folder (without ".htc")
+    hawc2_path -float- ;  File path where the HAWC2 executable is located
+    n_obs -int- ;         Number of observer points in HAWC2 must be <256
     ;
 end HAWC2;
 ;
 begin source ;
-    n_rays -int- ; Defines the number of sound rays (per time step) used for propagation
+    n_rays -int- ;          Defines the number of sound rays (per time step) used for propagation
     blade_percent -float- ; Defines r = blade_percent * R at which the source is assumed to be located.
-    scope -str- ; Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
+    scope -str- ;           Selects the noise model result to load ('All', 'TI', 'TE', 'ST', 'TP')
     radius_factor -float- ; Scaling factor for the radius of the sound source sphere
 end source ;
 ;
 begin propagation ;
-    n_threads -int- ; Defines the number of compute threads used for propagating sound rays
-    models -str-,-str-,... ; Defines which propagation effect models to apply (spherical, atmosphere, )
+    n_threads -int- ;        Defines the number of compute threads used for propagating sound rays
+    models -str-,-str-,... ; Defines which propagation effect models to apply ('spherical', 'atmosphere', )
 end propagation ;
 ;
 begin reception ;
@@ -115,14 +116,19 @@ begin reception ;
     ; Define the receiver point(s) in this block (can be multiple)
     ; ----------------------------------------------------------------------------------
     begin receiver ;
-        index -int- ; indexing number >=0
-        pos -float-,-float-,-float- ; location x,y,z (m)
-        rotation -float- ; Head rotation of the receiver (deg)
+        index -int- ;                 Indexing number >=0
+        pos -float-,-float-,-float- ; Location x,y,z (m)
+        rotation -float- ;            Head rotation of the receiver (deg)
     end receiver ;
 end reception ;
 ;
 begin reconstruction ;
-    ; --- WIP ---
+    f_s_desired -int- ; Desired sample frequency of the output audio file
+    overlap -int- ;     Amount of overlap between istft time segments
+    zeropad -int- ;     Amount of simulated zeropadding of istft time segments
+    wav_norm -float- ;  Pressure to normalise the WAV files to (Pa) (Recomended 1 Pa)
+    t_audio -float- ;   Time duration if the output audio file
+    model -str- ;       Select the signal reconstruction model ('Random', 'GLA', )
 end reconstruction ;
 ``` 
 

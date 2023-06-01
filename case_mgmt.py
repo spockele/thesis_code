@@ -1,12 +1,9 @@
 import os
 import queue
-import numpy as np
 import shutil as sh
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy.fft as npfft
 import scipy.fft as spfft
-import scipy.signal as spsig
-import scipy.io as spio
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 
@@ -14,6 +11,7 @@ import helper_functions as hf
 import source_model as sm
 import propagation_model as pm
 import reception_model as rm
+import reconstruction_model as cm
 
 
 """
@@ -96,7 +94,7 @@ class CaseLoader:
                 # Create block collection list
                 block = [line, ]
                 # Obtain all lines in the current block
-                while not block[-1].strip(' ').startswith(f'end {block_name}'):
+                while not block[-1].strip(' ').startswith(f'end {block_name}') and lines:
                     block.append(lines.pop(0))
                 # Add this block to the list
                 blocks[block_name] = block
@@ -152,7 +150,8 @@ class CaseLoader:
             if not (line.startswith(';') or line.startswith('\n')):
                 key, value, *_ = line.split(' ')
 
-                if key in ('rotor_radius', 'wsp', 'z_wsp', 'z0_wsp', 'groundtemp', 'groundpres', 'humidity', 'delta_t'):
+                if key in ('rotor_radius', 'rotor_rpm', 'wsp', 'z_wsp', 'z0_wsp', 'groundtemp', 'groundpres',
+                           'humidity', 'delta_t', ):
                     self.conditions_dict[key] = float(value)
 
                 elif key in ():
@@ -290,10 +289,10 @@ class CaseLoader:
         """
         blocks = self._get_blocks(lines[1:-1])
         for key, value in blocks.items():
-            if key in ():
+            if key in ('wav_norm', 't_audio', ):
                 self.reconstruction_dict[key] = float(value)
 
-            elif key in ():
+            elif key in ('f_s_desired', 'overlap', 'zeropad', ):
                 self.reconstruction_dict[key] = int(value)
 
             else:
@@ -315,7 +314,7 @@ class Case(CaseLoader):
         ''' Preparations for HAWC2 '''
         # Set the variables to store the properties of the HAWC2 sphere
         self.h2result_sphere = None
-        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
+        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name[-5:])
 
         ''' Setup of the models '''
         # Set the path for the atmosphere cache file
@@ -424,121 +423,94 @@ class Case(CaseLoader):
         """
         Run everything except HAWC2
         """
-        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
-        reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
+        # source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
+        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
+        # reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
+        reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
-        receiver: rm.Receiver = self.receiver_dict[0]
+        receiver: rm.Receiver
+        for rec_idx, receiver in self.receiver_dict.items():
+            # print(f' -- Running Propagation Model for receiver {rec_idx}')
+            # ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
+            # ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
+            #
+            # # propagation_model.pickle_ray_queue(ray_queue,
+            # #                                    os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
+            # # ray_queue = pm.PropagationModel.unpickle_ray_queue()
+            #
+            # print(f' -- Running Reception Model for receiver {rec_idx}')
+            # reception_model.run(receiver, ray_queue)
 
-        print(f' -- Running Propagation Model for receiver {0}')
-        ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
-        ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
+            spectrogram_path = os.path.join(self.project_path, 'spectrograms',
+                                            f'spectrogram_{self.case_name}_rec{rec_idx}.csv')
 
-        propagation_model.pickle_ray_queue(ray_queue,
-                                           os.path.join(self.project_path, f'pickle_{self.case_name}_rec{0}'))
-        # ray_queue = pm.PropagationModel.unpickle_ray_queue()
+            # receiver.spectrogram_to_csv(spectrogram_path)
 
-        print(f' -- Running Reception Model for receiver {0}')
-        reception_model.run(receiver, ray_queue)
+            receiver.spectrogram = receiver.spectrogram_from_csv(spectrogram_path)
+            # --------------------------------------------------------------------------------------------------------------
+            # Sound reconstruction
+            # --------------------------------------------------------------------------------------------------------------
+            reconstruction_model.run(receiver, f'{self.case_name}_rec{rec_idx}.wav')
 
-        spectrogram_path = os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv')
-        receiver.spectrogram.to_csv(spectrogram_path)
-
-        # --------------------------------------------------------------------------------------------------------------
-        # Sound reconstruction
-        # --------------------------------------------------------------------------------------------------------------
-        spectrogram = pd.read_csv(os.path.join(self.project_path, 'spectrograms', f'spectrogram_{self.case_name}_rec{0}.csv'),
-                                  header=0, index_col=0).applymap(complex)
-        spectrogram.columns = spectrogram.columns.astype(float)
-        spectrogram.index = spectrogram.index.astype(float)
-
-        n_base = 512
-        n_fft = n_base * 8
-        n_perseg = n_base * 2
-        x_fft = 1j * np.zeros((spectrogram.columns.size, n_fft // 2))
-        f_s_desired = n_base * 1e2
-        f = spfft.fftfreq(n_fft, 1 / f_s_desired)[:n_fft // 2]
-        f_octave = hf.octave_band_fc(1)
-        for ti, t in enumerate(spectrogram.columns):
-            x_spectrogram = spectrogram.loc[:, t].to_numpy()
-            x_fft[ti] = np.sqrt(np.interp(f, f_octave, x_spectrogram)) * np.exp(
-                1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
-
-        t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_fft, nperseg=n_perseg, noverlap=n_perseg - n_base,
-                           window=('tukey', .75))
-
-        # Longer sound files :)
-        rotation_time = 60 / 27.1  # 1 / RPM
-
-        x_rotation = x[t >= t[-1] - rotation_time]
-        t_rotation = t[t >= t[-1] - rotation_time] - (t[-1] - rotation_time)
-
-        x_rotation[t_rotation > t_rotation[-1] - (t[-1] - rotation_time)] += x[t < t[-1] - rotation_time]
-        x_long = np.tile(x_rotation, 10)
-
-        # Normalise to 60 dB (2e-2 Pa)
-        wav_dat = (np.clip(x_long / 2e-2, -1, 1) * 32767).astype(np.int16)
-        spio.wavfile.write(f'{self.case_name}_rec{0}.wav', int(f_s_desired), wav_dat)
-
-        # --------------------------------------------------------------------------------------------------------------
-        # Spectrograms and sound plots
-        # --------------------------------------------------------------------------------------------------------------
-        plt.figure(1)
-        ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=-10, vmax=30)
-        cbar = plt.colorbar(ctr)
-        plt.xlabel('t (s)')
-        plt.ylabel('f (Hz)')
-        cbar.set_label('PSL (dB / Hz)')
-
-        plt.figure(2)
-        f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
-        ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=-10, vmax=30)
-        cbar = plt.colorbar(ctr)
-        plt.xlabel('t (s)')
-        plt.ylabel('f (Hz)')
-        cbar.set_label('PSL (dB / Hz)')
-
-        plt.figure(3)
-        plt.plot(t, x)
-        plt.xlabel('t (s)')
-        plt.ylabel('p (Pa)')
-
-        plt.figure(4)
-        plt.plot(t, 20 * np.log10(np.abs(x) / hf.p_ref))
-        plt.xlabel('t (s)')
-        plt.ylabel('Pressure level (dB)')
-        plt.ylim(-60, 80)
-
-        t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
-        histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        for t in t_rdb:
-            for ray in reception_model.rays[t]:
-                spectrum = ray.receive(receiver)[2]
-                energy = np.trapz(spectrum, spectrum.index)
-                if energy > 0:
-                    energy = 10 * np.log10(energy / hf.p_ref ** 2)
-
-                    bin_e = 2 * int(energy // 2) + 1
-                    if bin_e in histogram.index:
-                        histogram.loc[bin_e, t] += 1
-
-        plt.figure(5)
-        ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        cbr = plt.colorbar(ctr)
-
-        plt.xlabel('t (s)')
-        plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
-        cbr.set_label('Number of Received Sound Rays (-)')
-
-        received = receiver.received
-
-        t = sorted(received.keys())
-        n = np.array([len(received[t]) for t in sorted(received.keys())])
-
-        plt.figure(6)
-        plt.plot(t, n)
-        plt.xlabel('t (s)')
-        plt.ylabel('$N_{rays}$ (-)')
-
-        # plt.close('all')
-        plt.show()
+        # # --------------------------------------------------------------------------------------------------------------
+        # # Spectrograms and sound plots
+        # # --------------------------------------------------------------------------------------------------------------
+        # plt.figure(1)
+        # ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=-10, vmax=30)
+        # cbar = plt.colorbar(ctr)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('f (Hz)')
+        # cbar.set_label('PSL (dB / Hz)')
+        #
+        # plt.figure(2)
+        # f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
+        # ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=-10, vmax=30)
+        # cbar = plt.colorbar(ctr)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('f (Hz)')
+        # cbar.set_label('PSL (dB / Hz)')
+        #
+        # plt.figure(3)
+        # plt.plot(t, x)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('p (Pa)')
+        #
+        # plt.figure(4)
+        # plt.plot(t, 20 * np.log10(np.abs(x) / hf.p_ref))
+        # plt.xlabel('t (s)')
+        # plt.ylabel('Pressure level (dB)')
+        # plt.ylim(-60, 80)
+        #
+        # t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
+        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+        # for t in t_rdb:
+        #     for ray in reception_model.rays[t]:
+        #         spectrum = ray.receive(receiver)[2]
+        #         energy = np.trapz(spectrum, spectrum.index)
+        #         if energy > 0:
+        #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
+        #
+        #             bin_e = 2 * int(energy // 2) + 1
+        #             if bin_e in histogram.index:
+        #                 histogram.loc[bin_e, t] += 1
+        #
+        # plt.figure(5)
+        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+        # cbr = plt.colorbar(ctr)
+        #
+        # plt.xlabel('t (s)')
+        # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+        # cbr.set_label('Number of Received Sound Rays (-)')
+        #
+        # received = receiver.received
+        #
+        # t = sorted(received.keys())
+        # n = np.array([len(received[t]) for t in sorted(received.keys())])
+        #
+        # plt.figure(6)
+        # plt.plot(t, n)
+        # plt.xlabel('t (s)')
+        # plt.ylabel('$N_{rays}$ (-)')
+        #
+        # # plt.close('all')
+        # plt.show()

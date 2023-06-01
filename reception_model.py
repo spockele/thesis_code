@@ -1,10 +1,8 @@
 import queue
-
 import numpy as np
 import pandas as pd
 
 import helper_functions as hf
-# from propagation_model import SoundRay
 
 
 """
@@ -100,6 +98,26 @@ class Receiver(hf.Cartesian):
         p_thread.stop()
         del p_thread
 
+    def spectrogram_to_csv(self, path: str):
+        """
+
+        :param path:
+        :return:
+        """
+        self.spectrogram.to_csv(path)
+
+    @staticmethod
+    def spectrogram_from_csv(path: str):
+        """
+
+        :param path:
+        :return:
+        """
+        spectrogram = pd.read_csv(path, header=0, index_col=0).applymap(complex)
+        spectrogram.columns = spectrogram.columns.astype(float)
+        spectrogram.index = spectrogram.index.astype(float)
+        return spectrogram
+
 
 class ReceptionModel:
     def __init__(self, aur_conditions_dict: dict, aur_reception_dict: dict) -> None:
@@ -140,7 +158,7 @@ class ReceptionModel:
                 if t in self.rays.keys():
                     self.rays[t].append(ray)
                 else:
-                    self.rays[t] = list([ray, ])
+                    self.rays[t] = list['SoundRay']([ray, ])
 
             # Update the ProgressThread
             p_thread.update()
