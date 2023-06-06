@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fft as spfft
 
+from . import HeadRelatedSpherical, Cartesian, limit_angle, c
+
 
 """
 ========================================================================================================================
@@ -11,7 +13,45 @@ import scipy.fft as spfft
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-__all__ = ["MITHrtf", ]
+__all__ = ["MITHrtf", "woodworth_itd", "plot_woodworth_itd"]
+
+
+head_radius = 87.5e-3  # (m)
+
+
+def woodworth_itd(angle: float):
+    """
+
+    :param angle:
+    :return:
+    """
+    angle = abs(limit_angle(angle))
+    if angle <= np.pi/2:
+        return (head_radius / c) * (angle + np.sin(angle))
+
+    elif np.pi/2 < angle <= np.pi:
+        return (head_radius / c) * (np.pi - angle + np.sin(angle))
+
+    else:
+        raise ValueError(f'Given angle invalid.')
+
+
+def plot_woodworth_itd():
+    """
+
+    :return:
+    """
+    plt.figure(1, figsize=(4.8, 4.8))
+    ax = plt.subplot(projection='polar')
+    th = np.linspace(-np.pi, np.pi, 361)
+
+    ax.plot(th, [woodworth_itd(angle) * 1e3 for angle in th], label='ITD (ms)')
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ax.set_rlabel_position(45)
+    ax.legend(loc=3, bbox_to_anchor=(.8, .95))
+    plt.tight_layout()
+    plt.show()
 
 
 class MITHrtf:
@@ -22,9 +62,9 @@ class MITHrtf:
         """
         # Read the SOFA file with pysofaconventions
         size = "large" if large else "normal"
-        file = sofa.SOFAFile(f'./helper_functions/data/mit_kemar_{size}_pinna.sofa', 'r')
+        file = sofa.SOFAFile(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/thesis_code/helper_functions/data/mit_kemar_{size}_pinna.sofa', 'r')
         # Extract the list of positions
-        self.pos = file.getVariableValue('SourcePosition')
+        pos_lst = file.getVariableValue('SourcePosition')
         # Get the sampling frequency and number of samples of the HRIRs
         fs = file.getSamplingRate()
         n = file.getDimension('N').size
@@ -34,15 +74,16 @@ class MITHrtf:
         # Set the FFT frequency list
         self.f = spfft.fftfreq(n, 1 / fs)[:n // 2]
         # Create empty arrays for the HRTFs
-        self.hrtf_l = 1j * np.empty((self.pos.shape[0], self.f.size))
-        self.hrtf_r = 1j * np.empty((self.pos.shape[0], self.f.size))
+        self.hrtf_l = 1j * np.empty((pos_lst.shape[0], self.f.size))
+        self.hrtf_r = 1j * np.empty((pos_lst.shape[0], self.f.size))
 
+        self.pos = []
         # Loop over the positions
-        for pi, pos in enumerate(self.pos):
-            self.pos[pi] = (pos[0] * np.pi / 180, pos[1] * np.pi / 180, pos[2])
+        for pi, pos in enumerate(pos_lst):
+            self.pos.append(HeadRelatedSpherical(pos[2], -pos[0] * np.pi / 180, pos[1] * np.pi / 180, Cartesian(0., 0., 0.), 0.))
             # Obtain the correct HRIRs
             hrir_l, hrir_r = hrir[pi, :, :]
-            # FFT of the HRIRs are the HRTFs. Only care about amplitudes
+            # FFT of the HRIRs are the HRTFs
             self.hrtf_l[pi] = spfft.fft(hrir_l)[:n // 2]
             self.hrtf_r[pi] = spfft.fft(hrir_r)[:n // 2]
 
@@ -51,7 +92,7 @@ class MITHrtf:
         TODO: MITHrtf.get_hrtf > write the function to get the HRTF
         :return:
         """
-        raise NotImplementedError("HAHA, f*** you")
+        print([str(pos) for pos in self.pos])
 
     def plot_horizontal(self):
         """
@@ -60,45 +101,48 @@ class MITHrtf:
         # Create some empty lists to temp store the plots
         x_l_lst = []
         x_r_lst = []
-        f_lst = []
         th_lst = []
         # Collect the HRTFs on the horizontal plane
         for pi, pos in enumerate(self.pos):
-            if pos[1] == 0.:
-                th_lst.append(pos[0] * np.ones(self.f.size))
-                f_lst.append(self.f)
+            if pos[2] == 0.:
+                th_lst.append(pos[1])
                 x_l_lst.append(20 * np.log10(2 * np.abs(self.hrtf_l[pi])))
                 x_r_lst.append(20 * np.log10(2 * np.abs(self.hrtf_r[pi])))
 
         # Convert all this stuff to numpy arrays for reasons only known to god at this point
-        x_l_lst = np.array(x_l_lst)
-        x_r_lst = np.array(x_r_lst)
-        f_lst = np.array(f_lst)
         th_lst = np.degrees(np.array(th_lst))
+        th_sort = np.argsort(th_lst)
+        th_lst = th_lst[th_sort]
+        print(th_lst)
+
+        x_l_lst = np.array(x_l_lst)[th_sort]
+        x_r_lst = np.array(x_r_lst)[th_sort]
+        f_lst = self.f
 
         # Define the lowest value for the colorbar
         vmin = -40
         # Plot for the left ear
         plt.figure(1)
-        cmesh = plt.pcolormesh(f_lst, th_lst, x_l_lst, vmin=vmin, )
+        cmesh = plt.pcolor(f_lst, th_lst, x_l_lst, vmin=vmin, )
         cbar = plt.colorbar(cmesh)
         plt.xlabel('$f$ (Hz)')
         plt.ylabel('Azimuth (degrees)')
         cbar.set_label('(dB)')
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_l_lst), 10), np.max(x_l_lst)))
-        plt.yticks((0, 60, 120, 180, 240, 300, 360))
+        plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
         plt.savefig('./plots/HRTF_left.png')
         # Plot for the right ear
         plt.figure(2)
-        cmesh = plt.pcolormesh(f_lst, th_lst, x_r_lst, vmin=vmin, )
+        cmesh = plt.pcolor(f_lst, th_lst, x_r_lst, vmin=vmin, )
         cbar = plt.colorbar(cmesh)
         plt.xlabel('$f$ (Hz)')
         plt.ylabel('Azimuth (degrees)')
         cbar.set_label('(dB)')
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)))
-        plt.yticks((0, 60, 120, 180, 240, 300, 360))
+        plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
         plt.savefig('./plots/HRTF_right.png')
 
         plt.show()
+
