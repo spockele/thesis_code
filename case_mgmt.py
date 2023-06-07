@@ -314,7 +314,7 @@ class Case(CaseLoader):
         ''' Preparations for HAWC2 '''
         # Set the variables to store the properties of the HAWC2 sphere
         self.h2result_sphere = None
-        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name[-5:])
+        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
 
         ''' Setup of the models '''
         # Set the path for the atmosphere cache file
@@ -423,94 +423,94 @@ class Case(CaseLoader):
         """
         Run everything except HAWC2
         """
-        # source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
-        # reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
+        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
+        reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
         reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
-            # print(f' -- Running Propagation Model for receiver {rec_idx}')
-            # ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
-            # ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
-            #
-            # # propagation_model.pickle_ray_queue(ray_queue,
-            # #                                    os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
-            # # ray_queue = pm.PropagationModel.unpickle_ray_queue()
-            #
-            # print(f' -- Running Reception Model for receiver {rec_idx}')
-            # reception_model.run(receiver, ray_queue)
+            print(f' -- Running Propagation Model for receiver {rec_idx}')
+            ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
+            ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
+
+            propagation_model.pickle_ray_queue(ray_queue,
+                                               os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
+            # ray_queue = pm.PropagationModel.unpickle_ray_queue()
+
+            print(f' -- Running Reception Model for receiver {rec_idx}')
+            reception_model.run(receiver, ray_queue)
 
             spectrogram_path = os.path.join(self.project_path, 'spectrograms',
                                             f'spectrogram_{self.case_name}_rec{rec_idx}.csv')
 
-            # receiver.spectrogram_to_csv(spectrogram_path)
+            receiver.spectrogram_to_csv(spectrogram_path)
 
-            receiver.spectrogram = receiver.spectrogram_from_csv(spectrogram_path)
-            # --------------------------------------------------------------------------------------------------------------
+            # receiver.spectrogram = receiver.spectrogram_from_csv(spectrogram_path)
+            # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
-            # --------------------------------------------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------------------------------------
             reconstruction_model.run(receiver, f'{self.case_name}_rec{rec_idx}.wav')
 
-        # # --------------------------------------------------------------------------------------------------------------
-        # # Spectrograms and sound plots
-        # # --------------------------------------------------------------------------------------------------------------
-        # plt.figure(1)
-        # ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=-10, vmax=30)
-        # cbar = plt.colorbar(ctr)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('f (Hz)')
-        # cbar.set_label('PSL (dB / Hz)')
-        #
-        # plt.figure(2)
-        # f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
-        # ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=-10, vmax=30)
-        # cbar = plt.colorbar(ctr)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('f (Hz)')
-        # cbar.set_label('PSL (dB / Hz)')
-        #
-        # plt.figure(3)
-        # plt.plot(t, x)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('p (Pa)')
-        #
-        # plt.figure(4)
-        # plt.plot(t, 20 * np.log10(np.abs(x) / hf.p_ref))
-        # plt.xlabel('t (s)')
-        # plt.ylabel('Pressure level (dB)')
-        # plt.ylim(-60, 80)
-        #
-        # t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
-        # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
-        # for t in t_rdb:
-        #     for ray in reception_model.rays[t]:
-        #         spectrum = ray.receive(receiver)[2]
-        #         energy = np.trapz(spectrum, spectrum.index)
-        #         if energy > 0:
-        #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
-        #
-        #             bin_e = 2 * int(energy // 2) + 1
-        #             if bin_e in histogram.index:
-        #                 histogram.loc[bin_e, t] += 1
-        #
-        # plt.figure(5)
-        # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
-        # cbr = plt.colorbar(ctr)
-        #
-        # plt.xlabel('t (s)')
-        # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
-        # cbr.set_label('Number of Received Sound Rays (-)')
-        #
-        # received = receiver.received
-        #
-        # t = sorted(received.keys())
-        # n = np.array([len(received[t]) for t in sorted(received.keys())])
-        #
-        # plt.figure(6)
-        # plt.plot(t, n)
-        # plt.xlabel('t (s)')
-        # plt.ylabel('$N_{rays}$ (-)')
-        #
-        # # plt.close('all')
-        # plt.show()
+            # # --------------------------------------------------------------------------------------------------------
+            # # Spectrograms and sound plots
+            # # --------------------------------------------------------------------------------------------------------
+            # plt.figure(1)
+            # ctr = plt.pcolor(spectrogram.columns, f, 20 * np.log10(np.abs(x_fft.T) / hf.p_ref), vmin=-10, vmax=30)
+            # cbar = plt.colorbar(ctr)
+            # plt.xlabel('t (s)')
+            # plt.ylabel('f (Hz)')
+            # cbar.set_label('PSL (dB / Hz)')
+            #
+            # plt.figure(2)
+            # f_stft, t_stft, x_stft = spsig.stft(x, f_s_desired)
+            # ctr = plt.pcolor(t_stft, f_stft, 20 * np.log10(np.abs(x_stft) / hf.p_ref), vmin=-10, vmax=30)
+            # cbar = plt.colorbar(ctr)
+            # plt.xlabel('t (s)')
+            # plt.ylabel('f (Hz)')
+            # cbar.set_label('PSL (dB / Hz)')
+            #
+            # plt.figure(3)
+            # plt.plot(t, x)
+            # plt.xlabel('t (s)')
+            # plt.ylabel('p (Pa)')
+            #
+            # plt.figure(4)
+            # plt.plot(t, 20 * np.log10(np.abs(x) / hf.p_ref))
+            # plt.xlabel('t (s)')
+            # plt.ylabel('Pressure level (dB)')
+            # plt.ylim(-60, 80)
+            #
+            # t_rdb = [round(t, 10) for t in sorted(reception_model.rays.keys())]
+            # histogram = pd.DataFrame(0, index=np.arange(1, 99 + 2, 2), columns=t_rdb)
+            # for t in t_rdb:
+            #     for ray in reception_model.rays[t]:
+            #         spectrum = ray.receive(receiver)[2]
+            #         energy = np.trapz(spectrum, spectrum.index)
+            #         if energy > 0:
+            #             energy = 10 * np.log10(energy / hf.p_ref ** 2)
+            #
+            #             bin_e = 2 * int(energy // 2) + 1
+            #             if bin_e in histogram.index:
+            #                 histogram.loc[bin_e, t] += 1
+            #
+            # plt.figure(5)
+            # ctr = plt.pcolor(histogram.columns, histogram.index, histogram)
+            # cbr = plt.colorbar(ctr)
+            #
+            # plt.xlabel('t (s)')
+            # plt.ylabel('Received OSPL of Sound Ray (dB) (binned per 2 dB)')
+            # cbr.set_label('Number of Received Sound Rays (-)')
+            #
+            # received = receiver.received
+            #
+            # t = sorted(received.keys())
+            # n = np.array([len(received[t]) for t in sorted(received.keys())])
+            #
+            # plt.figure(6)
+            # plt.plot(t, n)
+            # plt.xlabel('t (s)')
+            # plt.ylabel('$N_{rays}$ (-)')
+            #
+            # # plt.close('all')
+            # plt.show()
