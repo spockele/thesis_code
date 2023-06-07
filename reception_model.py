@@ -19,25 +19,20 @@ hrtf = hf.MITHrtf()
 
 
 class ReceivedSound:
-    def __init__(self, t_received: float, last_dir: hf.Cartesian, spectrum: pd.DataFrame, head_rotation: float) -> None:
+    def __init__(self, t_received: float, spectrum: pd.DataFrame, source_pos: hf.Cartesian,
+                 head_rotation: float) -> None:
         """
         ================================================================================================================
         Class to store incoming sound from SoundRays.
         ================================================================================================================
         :param t_received: time of reception (s) of the SoundRay (as obtained from SoundRay.receive)
-        :param last_dir: last item of SoundRay.dir (as obtained from SoundRay.receive)
         :param spectrum: sound spectrum with amplitude and phase (as obtained from SoundRay.receive)
         :param head_rotation: Receiver.rotation of the Receiver where this sound is received
         """
         self.t = t_received
         self.head_rotation = head_rotation
         self.spectrum = spectrum
-
-        # Incoming direction is the inverse of the last travel direction, adjusted for the head rotation
-        coming_from = - last_dir / last_dir.len()
-        self.incoming_dir = coming_from.to_hr_spherical(hf.Cartesian(0, 0, 0, ), head_rotation)
-
-        self.spectrum[['hrtf_l', 'hrtf_r']] = hrtf.get_hrtf(self.incoming_dir[1], self.incoming_dir[2])
+        self.source_pos = source_pos
 
 
 class Receiver(hf.Cartesian):

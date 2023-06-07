@@ -157,6 +157,7 @@ class Source(hf.Cartesian):
         :param blade: blade label of this sound Source
         """
         super().__init__(x, y, z)
+        self._cartesian = hf.Cartesian(x, y, z)
 
         self.sphere = [point + self for point in sphere]
         self.sphere_dist = sphere_dist
@@ -203,7 +204,7 @@ class Source(hf.Cartesian):
                 # Get the relevant amplitude spectrum
                 spectrum = np.sqrt(h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t))
 
-                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, models,
+                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, self._cartesian, beam_width, spectrum, models,
                                           t_0=self.t, label=self.blade))
 
         return ray_queue

@@ -71,7 +71,8 @@ class PropagationThread(threading.Thread):
 
 
 class Ray:
-    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, t_0: float = 0.) -> None:
+    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, source_pos: hf.Cartesian,
+                 t_0: float = 0.) -> None:
         """
         ================================================================================================================
         Class for the propagation sound ray model.
@@ -88,6 +89,8 @@ class Ray:
         self.t = np.array([t_0, ])
         self.s = np.array([s_0])
         self.received = False
+
+        self.source_pos = source_pos
 
     def __repr__(self):
         return f'<Ray at {self.pos[-1]}, received={self.received}>'
@@ -235,8 +238,9 @@ class Ray:
 
 
 class SoundRay(Ray):
-    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, beam_width: float,
-                 amplitude_spectrum: pd.DataFrame, models: tuple, t_0: float = 0., label: str = None) -> None:
+    def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, source_pos: hf.Cartesian,
+                 beam_width: float, amplitude_spectrum: pd.DataFrame, models: tuple,
+                 t_0: float = 0., label: str = None) -> None:
         """
         ================================================================================================================
         Class for the propagation sound ray model. With the sound spectral effects.
@@ -248,7 +252,7 @@ class SoundRay(Ray):
         :param t_0: the start time of the ray propagation (s)
         :param label: a string label for SoundRay
         """
-        super().__init__(pos_0, vel_0, s_0, t_0)
+        super().__init__(pos_0, vel_0, s_0, source_pos, t_0)
 
         self.bw = beam_width
         self.label = label
@@ -268,7 +272,7 @@ class SoundRay(Ray):
         """
         Create a not-yet-propagated copy of this SoundRay.
         """
-        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.bw, self.spectrum['a'],
+        return SoundRay(self.pos[0], self.vel[0], self.s[0], self.source_pos, self.bw, self.spectrum['a'],
                         self.models, self.t[0], self.label)
 
     def propagation_effects(self, atmosphere: hf.Atmosphere) -> None:
@@ -329,7 +333,7 @@ class SoundRay(Ray):
         # Determine the filter and clip to between 0 and 1
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
 
-    def receive(self, receiver: Receiver) -> (float, hf.Cartesian, pd.DataFrame):
+    def receive(self, receiver: Receiver) -> (float, pd.DataFrame, hf.Cartesian):
         """
         Function that adds the SoundRay to the receiver.
         :param receiver: instance of Receiver
@@ -345,7 +349,7 @@ class SoundRay(Ray):
             spectrum['a'] *= self.spectrum[model]
 
         # Return what is needed to create a ReceivedSound instance
-        return self.t[-1], self.dir[-1], spectrum
+        return self.t[-1], spectrum, self.source_pos
 
 
 class PropagationModel:
