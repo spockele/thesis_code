@@ -40,7 +40,7 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
 
     for ti, t in enumerate(receiver.spectrogram.columns):
         x_spectrogram = receiver.spectrogram.loc[:, t].to_numpy()
-        x_fft[ti] = np.interp(f, f_spectrogram, x_spectrogram) * np.sum(window) * np.exp(
+        x_fft[ti] = np.interp(f, f_spectrogram, x_spectrogram) * np.sqrt(np.sum(window)) * np.exp(
             1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
 
     t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_fft, nperseg=n_perseg, noverlap=n_perseg - n_base,
