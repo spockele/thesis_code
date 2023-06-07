@@ -2,6 +2,7 @@ import pysofaconventions as sofa
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fft as spfft
+import scipy.interpolate as spint
 
 from . import HeadRelatedSpherical, Cartesian, limit_angle, c
 
@@ -77,46 +78,42 @@ class MITHrtf:
         self.hrtf_l = 1j * np.empty((pos_lst.shape[0], self.f.size))
         self.hrtf_r = 1j * np.empty((pos_lst.shape[0], self.f.size))
 
-        self.pos = []
+        self.azimuth = np.empty((pos_lst.shape[0], ))
+        self.polar = np.empty((pos_lst.shape[0], ))
         # Loop over the positions
         for pi, pos in enumerate(pos_lst):
-            self.pos.append(HeadRelatedSpherical(pos[2], -pos[0] * np.pi / 180, pos[1] * np.pi / 180, Cartesian(0., 0., 0.), 0.))
+            # Store azimuth angle, which is opposite in my coordinate systems compared to the HRTF files
+            self.azimuth[pi] = -limit_angle(pos[0] * np.pi / 180)
+            # Store polar angle
+            self.polar[pi] = limit_angle(pos[1] * np.pi / 180)
+
             # Obtain the correct HRIRs
             hrir_l, hrir_r = hrir[pi, :, :]
             # FFT of the HRIRs are the HRTFs
             self.hrtf_l[pi] = spfft.fft(hrir_l)[:n // 2]
             self.hrtf_r[pi] = spfft.fft(hrir_r)[:n // 2]
 
-    def get_hrtf(self):
+        self.points = np.vstack((self.azimuth, self.polar)).T
+
+    def get_hrtf(self, azimuth: float, polar: float):
         """
         TODO: MITHrtf.get_hrtf > write the function to get the HRTF
         :return:
         """
-        print([str(pos) for pos in self.pos])
+        hrtf_l = spint.griddata(self.points, self.hrtf_l, (limit_angle(azimuth), limit_angle(polar)), method='nearest')
+        hrtf_r = spint.griddata(self.points, self.hrtf_r, (limit_angle(azimuth), limit_angle(polar)), method='nearest')
+
+        return hrtf_l, hrtf_r
 
     def plot_horizontal(self):
         """
         Plot the HRTF for all azimuth angles in the horizontal plane in dB
         """
-        # Create some empty lists to temp store the plots
-        x_l_lst = []
-        x_r_lst = []
-        th_lst = []
-        # Collect the HRTFs on the horizontal plane
-        for pi, pos in enumerate(self.pos):
-            if pos[2] == 0.:
-                th_lst.append(pos[1])
-                x_l_lst.append(20 * np.log10(2 * np.abs(self.hrtf_l[pi])))
-                x_r_lst.append(20 * np.log10(2 * np.abs(self.hrtf_r[pi])))
-
-        # Convert all this stuff to numpy arrays for reasons only known to god at this point
-        th_lst = np.degrees(np.array(th_lst))
+        th_lst = self.azimuth[self.polar == 0.]
         th_sort = np.argsort(th_lst)
         th_lst = th_lst[th_sort]
-        print(th_lst)
-
-        x_l_lst = np.array(x_l_lst)[th_sort]
-        x_r_lst = np.array(x_r_lst)[th_sort]
+        x_l_lst = 20 * np.log10(np.abs(self.hrtf_l[self.polar == 0., :]))[th_sort]
+        x_r_lst = 20 * np.log10(np.abs(self.hrtf_r[self.polar == 0., :]))[th_sort]
         f_lst = self.f
 
         # Define the lowest value for the colorbar
@@ -130,7 +127,7 @@ class MITHrtf:
         cbar.set_label('(dB)')
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_l_lst), 10), np.max(x_l_lst)))
-        plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
+        # plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
         plt.savefig('./plots/HRTF_left.png')
         # Plot for the right ear
         plt.figure(2)
@@ -141,7 +138,7 @@ class MITHrtf:
         cbar.set_label('(dB)')
         plt.tight_layout()
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)))
-        plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
+        # plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
         plt.savefig('./plots/HRTF_right.png')
 
         plt.show()
