@@ -342,7 +342,7 @@ class SoundRay(Ray):
         spectrum['a'] *= self.spectrum['gaussian']
         # Add attenuation from selected models
         for model in self.models:
-            spectrum['a'] *= self.spectrum[model] ** 2
+            spectrum['a'] *= self.spectrum[model]
 
         # Return what is needed to create a ReceivedSound instance
         return self.t[-1], self.dir[-1], spectrum

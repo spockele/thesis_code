@@ -15,6 +15,9 @@ import helper_functions as hf
 __all__ = ['ReceivedSound', 'Receiver', 'ReceptionModel']
 
 
+hrtf = hf.MITHrtf()
+
+
 class ReceivedSound:
     def __init__(self, t_received: float, last_dir: hf.Cartesian, spectrum: pd.DataFrame, head_rotation: float) -> None:
         """
@@ -31,8 +34,10 @@ class ReceivedSound:
         self.spectrum = spectrum
 
         # Incoming direction is the inverse of the last travel direction, adjusted for the head rotation
-        coming_from = - last_dir
+        coming_from = - last_dir / last_dir.len()
         self.incoming_dir = coming_from.to_hr_spherical(hf.Cartesian(0, 0, 0, ), head_rotation)
+
+        self.spectrum[['hrtf_l', 'hrtf_r']] = hrtf.get_hrtf(self.incoming_dir[1], self.incoming_dir[2])
 
 
 class Receiver(hf.Cartesian):
@@ -85,7 +90,7 @@ class Receiver(hf.Cartesian):
             # Merge spectral amplitude and phase for each incoming sound
             spectra = [sound.spectrum['a'] * np.exp(1j * sound.spectrum['p']) for sound in sounds]
             # Sum these merged spectra and put them into the sums dictionary
-            sums[t] = sum(spectra)
+            sums[t] = np.abs(sum(spectra))
             # Update the ProgressThread
             p_thread.update()
 

@@ -201,7 +201,7 @@ class Source(hf.Cartesian):
                 # Set the initial velocity vector
                 vel_0 = speed_of_sound * dir_0 / dir_0.len()
                 # Get the relevant amplitude spectrum
-                spectrum = h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t)
+                spectrum = np.sqrt(h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t))
 
                 ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, beam_width, spectrum, models,
                                           t_0=self.t, label=self.blade))
