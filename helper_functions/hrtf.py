@@ -65,7 +65,7 @@ class MITHrtf:
         """
         # Read the SOFA file with pysofaconventions
         size = "large" if large else "normal"
-        path = os.path.abspath(f'data/mit_kemar_{size}_pinna.sofa')
+        path = os.path.abspath(f'./helper_functions/data/mit_kemar_{size}_pinna.sofa')
         file = sofa.SOFAFile(path, 'r')
 
         # Extract the list of positions
