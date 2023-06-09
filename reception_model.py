@@ -1,6 +1,7 @@
 import queue
 import numpy as np
 import pandas as pd
+import compress_pickle as pickle
 
 import helper_functions as hf
 
@@ -181,6 +182,24 @@ class Receiver(hf.Cartesian):
         spectrogram_right.index = spectrogram_right.index.astype(float)
 
         return spectrogram_left, spectrogram_right
+
+    def pickle(self, path: str):
+        """
+
+        :param path:
+        :return:
+        """
+        pickle_file = open(path, 'wb')
+        pickle.dump(self, pickle_file)
+        pickle_file.close()
+
+    @staticmethod
+    def unpickle(path: str):
+        pickle_file = open(path, 'rb')
+        receiver = pickle.load(pickle_file)
+        pickle_file.close()
+
+        return receiver
 
 
 class ReceptionModel:
