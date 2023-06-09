@@ -75,7 +75,7 @@ def read_hawc2_aero_noise(path: str, scope: str = 'All'):
     time_series_data.set_index('t', inplace=True)
 
     # Create empty PSD dict
-    psd = [pd.DataFrame() for _ in range(4)]
+    psd = [{} for _ in range(4)]
 
     # Set the number of lines per time step
     n_lines_per_t = n_freq + 2
@@ -96,21 +96,28 @@ def read_hawc2_aero_noise(path: str, scope: str = 'All'):
 
         # Set the zero index of the PSD information
         psd_0_idx = 6 + li * n_lines_per_t + 1
-        # Read the PSD at this timestep
-        for psd_line in lines[psd_0_idx:psd_0_idx + n_freq]:
-            # Process the line
-            psd_line = [float(value) for value in psd_line.strip('  ').replace('  ', ' ').split(' ')]
-            # Fill values into spectrum
-            for n_blade in range(4):
-                psd_idx = 5 * n_blade + 1
-                psd[n_blade].loc[psd_line[0], t] = psd_line[psd_idx + scope_idxs[scope]]
+        # Read the PSD block at this timestep
+        psd_lines = np.array([[float(value) for value in psd_line.strip('  ').replace('  ', ' ').split(' ')]
+                              for psd_line in lines[psd_0_idx:psd_0_idx + n_freq]])
+        # Extract the frequency list for later
+        f = psd_lines[:, 0]
+        # Loop over the blades
+        for n_blade in range(4):
+            # Determine the blade's position in the psd block
+            psd_idx = 5 * n_blade + 1
+            # Put the correct psd into the dictionary of the blade
+            psd[n_blade][t] = psd_lines[:, psd_idx + scope_idxs[scope]]
+
+    # Create a DataFrame for each blade
+    psd_out = [pd.DataFrame(psd[n_blade], index=f) for n_blade in range(4)]
 
     # Unwrap from the range [0,2pi] to avoid interpolation issues at the domain gap
     time_series_data.loc[:, 'psi_1'] = np.unwrap(time_series_data.loc[:, 'psi_1'])
     time_series_data.loc[:, 'psi_2'] = np.unwrap(time_series_data.loc[:, 'psi_2'])
     time_series_data.loc[:, 'psi_3'] = np.unwrap(time_series_data.loc[:, 'psi_3'])
+
     # Return all the extracted data ;|
-    return observer_pos, time_series_data, psd
+    return observer_pos, time_series_data, psd_out
 
 # TODO: hf.in_out implement alternative to librosa
 # def wav_to_stft(path):
