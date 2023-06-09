@@ -34,12 +34,12 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
 
     window = spsig.windows.tukey(n_perseg, .75, )
 
-    x_fft = 1j * np.zeros((receiver.spectrogram.columns.size, n_fft // 2))
+    x_fft = 1j * np.zeros((receiver.spectrogram_left.columns.size, n_fft // 2))
     f = spfft.fftfreq(n_fft, 1 / f_s_desired)[:n_fft // 2]
-    f_spectrogram = receiver.spectrogram.index.to_numpy().flatten()
+    f_spectrogram = receiver.spectrogram_left.index.to_numpy().flatten()
 
-    for ti, t in enumerate(receiver.spectrogram.columns):
-        x_spectrogram = receiver.spectrogram.loc[:, t].to_numpy()
+    for ti, t in enumerate(receiver.spectrogram_left.columns):
+        x_spectrogram = receiver.spectrogram_left.loc[:, t].to_numpy()
         x_fft[ti] = np.interp(f, f_spectrogram, x_spectrogram) * np.sqrt(np.sum(window)) * np.exp(
             1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
 
