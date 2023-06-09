@@ -146,4 +146,7 @@ ray_cache/
 pickle*/
 NTK_*/
 htc/
+aur/
+# Exclude some python files
 ntk_data_processing.py
+stuff.py
