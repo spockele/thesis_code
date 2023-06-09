@@ -396,7 +396,7 @@ class PropagationModel:
         return out_queue
 
     @staticmethod
-    def pickle_ray_queue(ray_queue: queue.Queue[Ray], ray_cache_path: str) -> None:
+    def pickle_ray_queue(ray_queue: queue.Queue[SoundRay], ray_cache_path: str) -> None:
         """
         Cache a queue of Rays to compressed pickles in the given directory.
         :param ray_queue: queue.Queue containing Rays (or SoundRays)
@@ -427,7 +427,7 @@ class PropagationModel:
         del p_thread
 
     @staticmethod
-    def unpickle_ray_queue(ray_cache_path: str) -> queue.Queue[Ray]:
+    def unpickle_ray_queue(ray_cache_path: str) -> queue.Queue[SoundRay]:
         """
         Read out a cache directory of compressed Ray pickles.
         :param ray_cache_path: path to directory containing pickles
@@ -466,7 +466,7 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: queue.Queue[SoundRay], receiver: Receiver, time_series: pd.DataFrame) -> None:
+    def interactive_ray_plot(ray_queue: queue.Queue[SoundRay], receiver: Receiver, ) -> None:
         """
         Makes an interactive plot of the SoundRays in a queue.Queue.
         :param ray_queue: queue.Queue containing SoundRays
@@ -480,7 +480,7 @@ class PropagationModel:
             # Add any received rays to the dictionary
             if ray.received:
                 # Just stupid sh!te to avoid floating point errors...
-                t = round(ray.t[-1], 10)
+                t = round(ray.t[0], 10)
                 # Fill into the dictionary
                 if t in rays.keys():
                     rays[t].append(ray)
@@ -490,6 +490,9 @@ class PropagationModel:
         # Create the main plot
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
+
+        # Pre-set the colorbar levels
+        levels = np.arange(5, 95 + 10, 10)
 
         def update_plot(t_plt: float):
             """
@@ -518,7 +521,7 @@ class PropagationModel:
                 pos_array = ry.pos_array()
 
                 # Get the sound spectrum
-                _, _, spectrum = ry.receive(receiver)
+                _, spectrum, source_pos = ry.receive(receiver)
                 # Integrate to get the energy
                 energy = np.trapz(spectrum['a'], spectrum.index)
                 # Check that energy is not zero before continuing
@@ -528,17 +531,17 @@ class PropagationModel:
                     # Bin the energy
                     energy_bin = 10 * int(energy // 10) + 5
                     # Apply color to that energy
-                    cmap_lvl = np.float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
+                    cmap_lvl = float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
                     color = cmap(cmap_lvl)
 
                     # Plot the ray
                     ax.plot(-pos_array[0], pos_array[1], -pos_array[2], color=color)
 
-            # Plot the source points if they exist at this input time
-            for key in time_series.columns:
-                if 'blade' in key and t_plt in time_series.index:
-                    x, y, z = time_series.loc[t_plt, key].vec
-                    ax.scatter(-x, y, -z, s=5, color='k', marker='8')
+                    x, y, z = source_pos.vec
+                    x_0, y_0, z_0 = ry.pos[0].vec
+
+                    ax.scatter(-x, y, -z, color='k', marker='8')
+                    ax.plot((-x, -x_0), (y, y_0), (-z, -z_0), color='0.8', )
 
         # Adjust the main plot to make room for the sliders
         fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
@@ -556,7 +559,6 @@ class PropagationModel:
         )
 
         # Create the colorbar for the energy levels
-        levels = np.arange(5, 95 + 10, 10)
         ticks = np.arange(0, 100 + 10, 10)
         cmap = mpl.colormaps['viridis'].resampled(10)
 
