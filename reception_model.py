@@ -19,7 +19,7 @@ hrtf = hf.MITHrtf()
 
 
 class ReceivedSound:
-    def __init__(self, t_received: float, spectrum: pd.DataFrame, source_pos: hf.Cartesian,
+    def __init__(self, t_received: float, spectrum: pd.DataFrame, source_pos: hf.Cartesian, receiver_pos: hf.Cartesian,
                  head_rotation: float) -> None:
         """
         ================================================================================================================
@@ -32,7 +32,23 @@ class ReceivedSound:
         self.t = t_received
         self.head_rotation = head_rotation
         self.spectrum = spectrum
-        self.source_pos = source_pos
+
+        self.relative_source_pos = source_pos.to_hr_spherical(receiver_pos, self.head_rotation)
+        self.receiver_pos = receiver_pos
+
+        self.spectrum_binaural = pd.DataFrame(0., index=hrtf.f, columns=['al', 'pl', 'ar', 'pr'])
+
+    def apply_hrtf(self):
+        """
+
+        """
+        hrtf_l, hrtf_r = hrtf.get_hrtf(self.relative_source_pos[1], self.relative_source_pos[2])
+
+        self.spectrum_binaural['al'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['a']) * np.abs(hrtf_l)
+        self.spectrum_binaural['pl'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['p']) + np.angle(hrtf_l)
+
+        self.spectrum_binaural['ar'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['a']) * np.abs(hrtf_r)
+        self.spectrum_binaural['pr'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['p']) + np.angle(hrtf_r)
 
 
 class Receiver(hf.Cartesian):
@@ -45,11 +61,17 @@ class Receiver(hf.Cartesian):
         """
         x, y, z = parse_dict['pos']
         super().__init__(x, y, z)
+        self.cartesian = hf.Cartesian(x, y, z)
+
         self.index = parse_dict['index']
         self.rotation = hf.limit_angle(np.radians(parse_dict['rotation']))
 
         self.received = dict[float: list]()
-        self.spectrogram = pd.DataFrame()
+
+        self.spectrogram_left = pd.DataFrame()
+        self.spectrogram_right = pd.DataFrame()
+
+        self.mode = ''
 
     def __repr__(self):
         return f'<Receiver {self.index}: {str(self)}>'
@@ -66,57 +88,99 @@ class Receiver(hf.Cartesian):
         else:
             self.received[sound.t] = list[ReceivedSound]([sound, ])
 
-    def sum_spectra(self) -> None:
+    def sum_spectra(self, mode: str) -> None:
         """
         Sum all the sound spectra at the same time step.
         """
         # Sort the received dictionary by its keys
         self.received = dict[float: list](sorted(self.received.items()))
-        # Initialise the dictionary to receive the sums per time step
-        sums = dict[float: pd.DataFrame]()
+        self.mode = mode
 
         # Start a ProgressThread
         p_thread = hf.ProgressThread(len(self.received.keys()), 'Summing received sound')
         p_thread.start()
 
-        # Loop over the timesteps in the received dictionary
-        sounds: list[ReceivedSound]
-        for t, sounds in self.received.items():
-            # Merge spectral amplitude and phase for each incoming sound
-            spectra = [sound.spectrum['a'] * np.exp(1j * sound.spectrum['p']) for sound in sounds]
-            # Sum these merged spectra and put them into the sums dictionary
-            sums[t] = np.abs(sum(spectra))
-            # Update the ProgressThread
-            p_thread.update()
+        if self.mode == 'mono':
+            # Initialise the dictionary to receive the sums per time step
+            sums = dict[float: pd.DataFrame]()
+            # Loop over the timesteps in the received dictionary
+            sounds: list[ReceivedSound]
+            for t, sounds in self.received.items():
+                # Merge spectral amplitude and phase for each incoming sound
+                spectra = [sound.spectrum['a'] * np.exp(1j * sound.spectrum['p']) for sound in sounds]
+                # Sum these merged spectra and put them into the sums dictionary
+                sums[t] = sum(spectra)
+                # Update the ProgressThread
+                p_thread.update()
 
-        # Put all these sums into a pd.DataFrame
-        self.spectrogram = pd.concat(sums.values(), axis=1)
-        # Set the column names to the time steps
-        self.spectrogram.columns = self.received.keys()
+            # Put all these sums into a pd.DataFrame
+            self.spectrogram_left = pd.concat(sums.values(), axis=1)
+            self.spectrogram_right = pd.concat(sums.values(), axis=1)
+            # Set the column names to the time steps
+            self.spectrogram_left.columns = self.received.keys()
+            self.spectrogram_right.columns = self.received.keys()
+
+        elif self.mode == 'stereo':
+            # Initialise the dictionaries to receive the sums per time step
+            sums_left = dict[float: pd.DataFrame]()
+            sums_right = dict[float: pd.DataFrame]()
+            # Loop over the timesteps in the received dictionary
+            sounds: list[ReceivedSound]
+            for t, sounds in self.received.items():
+                # Apply the head-related transfer function to the received sounds at this timestep
+                [sound.apply_hrtf() for sound in sounds]
+
+                # Merge spectral amplitude and phase for each incoming sound
+                spectra_left = [sound.spectrum_binaural['al'] * np.exp(1j * sound.spectrum_binaural['pl'])
+                                for sound in sounds]
+
+                spectra_right = [sound.spectrum_binaural['ar'] * np.exp(1j * sound.spectrum_binaural['pr'])
+                                 for sound in sounds]
+
+                # Sum these merged spectra and put them into the sums dictionaries
+                sums_left[t] = sum(spectra_left)
+                sums_right[t] = sum(spectra_right)
+                # Update the ProgressThread
+                p_thread.update()
+
+            # Put all these sums into a pd.DataFrame
+            self.spectrogram_left = pd.concat(sums_left.values(), axis=1)
+            self.spectrogram_right = pd.concat(sums_right.values(), axis=1)
+            # Set the column names to the time steps
+            self.spectrogram_left.columns = self.received.keys()
+            self.spectrogram_right.columns = self.received.keys()
 
         # Stop the ProgressThread
         p_thread.stop()
         del p_thread
 
-    def spectrogram_to_csv(self, path: str):
+    def spectrogram_to_csv(self, path_left: str, path_right: str):
         """
 
-        :param path:
+        :param path_left:
+        :param path_right:
         :return:
         """
-        self.spectrogram.to_csv(path)
+        self.spectrogram_left.to_csv(path_left)
+        self.spectrogram_right.to_csv(path_right)
 
     @staticmethod
-    def spectrogram_from_csv(path: str):
+    def spectrogram_from_csv(path_left: str, path_right: str):
         """
 
-        :param path:
+        :param path_left:
+        :param path_right:
         :return:
         """
-        spectrogram = pd.read_csv(path, header=0, index_col=0).applymap(complex)
-        spectrogram.columns = spectrogram.columns.astype(float)
-        spectrogram.index = spectrogram.index.astype(float)
-        return spectrogram
+        spectrogram_left = pd.read_csv(path_left, header=0, index_col=0).applymap(complex)
+        spectrogram_left.columns = spectrogram_left.columns.astype(float)
+        spectrogram_left.index = spectrogram_left.index.astype(float)
+
+        spectrogram_right = pd.read_csv(path_right, header=0, index_col=0).applymap(complex)
+        spectrogram_right.columns = spectrogram_right.columns.astype(float)
+        spectrogram_right.index = spectrogram_right.index.astype(float)
+
+        return spectrogram_left, spectrogram_right
 
 
 class ReceptionModel:
@@ -149,7 +213,8 @@ class ReceptionModel:
             # Check if ray is received at the Receiver
             if ray.received:
                 # Create the ReceivedSound from the ray at the Receiver
-                sound = ReceivedSound(*ray.receive(receiver), receiver.rotation)
+                t_received, spectrum, source_pos = ray.receive(receiver)
+                sound = ReceivedSound(t_received, spectrum, source_pos, receiver.cartesian, receiver.rotation)
                 # Receive the sound with the Receiver
                 receiver.receive(sound)
                 # Another one of these fun floating point error correction points :)
@@ -167,4 +232,4 @@ class ReceptionModel:
         del p_thread
 
         # Sum the sound spectra in the receiver
-        receiver.sum_spectra()
+        receiver.sum_spectra(self.params['mode'])

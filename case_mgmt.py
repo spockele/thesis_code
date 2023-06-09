@@ -441,12 +441,14 @@ class Case(CaseLoader):
             print(f' -- Running Reception Model for receiver {rec_idx}')
             reception_model.run(receiver, ray_queue)
 
-            spectrogram_path = os.path.join(self.project_path, 'spectrograms',
-                                            f'spectrogram_{self.case_name}_rec{rec_idx}.csv')
+            spectrogram_path_left = os.path.join(self.project_path, 'spectrograms',
+                                                 f'spectrogram_{self.case_name}_rec{rec_idx}_left.csv')
+            spectrogram_path_right = os.path.join(self.project_path, 'spectrograms',
+                                                 f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
 
-            receiver.spectrogram_to_csv(spectrogram_path)
+            receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
 
-            # receiver.spectrogram = receiver.spectrogram_from_csv(spectrogram_path)
+            # receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
             # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
             # ----------------------------------------------------------------------------------------------------------
