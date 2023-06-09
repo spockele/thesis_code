@@ -276,7 +276,7 @@ class CaseLoader:
             elif key in ():
                 self.reception_dict[key] = int(block)
 
-            elif key == 'receiver':
+            elif key.startswith('receiver'):
                 self._parse_receiver(block)
 
             else:
@@ -430,13 +430,15 @@ class Case(CaseLoader):
 
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
+            print()
             print(f' -- Running Propagation Model for receiver {rec_idx}')
             ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
             ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
 
             propagation_model.pickle_ray_queue(ray_queue,
                                                os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
-            # ray_queue = pm.PropagationModel.unpickle_ray_queue()
+
+            receiver.pickle(os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}', 'receiver.pickle.gz'))
 
             print(f' -- Running Reception Model for receiver {rec_idx}')
             reception_model.run(receiver, ray_queue)
@@ -452,7 +454,7 @@ class Case(CaseLoader):
             # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
             # ----------------------------------------------------------------------------------------------------------
-            reconstruction_model.run(receiver, f'{self.case_name}_rec{rec_idx}.wav')
+            reconstruction_model.run(receiver, f'{self.project_path}/wavfiles/{self.case_name}_rec{rec_idx}.wav')
 
             # # --------------------------------------------------------------------------------------------------------
             # # Spectrograms and sound plots
