@@ -1,10 +1,11 @@
+import os
 import pysofaconventions as sofa
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.fft as spfft
 import scipy.interpolate as spint
 
-from . import HeadRelatedSpherical, Cartesian, limit_angle, c
+from . import limit_angle, c
 
 
 """
@@ -26,12 +27,13 @@ def woodworth_itd(angle: float):
     :param angle:
     :return:
     """
+    side = {-1.: 'left', 0.: 'centre', 1.: 'right'}[np.sign(limit_angle(angle))]
     angle = abs(limit_angle(angle))
     if angle <= np.pi/2:
-        return (head_radius / c) * (angle + np.sin(angle))
+        return side, (head_radius / c) * (angle + np.sin(angle))
 
     elif np.pi/2 < angle <= np.pi:
-        return (head_radius / c) * (np.pi - angle + np.sin(angle))
+        return side, (head_radius / c) * (np.pi - angle + np.sin(angle))
 
     else:
         raise ValueError(f'Given angle invalid.')
@@ -46,7 +48,7 @@ def plot_woodworth_itd():
     ax = plt.subplot(projection='polar')
     th = np.linspace(-np.pi, np.pi, 361)
 
-    ax.plot(th, [woodworth_itd(angle) * 1e3 for angle in th], label='ITD (ms)')
+    ax.plot(th, [woodworth_itd(angle)[1] * 1e3 for angle in th], label='ITD (ms)')
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
     ax.set_rlabel_position(45)
@@ -63,7 +65,9 @@ class MITHrtf:
         """
         # Read the SOFA file with pysofaconventions
         size = "large" if large else "normal"
-        file = sofa.SOFAFile(f'/home/josephine/Documents/EWEM/7 - MASTER THESIS/thesis_code/helper_functions/data/mit_kemar_{size}_pinna.sofa', 'r')
+        path = os.path.abspath(f'data/mit_kemar_{size}_pinna.sofa')
+        file = sofa.SOFAFile(path, 'r')
+
         # Extract the list of positions
         pos_lst = file.getVariableValue('SourcePosition')
         # Get the sampling frequency and number of samples of the HRIRs
