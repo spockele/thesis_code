@@ -68,6 +68,6 @@ class Project:
 
 
 if __name__ == '__main__':
-    proj_path = os.path.abspath('NTK')
+    proj_path = os.path.abspath('NTK_test')
     proj = Project(proj_path)
     proj.run()

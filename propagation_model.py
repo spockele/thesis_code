@@ -9,6 +9,7 @@ import compress_pickle as pickle
 
 from typing import Self
 from matplotlib.widgets import Slider
+from matplotlib.animation import FuncAnimation
 
 import helper_functions as hf
 from reception_model import Receiver
@@ -366,37 +367,47 @@ class PropagationModel:
         self.params = aur_propagation_dict
         self.atmosphere = atmosphere
 
-    def run(self, receiver: Receiver, in_queue: queue.Queue) -> queue.Queue:
+    def run(self, receiver: Receiver, in_queue: list[SoundRay]) -> None:
         """
         Run the propagation model for one receiver.
         :param receiver: instance of rm.Receiver
         :param in_queue: queue.Queue instance containing non-propagated SoundRays
         :return: A queue.Queue instance containing all propagated SoundRays.
         """
-        # Initialise the output queue.Queue()s
-        out_queue = queue.Queue()
+        # # Initialise the output queue.Queue()s
+        # out_queue = queue.Queue()
 
         # Set the time limit to limit compute time
         t_limit = 3 * receiver.dist(self.conditions_dict['hub_pos']) / hf.c
 
         # Start a ProgressThread to follow the propagation
-        p_thread = hf.ProgressThread(in_queue.qsize(), f'Propagating rays')
+        p_thread = hf.ProgressThread(len(in_queue), f'Propagating rays')
         p_thread.start()
-        # Create the PropagationThreads
-        threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
-                                     receiver, self.atmosphere, p_thread, t_limit)
-                   for _ in range(self.params['n_threads'])]
-        # Start the threads and hold until all are done
-        [thread.start() for thread in threads]
-        [thread.join() for thread in threads]
+
+        for ray in in_queue:
+            ray.propagate(self.conditions_dict['delta_t'], receiver, self.atmosphere, t_limit)
+            p_thread.update()
+
         # Stop the ProgressThread
         p_thread.stop()
         del p_thread
 
-        return out_queue
+        # # Create the PropagationThreads
+        # threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
+        #                              receiver, self.atmosphere, p_thread, t_limit)
+        #            for _ in range(self.params['n_threads'])]
+        # # Start the threads and hold until all are done
+        # [thread.start() for thread in threads]
+        # [thread.join() for thread in threads]
+        # # Stop the ProgressThread
+        # p_thread.stop()
+        # del p_thread
+        # del threads
+
+        # return out_queue
 
     @staticmethod
-    def pickle_ray_queue(ray_queue: queue.Queue[SoundRay], ray_cache_path: str) -> None:
+    def pickle_ray_queue(ray_queue: list[SoundRay], ray_cache_path: str) -> None:
         """
         Cache a queue of Rays to compressed pickles in the given directory.
         :param ray_queue: queue.Queue containing Rays (or SoundRays)
@@ -407,12 +418,12 @@ class PropagationModel:
             os.mkdir(ray_cache_path)
 
         # Start a ProgressThread
-        p_thread = hf.ProgressThread(ray_queue.qsize(), 'Pickle-ing sound rays')
+        p_thread = hf.ProgressThread(len(ray_queue), 'Pickle-ing sound rays')
         p_thread.start()
 
         # Loop over the queue without emptying it
         ray: SoundRay
-        for ray in ray_queue.queue:
+        for ray in ray_queue:
             # Open the pickle file
             ray_file = open(os.path.join(ray_cache_path, f'SoundRay_{p_thread.step}.pickle.gz'), 'wb')
             # Dump the pickle
@@ -427,7 +438,7 @@ class PropagationModel:
         del p_thread
 
     @staticmethod
-    def unpickle_ray_queue(ray_cache_path: str) -> queue.Queue[SoundRay]:
+    def unpickle_ray_queue(ray_cache_path: str) -> list[SoundRay]:
         """
         Read out a cache directory of compressed Ray pickles.
         :param ray_cache_path: path to directory containing pickles
@@ -437,7 +448,7 @@ class PropagationModel:
             raise NotADirectoryError(f'No {ray_cache_path} directory found. Cannot un-pickle ray queue.')
 
         # Create empty queue.Queue
-        ray_queue = queue.Queue()
+        ray_queue = list[SoundRay]()
         # Get paths of all files in the directory with ".pickle" in them
         ray_paths = [ray_path for ray_path in os.listdir(ray_cache_path) if '.pickle' in ray_path]
 
@@ -453,7 +464,7 @@ class PropagationModel:
             # Open the jar
             ray_file = open(os.path.join(ray_cache_path, ray_path), 'rb')
             # Take the pickle
-            ray_queue.put(pickle.load(ray_file))
+            ray_queue.append(pickle.load(ray_file))
             # Close the jar
             ray_file.close()
             # Update the ProgressThread
@@ -466,17 +477,16 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: queue.Queue[SoundRay], receiver: Receiver, ) -> None:
+    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, ) -> None:
         """
         Makes an interactive plot of the SoundRays in a queue.Queue.
         :param ray_queue: queue.Queue containing SoundRays
         :param receiver: instance of rm.Receiver with which the SoundRays where propagated
-        :param time_series: time_series from the SourceModel
         """
         # Create an empty ray dictionary
         rays = dict[float: list]()
         # Loop over the ray_queue without removing the SoundRays
-        for ray in ray_queue.queue:
+        for ray in ray_queue:
             # Add any received rays to the dictionary
             if ray.received:
                 # Just stupid sh!te to avoid floating point errors...
@@ -575,5 +585,9 @@ class PropagationModel:
         update_plot(valstep[0])
         # Set the slider update function
         slider.on_changed(update_plot)
+
+        # ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=valstep[1] - valstep[0])
+        # ani.save('rays.gif', writer='pillow')
+
         # Plot the plot
         plt.show()

@@ -167,8 +167,8 @@ class Source(hf.Cartesian):
     def __repr__(self) -> str:
         return f'<Source: {str(self)}, t = {self.t} s>'
 
-    def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: queue.Queue[pm.SoundRay],
-                      receiver: rm.Receiver, models: tuple) -> queue.Queue[pm.SoundRay]:
+    def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: list[pm.SoundRay],
+                      receiver: rm.Receiver, models: tuple) -> None:  #list[pm.SoundRay]:
         """
         Generate SoundRays that would come from this source and put them into the ray_queue.
         :param h2_sphere: the sphere of HAWC2 results to obtain sound from
@@ -204,10 +204,10 @@ class Source(hf.Cartesian):
                 # Get the relevant amplitude spectrum
                 spectrum = np.sqrt(h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t))
 
-                ray_queue.put(pm.SoundRay(pos_0, vel_0, s_0, self._cartesian, beam_width, spectrum, models,
-                                          t_0=self.t, label=self.blade))
+                ray_queue.append(pm.SoundRay(pos_0, vel_0, s_0, self._cartesian, beam_width, spectrum, models,
+                                             t_0=self.t, label=self.blade))
 
-        return ray_queue
+        # return ray_queue
 
 
 class SourceModel:
@@ -256,7 +256,7 @@ class SourceModel:
                 self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
                                                                     origin).to_cartesian()
 
-        self.source_queue = queue.Queue[Source]()
+        self.source_queue = list[Source]()
         # Generate the sound sources
         points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
 
@@ -271,13 +271,13 @@ class SourceModel:
                     x, y, z = self.time_series.loc[t, key].vec
                     source = Source(x, y, z, points, dist, t, key)
 
-                    self.source_queue.put(source)
+                    self.source_queue.append(source)
                     p_thread.update()
 
         p_thread.stop()
         del p_thread
 
-    def run(self, receiver: rm.Receiver, models: tuple) -> queue.Queue:
+    def run(self, receiver: rm.Receiver, models: tuple) -> list[pm.SoundRay]:  # queue.Queue:
         """
         Run the Source model, aka generate all rays from all Sources
         :param receiver:
@@ -285,14 +285,14 @@ class SourceModel:
         :return: a queue containing the generated SoundRays
         """
         # Create an empty queue.Queue for the SoundRays
-        ray_queue = queue.Queue[pm.SoundRay]()
+        ray_queue = list[pm.SoundRay]()
         # Start a ProgressThread
-        p_thread = hf.ProgressThread(self.source_queue.qsize(), 'Generating rays')
+        p_thread = hf.ProgressThread(len(self.source_queue), 'Generating rays')
         p_thread.start()
         # Loop over the source_queue without popping the Sources
-        for source in self.source_queue.queue:
+        for source in self.source_queue:
             # Generate the rays for the current Source
-            ray_queue = source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models)
+            source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models)
             # Update the progress thread
             p_thread.update()
 
@@ -309,7 +309,7 @@ class SourceModel:
         # Create empty dictionary to store Sources per time step
         sources = dict[float: list]()
         # Loop over the source_queue without popping the Sources
-        for source in self.source_queue.queue:
+        for source in self.source_queue:
             # Avoid stoopid floating point errors with time steps
             t = round(source.t, 10)
             # Fill the dictionary

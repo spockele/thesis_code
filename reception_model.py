@@ -154,6 +154,7 @@ class Receiver(hf.Cartesian):
         # Stop the ProgressThread
         p_thread.stop()
         del p_thread
+        del self.received
 
     def spectrogram_to_csv(self, path_left: str, path_right: str):
         """
@@ -214,21 +215,18 @@ class ReceptionModel:
         self.conditions_dict = aur_conditions_dict
         self.params = aur_reception_dict
 
-        # Initialise the dictionary to store the SoundRays
-        self.rays = dict[float: list]()
-
-    def run(self, receiver: Receiver, in_queue: queue.Queue) -> None:
+    def run(self, receiver: Receiver, in_queue: list) -> None:
         """
         Run the reception model.
         :param receiver: instance of rm.Receiver
         :param in_queue: queue of SoundRays to receive
         """
         # Start a ProgressThread
-        p_thread = hf.ProgressThread(in_queue.qsize(), 'Receiving sound rays')
+        p_thread = hf.ProgressThread(len(in_queue), 'Receiving sound rays')
         p_thread.start()
 
         # Loop over the input queue
-        for ray in in_queue.queue:
+        for ray in in_queue:
             # Check if ray is received at the Receiver
             if ray.received:
                 # Create the ReceivedSound from the ray at the Receiver
@@ -236,13 +234,6 @@ class ReceptionModel:
                 sound = ReceivedSound(t_received, spectrum, source_pos, receiver.cartesian, receiver.rotation)
                 # Receive the sound with the Receiver
                 receiver.receive(sound)
-                # Another one of these fun floating point error correction points :)
-                t = round(ray.t[-1], 10)
-                # Put the ray in the dictionary for later use (say for plots...)
-                if t in self.rays.keys():
-                    self.rays[t].append(ray)
-                else:
-                    self.rays[t] = list['SoundRay']([ray, ])
 
             # Update the ProgressThread
             p_thread.update()

@@ -432,8 +432,8 @@ class Case(CaseLoader):
         for rec_idx, receiver in self.receiver_dict.items():
             print()
             print(f' -- Running Propagation Model for receiver {rec_idx}')
-            ray_queue: queue.Queue = source_model.run(receiver, self.propagation_dict['models'])
-            ray_queue: queue.Queue = propagation_model.run(receiver, ray_queue)
+            ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
+            propagation_model.run(receiver, ray_queue)
 
             propagation_model.pickle_ray_queue(ray_queue,
                                                os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
@@ -443,10 +443,12 @@ class Case(CaseLoader):
             print(f' -- Running Reception Model for receiver {rec_idx}')
             reception_model.run(receiver, ray_queue)
 
+            del ray_queue
+
             spectrogram_path_left = os.path.join(self.project_path, 'spectrograms',
                                                  f'spectrogram_{self.case_name}_rec{rec_idx}_left.csv')
             spectrogram_path_right = os.path.join(self.project_path, 'spectrograms',
-                                                 f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
+                                                  f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
 
             receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
 
@@ -455,6 +457,8 @@ class Case(CaseLoader):
             # Sound reconstruction
             # ----------------------------------------------------------------------------------------------------------
             reconstruction_model.run(receiver, f'{self.project_path}/wavfiles/{self.case_name}_rec{rec_idx}.wav')
+
+            del receiver
 
             # # --------------------------------------------------------------------------------------------------------
             # # Spectrograms and sound plots
