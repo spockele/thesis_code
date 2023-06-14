@@ -2,6 +2,7 @@ import math
 import numpy as np
 import scipy.fft as spfft
 import scipy.signal as spsig
+import matplotlib.pyplot as plt
 import scipy.io as spio
 
 import helper_functions as hf
@@ -29,13 +30,16 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     """
     f_s_desired = aur_reconstruction_dict['f_s_desired']
     n_base = int(f_s_desired * aur_conditions_dict['delta_t'])
-    n_fft = n_base * aur_reconstruction_dict['zeropad']
-    n_perseg = n_base * aur_reconstruction_dict['overlap']
+    overlap = aur_reconstruction_dict['overlap']
+    n_perseg = n_base * overlap
 
-    window = spsig.windows.tukey(n_perseg, .75, )
+    if overlap == 1:
+        window = spsig.windows.boxcar(n_perseg)
+    else:
+        window = spsig.windows.hann(n_perseg)
 
-    x_fft = 1j * np.zeros((receiver.spectrogram_left.columns.size, n_fft // 2))
-    f = spfft.fftfreq(n_fft, 1 / f_s_desired)[:n_fft // 2]
+    x_fft = 1j * np.zeros((receiver.spectrogram_left.columns.size, n_perseg // 2))
+    f = spfft.fftfreq(n_perseg, 1 / f_s_desired)[:n_perseg // 2]
     f_spectrogram = receiver.spectrogram_left.index.to_numpy().flatten()
 
     for ti, t in enumerate(receiver.spectrogram_left.columns):
@@ -43,8 +47,10 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
         x_fft[ti] = np.interp(f, f_spectrogram, x_spectrogram) * np.sqrt(np.sum(window)) * np.exp(
             1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
 
-    t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_fft, nperseg=n_perseg, noverlap=n_perseg - n_base,
+    t, x = spsig.istft(x_fft.T, f_s_desired, nfft=n_perseg, nperseg=n_perseg, noverlap=n_perseg - n_base,
                        window=window,)
+
+    x /= max(1, overlap / 2)
 
     # Longer sound files :)
     rotation_time = 60 / aur_conditions_dict['rotor_rpm']  # 60 (s/min) / RPM (1 / min)

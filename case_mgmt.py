@@ -423,36 +423,36 @@ class Case(CaseLoader):
         """
         Run everything except HAWC2
         """
-        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
-        reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
+        # source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
+        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
+        # reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
         reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
             print()
-            print(f' -- Running Propagation Model for receiver {rec_idx}')
-            ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
-            propagation_model.run(receiver, ray_queue)
-
-            propagation_model.pickle_ray_queue(ray_queue,
-                                               os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
-
-            receiver.pickle(os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}', 'receiver.pickle.gz'))
-
+            # print(f' -- Running Propagation Model for receiver {rec_idx}')
+            # ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
+            # propagation_model.run(receiver, ray_queue)
+            #
+            # propagation_model.pickle_ray_queue(ray_queue,
+            #                                    os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
+            #
+            # receiver.pickle(os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}', 'receiver.pickle.gz'))
+            #
             print(f' -- Running Reception Model for receiver {rec_idx}')
-            reception_model.run(receiver, ray_queue)
-
-            del ray_queue
-
+            # reception_model.run(receiver, ray_queue)
+            #
+            # del ray_queue
+            #
             spectrogram_path_left = os.path.join(self.project_path, 'spectrograms',
                                                  f'spectrogram_{self.case_name}_rec{rec_idx}_left.csv')
             spectrogram_path_right = os.path.join(self.project_path, 'spectrograms',
                                                   f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
+            #
+            # receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
 
-            receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
-
-            # receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
+            receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
             # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
             # ----------------------------------------------------------------------------------------------------------

@@ -344,7 +344,7 @@ class SoundRay(Ray):
         # Take the amplitude and phase spectra
         spectrum = self.spectrum[['a', 'p']].copy()
         # Add the Gaussian beam attenuation
-        spectrum['a'] *= self.spectrum['gaussian']
+        spectrum['a'] *= self.spectrum['gaussian'] ** .5
         # Add attenuation from selected models
         for model in self.models:
             spectrum['a'] *= self.spectrum[model]
