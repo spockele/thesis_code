@@ -428,7 +428,7 @@ class Case(CaseLoader):
         # ----------------------------------------------------------------------------------------------------------
         # Model setup
         # ----------------------------------------------------------------------------------------------------------
-        dummy = self.reception_dict['load_spectrogram'] or not self.propagation_dict['unpickle']
+        dummy = self.reception_dict['load_spectrogram'] or self.propagation_dict['unpickle']
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere,
                                       dummy=dummy)
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
