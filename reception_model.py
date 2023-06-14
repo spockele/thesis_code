@@ -30,18 +30,20 @@ class ReceivedSound:
         :param spectrum: sound spectrum with amplitude and phase (as obtained from SoundRay.receive)
         :param head_rotation: Receiver.rotation of the Receiver where this sound is received
         """
+        # Store parameters
         self.t = t_received
         self.head_rotation = head_rotation
         self.spectrum = spectrum
 
+        # Determine the relative location of the sound source
         self.relative_source_pos = source_pos.to_hr_spherical(receiver_pos, self.head_rotation)
         self.receiver_pos = receiver_pos
-
+        # Initialise the binaural spectrum
         self.spectrum_binaural = pd.DataFrame(0., index=hrtf.f, columns=['al', 'pl', 'ar', 'pr'])
 
-    def apply_hrtf(self):
+    def apply_hrtf(self) -> None:
         """
-
+        Obtain and apply the Head-Related Transfer function to the spectrogram of this received sound
         """
         hrtf_l, hrtf_r = hrtf.get_hrtf(self.relative_source_pos[1], self.relative_source_pos[2])
 
@@ -60,18 +62,23 @@ class Receiver(hf.Cartesian):
         ================================================================================================================
         :param parse_dict: dictionary resulting from CaseLoader._parse_receiver
         """
+        # Extract the coordinates
         x, y, z = parse_dict['pos']
+        # Initialise the coordinate
         super().__init__(x, y, z)
+        # Store a plain coordinates copy of this point
         self.cartesian = hf.Cartesian(x, y, z)
 
+        # Add information
         self.index = parse_dict['index']
         self.rotation = hf.limit_angle(np.radians(parse_dict['rotation']))
 
+        # Initialise the reception dictionary
         self.received = dict[float: list]()
-
+        # Initialise the left and right spectrograms
         self.spectrogram_left = pd.DataFrame()
         self.spectrogram_right = pd.DataFrame()
-
+        # Initialise a mode variable
         self.mode = ''
 
     def __repr__(self):
@@ -91,7 +98,7 @@ class Receiver(hf.Cartesian):
 
     def sum_spectra(self, mode: str) -> None:
         """
-        Sum all the sound spectra at the same time step.
+        Sum all the sound spectra at the same time step to a spectrogram.
         """
         # Sort the received dictionary by its keys
         self.received = dict[float: list](sorted(self.received.items()))
@@ -151,17 +158,16 @@ class Receiver(hf.Cartesian):
             self.spectrogram_left.columns = self.received.keys()
             self.spectrogram_right.columns = self.received.keys()
 
-        # Stop the ProgressThread
+        # Stop the ProgressThread and delete the received SoundRays for memory
         p_thread.stop()
         del p_thread
         del self.received
 
-    def spectrogram_to_csv(self, path_left: str, path_right: str):
+    def spectrogram_to_csv(self, path_left: str, path_right: str) -> None:
         """
-
-        :param path_left:
-        :param path_right:
-        :return:
+        Store the internal spectrograms to files
+        :param path_left: path for the left spectrogram csv
+        :param path_right: path for the right spectrogram csv
         """
         t_0 = time.time()
 
@@ -171,45 +177,52 @@ class Receiver(hf.Cartesian):
         elapsed = round(time.time() - t_0, 2)
         print(f'Writing spectrograms to file: Done! (Elapsed time: {elapsed} s')
 
-    @staticmethod
-    def spectrogram_from_csv(path_left: str, path_right: str):
+    def spectrogram_from_csv(self, path_left: str, path_right: str) -> None:
         """
-
-        :param path_left:
-        :param path_right:
-        :return:
+        Load spectrograms from csv files
+        :param path_left: path for the left spectrogram csv
+        :param path_right: path for the right spectrogram csv
         """
         t_0 = time.time()
-
-        spectrogram_left = pd.read_csv(path_left, header=0, index_col=0).applymap(complex)
-        spectrogram_left.columns = spectrogram_left.columns.astype(float)
-        spectrogram_left.index = spectrogram_left.index.astype(float)
-
-        spectrogram_right = pd.read_csv(path_right, header=0, index_col=0).applymap(complex)
-        spectrogram_right.columns = spectrogram_right.columns.astype(float)
-        spectrogram_right.index = spectrogram_right.index.astype(float)
+        # Load left spectrogram and make numbers complex.
+        self.spectrogram_left = pd.read_csv(path_left, header=0, index_col=0).applymap(complex)
+        # Make the column names, and index column floats
+        self.spectrogram_left.columns = self.spectrogram_left.columns.astype(float)
+        self.spectrogram_left.index = self.spectrogram_left.index.astype(float)
+        # Load left spectrogram and make numbers complex.
+        self.spectrogram_right = pd.read_csv(path_right, header=0, index_col=0).applymap(complex)
+        # Make the column names, and index column floats
+        self.spectrogram_right.columns = self.spectrogram_right.columns.astype(float)
+        self.spectrogram_right.index = self.spectrogram_right.index.astype(float)
 
         elapsed = round(time.time() - t_0, 2)
         print(f'Reading spectrograms from file: Done! (Elapsed time: {elapsed} s')
 
-        return spectrogram_left, spectrogram_right
-
     def pickle(self, path: str):
         """
-
-        :param path:
-        :return:
+        Create a pickle file at the given path
+        :param path: path for the pickle to be placed
         """
+        # Open jar
         pickle_file = open(path, 'wb')
+        # Dump pickle
         pickle.dump(self, pickle_file)
+        # Close jar
         pickle_file.close()
 
     @staticmethod
     def unpickle(path: str):
+        """
+        Load a pickle file at the given path
+        :param path: path of the pickle
+        """
+        # Open jar
         pickle_file = open(path, 'rb')
+        # Take pickle
         receiver = pickle.load(pickle_file)
+        # Close jar
         pickle_file.close()
-
+        # Pass the pickle along
         return receiver
 
 

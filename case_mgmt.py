@@ -467,8 +467,7 @@ class Case(CaseLoader):
 
             else:
                 print(f' -- Running Reception Model for receiver {rec_idx}')
-                receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(
-                    spectrogram_path_left, spectrogram_path_right)
+                receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
 
             # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
