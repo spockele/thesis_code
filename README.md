@@ -107,7 +107,7 @@ begin HAWC2;
     ; ----------------------------------------------------------------------------------
     htc_name -str- ;      Name of the .htc file in the H2model folder (without ".htc")
     hawc2_path -float- ;  File path where the HAWC2 executable is located
-    n_obs -int- ;         Number of observer points in HAWC2 must be <256
+    n_obs -int- ;         Number of observer points in HAWC2 (must be <256)
     ;
 end HAWC2;
 ;
@@ -121,23 +121,29 @@ end source ;
 begin propagation ;
     n_threads -int- ;        Defines the number of compute threads used for propagating sound rays
     models -str-,-str-,... ; Defines which propagation effect models to apply ('spherical', 'atmosphere', )
+    pickle -int- ;           Save SoundRays to pickle files for later use (0 for no, or 1 for yes)
+    unpickle -int- ;         Use saved SoundRays for reception and reconstruction model
 end propagation ;
 ;
 begin reception ;
+    save_spectrogram -int- ;        Save the resulting spectrograms (0 for no, or 1 for yes)
+    load_spectrogram -int- ;        Load previously generated spectrograms (0 for no, or 1 for yes)
+    mode -str- ;                    Binaural rendering mode ('mono' or 'stereo')
+    ;
     ; ----------------------------------------------------------------------------------
     ; Define the receiver point(s) in this block (can be multiple)
     ; ----------------------------------------------------------------------------------
     begin receiver ;
         index -int- ;                 Indexing number >=0
-        pos -float-,-float-,-float- ; Location x,y,z (m)
-        rotation -float- ;            Head rotation of the receiver (deg)
+        pos -float-,-float-,-float- ; Location x,y,z (m) in HAWC2 global coordinates
+        rotation -float- ;            Head rotation of the receiver (clockwise positive, from the y-axis) (deg)
     end receiver ;
+    ;
 end reception ;
 ;
 begin reconstruction ;
     f_s_desired -int- ; Desired sample frequency of the output audio file
     overlap -int- ;     Amount of overlap between istft time segments
-    zeropad -int- ;     Amount of simulated zeropadding of istft time segments
     wav_norm -float- ;  Pressure to normalise the WAV files to (Pa) (Recomended 1 Pa)
     t_audio -float- ;   Time duration if the output audio file
     model -str- ;       Select the signal reconstruction model ('Random', 'GLA', )

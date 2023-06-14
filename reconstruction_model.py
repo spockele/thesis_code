@@ -1,4 +1,5 @@
 import math
+import time
 import numpy as np
 import scipy.fft as spfft
 import scipy.signal as spsig
@@ -58,11 +59,11 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     n_required = int(math.ceil(aur_reconstruction_dict['t_audio'] * f_s_desired))
 
     x_rotation = x[np.logical_and(t[-1] - 1.1 * rotation_time <= t, t <= t[-1] - 0.1 * rotation_time)]
-    x_long = np.tile(x_rotation, n_tiles)
-
     norm = aur_reconstruction_dict['wav_norm']
-    wav_dat = (np.clip(x_long[:n_required] / norm, -1, 1) * 32767).astype(np.int16)
-    spio.wavfile.write(wav_path, f_s_desired, wav_dat)
+    x_norm = (np.clip(x_rotation / norm, -1, 1) * 32767).astype(np.int16)
+    x_long = np.tile(x_norm, n_tiles)[:n_required]
+
+    spio.wavfile.write(wav_path, f_s_desired, x_long)
 
 
 class ReconstructionModel:
@@ -80,4 +81,8 @@ class ReconstructionModel:
         self._reconstruct = globals()[self.params['model']]
 
     def run(self, receiver: rm.Receiver, wav_path: str):
+        t_0 = time.time()
         self._reconstruct(receiver, self.conditions_dict, self.params, wav_path)
+
+        elapsed = round(time.time() - t_0, 2)
+        print(f'Reconstructing signal from spectrogram: Done! (Elapsed time: {elapsed} s)')

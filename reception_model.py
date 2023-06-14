@@ -1,4 +1,5 @@
 import queue
+import time
 import numpy as np
 import pandas as pd
 import compress_pickle as pickle
@@ -163,8 +164,13 @@ class Receiver(hf.Cartesian):
         :param path_right:
         :return:
         """
+        t_0 = time.time()
+
         self.spectrogram_left.to_csv(path_left)
         self.spectrogram_right.to_csv(path_right)
+
+        elapsed = round(time.time() - t_0, 2)
+        print(f'Writing spectrograms to file: Done! (Elapsed time: {elapsed} s')
 
     @staticmethod
     def spectrogram_from_csv(path_left: str, path_right: str):
@@ -174,6 +180,8 @@ class Receiver(hf.Cartesian):
         :param path_right:
         :return:
         """
+        t_0 = time.time()
+
         spectrogram_left = pd.read_csv(path_left, header=0, index_col=0).applymap(complex)
         spectrogram_left.columns = spectrogram_left.columns.astype(float)
         spectrogram_left.index = spectrogram_left.index.astype(float)
@@ -181,6 +189,9 @@ class Receiver(hf.Cartesian):
         spectrogram_right = pd.read_csv(path_right, header=0, index_col=0).applymap(complex)
         spectrogram_right.columns = spectrogram_right.columns.astype(float)
         spectrogram_right.index = spectrogram_right.index.astype(float)
+
+        elapsed = round(time.time() - t_0, 2)
+        print(f'Reading spectrograms from file: Done! (Elapsed time: {elapsed} s')
 
         return spectrogram_left, spectrogram_right
 

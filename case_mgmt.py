@@ -233,6 +233,9 @@ class CaseLoader:
             elif key == 'models':
                 self.propagation_dict[key] = tuple(value.split(','))
 
+            elif key in ('pickle', 'unpickle'):
+                self.propagation_dict[key] = bool(int(value))
+
             else:
                 self.propagation_dict[key] = value
 
@@ -278,6 +281,9 @@ class CaseLoader:
 
             elif key.startswith('receiver'):
                 self._parse_receiver(block)
+
+            elif key in ('save_spectrogram', 'load_spectrogram'):
+                self.reception_dict[key] = bool(int(block))
 
             else:
                 self.reception_dict[key] = block
@@ -423,39 +429,55 @@ class Case(CaseLoader):
         """
         Run everything except HAWC2
         """
-        # source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere)
-        # propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
-        # reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
+        # ----------------------------------------------------------------------------------------------------------
+        # Model setup
+        # ----------------------------------------------------------------------------------------------------------
+        dummy = self.reception_dict['load_spectrogram'] or not self.propagation_dict['unpickle']
+        source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere,
+                                      dummy=dummy)
+        propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
+        reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
         reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
-            print()
-            # print(f' -- Running Propagation Model for receiver {rec_idx}')
-            # ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
-            # propagation_model.run(receiver, ray_queue)
-            #
-            # propagation_model.pickle_ray_queue(ray_queue,
-            #                                    os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}'))
-            #
-            # receiver.pickle(os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}', 'receiver.pickle.gz'))
-            #
-            print(f' -- Running Reception Model for receiver {rec_idx}')
-            # reception_model.run(receiver, ray_queue)
-            #
-            # del ray_queue
-            #
+            pickle_path = os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}')
             spectrogram_path_left = os.path.join(self.project_path, 'spectrograms',
                                                  f'spectrogram_{self.case_name}_rec{rec_idx}_left.csv')
             spectrogram_path_right = os.path.join(self.project_path, 'spectrograms',
                                                   f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
-            #
-            # receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
+            print()
 
-            receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
+            if not self.reception_dict['load_spectrogram']:
+                if not self.propagation_dict['unpickle']:
+                    print(f' -- Running Propagation Model for receiver {rec_idx}')
+                    ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
+                    propagation_model.run(receiver, ray_queue)
+
+                    if self.propagation_dict['pickle']:
+                        propagation_model.pickle_ray_queue(ray_queue, pickle_path)
+                        receiver.pickle(os.path.join(pickle_path, 'receiver.pickle.gz'))
+
+                else:
+                    ray_queue = propagation_model.unpickle_ray_queue(pickle_path)
+
+                print(f' -- Running Reception Model for receiver {rec_idx}')
+                reception_model.run(receiver, ray_queue)
+
+                del ray_queue
+
+                if self.reception_dict['save_spectrogram']:
+                    receiver.spectrogram_to_csv(spectrogram_path_left, spectrogram_path_right)
+
+            else:
+                print(f' -- Running Reception Model for receiver {rec_idx}')
+                receiver.spectrogram_left, receiver.spectrogram_right = receiver.spectrogram_from_csv(
+                    spectrogram_path_left, spectrogram_path_right)
+
             # ----------------------------------------------------------------------------------------------------------
             # Sound reconstruction
             # ----------------------------------------------------------------------------------------------------------
+            print(f' -- Running Reconstruction Model for receiver {rec_idx}')
             reconstruction_model.run(receiver, f'{self.project_path}/wavfiles/{self.case_name}_rec{rec_idx}.wav')
 
             del receiver

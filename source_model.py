@@ -212,7 +212,7 @@ class Source(hf.Cartesian):
 
 class SourceModel:
     def __init__(self, aur_conditions_dict: dict, aur_source_dict: dict, h2_result_path: str,
-                 atmosphere: hf.Atmosphere, simple: bool = False) -> None:
+                 atmosphere: hf.Atmosphere, dummy: bool = False, simple: bool = False) -> None:
         """
         ================================================================================================================
         Class that manages the whole source model.
@@ -231,51 +231,55 @@ class SourceModel:
         self.simple = simple
 
         print(f' -- Source Model')
-        self.h2_sphere = H2Sphere(self.h2_result_path, self.params, self.conditions_dict)
-        self.time_series = self.h2_sphere.time_series
-
-        # Set the source origin radius
-        radius = self.params['blade_percent'] * self.conditions_dict['rotor_radius'] / 100
-        # Loop over time steps
-        for t in self.time_series.index:
-            # Set the hub point as origin for the cylindrical blade coordinates
-            origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
-
-            if self.simple:
-                # Assign the hub coordinate
-                self.time_series.loc[t, 'blade_0'] = origin
-
-                raise NotImplementedError('Simple source model not implemented yet.')
-
-            else:
-                # Assign the coordinates of blades 1 through 3, from their rotation from the HAWC2 output file
-                self.time_series.loc[t, 'blade_1'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_1'], 0,
-                                                                    origin).to_cartesian()
-                self.time_series.loc[t, 'blade_2'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_2'], 0,
-                                                                    origin).to_cartesian()
-                self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
-                                                                    origin).to_cartesian()
+        self.h2_sphere = None if dummy else H2Sphere(self.h2_result_path, self.params, self.conditions_dict)
+        self.time_series = None if dummy else self.h2_sphere.time_series
 
         self.source_queue = list[Source]()
-        # Generate the sound sources
-        points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
 
-        estimate = self.time_series.index.size
-        estimate *= 1 if self.simple else 3
-        p_thread = hf.ProgressThread(estimate, 'Generating sources')
-        p_thread.start()
+        if dummy:
+            print('Set up as dummy.')
+        else:
+            # Set the source origin radius
+            radius = self.params['blade_percent'] * self.conditions_dict['rotor_radius'] / 100
+            # Loop over time steps
+            for t in self.time_series.index:
+                # Set the hub point as origin for the cylindrical blade coordinates
+                origin = hf.Cartesian(*self.time_series.loc[t, ['hub_x', 'hub_y', 'hub_z']])
 
-        for key in self.time_series.columns:
-            if 'blade' in key:
-                for t in self.time_series.index:
-                    x, y, z = self.time_series.loc[t, key].vec
-                    source = Source(x, y, z, points, dist, t, key)
+                if self.simple:
+                    # Assign the hub coordinate
+                    self.time_series.loc[t, 'blade_0'] = origin
 
-                    self.source_queue.append(source)
-                    p_thread.update()
+                    raise NotImplementedError('Simple source model not implemented yet.')
 
-        p_thread.stop()
-        del p_thread
+                else:
+                    # Assign the coordinates of blades 1 through 3, from their rotation from the HAWC2 output file
+                    self.time_series.loc[t, 'blade_1'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_1'], 0,
+                                                                        origin).to_cartesian()
+                    self.time_series.loc[t, 'blade_2'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_2'], 0,
+                                                                        origin).to_cartesian()
+                    self.time_series.loc[t, 'blade_3'] = hf.Cylindrical(radius, self.time_series.loc[t, 'psi_3'], 0,
+                                                                        origin).to_cartesian()
+
+            # Generate the sound sources
+            points, fail, dist = hf.uniform_spherical_grid(self.params['n_rays'])
+
+            estimate = self.time_series.index.size
+            estimate *= 1 if self.simple else 3
+            p_thread = hf.ProgressThread(estimate, 'Generating sources')
+            p_thread.start()
+
+            for key in self.time_series.columns:
+                if 'blade' in key:
+                    for t in self.time_series.index:
+                        x, y, z = self.time_series.loc[t, key].vec
+                        source = Source(x, y, z, points, dist, t, key)
+
+                        self.source_queue.append(source)
+                        p_thread.update()
+
+            p_thread.stop()
+            del p_thread
 
     def run(self, receiver: rm.Receiver, models: tuple) -> list[pm.SoundRay]:  # queue.Queue:
         """
