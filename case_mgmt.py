@@ -1,9 +1,5 @@
 import os
-import queue
 import shutil as sh
-import matplotlib.pyplot as plt
-import numpy.fft as npfft
-import scipy.fft as spfft
 from wetb.hawc2 import HTCFile
 from wetb.hawc2.htc_contents import HTCSection
 

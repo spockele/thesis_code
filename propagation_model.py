@@ -1,6 +1,4 @@
 import os
-import queue
-import threading
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -22,53 +20,7 @@ from reception_model import Receiver
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-__all__ = ['PropagationThread', 'Ray', 'SoundRay', 'PropagationModel', ]
-
-
-class PropagationThread(threading.Thread):
-    def __init__(self, in_queue: queue.Queue, out_queue: queue.Queue, delta_t: float, receiver: Receiver,
-                 atmosphere: hf.Atmosphere, p_thread: hf.ProgressThread, t_lim: float) -> None:
-        """
-        ================================================================================================================
-        Subclass of threading.Thread to allow multiprocessing of the SoundRay.propagate function.
-        ================================================================================================================
-        :param in_queue: queue.Queue instance containing non-propagated SoundRays
-        :param out_queue: queue.Queue instance where propagated SoundRays will be put
-        :param delta_t: time step (s)
-        :param receiver: instance of rm.Receiver
-        :param atmosphere: the hf.Atmosphere to propagate the SoundRays through
-        :param p_thread: ProgressThread instance to track progress of the propagation model
-        :param t_lim: propagation time limit (s)
-        """
-        super().__init__()
-        self.in_queue = in_queue
-        self.out_queue = out_queue
-
-        self.delta_t = delta_t
-        self.receiver = receiver
-        self.atmosphere = atmosphere
-        self.t_lim = t_lim
-
-        self.p_thread = p_thread
-
-    def run(self) -> None:
-        """
-        Propagates all SoundRays in the in_queue.
-        """
-        # Loop as long as the input queue has SoundRays
-        while threading.main_thread().is_alive() and not self.in_queue.empty():
-            # Take a SoundRay from the queue
-            ray: SoundRay = self.in_queue.get()
-            # Propagate this Ray with given parameters
-            ray.propagate(self.delta_t, self.receiver, self.atmosphere, self.t_lim)
-            # When that is done, put the ray in the output queue
-            self.out_queue.put(ray)
-            # Update the progress thread so the counter goes up
-            self.p_thread.update()
-
-        # Check for ctrl+c type situations...
-        if not threading.main_thread().is_alive():
-            print(f'Stopped {self} after Interupt of MainThread')
+__all__ = ['Ray', 'SoundRay', 'PropagationModel', ]
 
 
 class Ray:
@@ -392,20 +344,6 @@ class PropagationModel:
         p_thread.stop()
         del p_thread
 
-        # # Create the PropagationThreads
-        # threads = [PropagationThread(in_queue, out_queue, self.conditions_dict['delta_t'],
-        #                              receiver, self.atmosphere, p_thread, t_limit)
-        #            for _ in range(self.params['n_threads'])]
-        # # Start the threads and hold until all are done
-        # [thread.start() for thread in threads]
-        # [thread.join() for thread in threads]
-        # # Stop the ProgressThread
-        # p_thread.stop()
-        # del p_thread
-        # del threads
-
-        # return out_queue
-
     @staticmethod
     def pickle_ray_queue(ray_queue: list[SoundRay], ray_cache_path: str) -> None:
         """
@@ -477,11 +415,12 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, ) -> None:
+    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, gif_out: str = None) -> None:
         """
         Makes an interactive plot of the SoundRays in a queue.Queue.
         :param ray_queue: queue.Queue containing SoundRays
         :param receiver: instance of rm.Receiver with which the SoundRays where propagated
+        :param gif_out: A path to output a gif animation to
         """
         # Create an empty ray dictionary
         rays = dict[float: list]()
@@ -496,13 +435,6 @@ class PropagationModel:
                     rays[t].append(ray)
                 else:
                     rays[t] = list[SoundRay]([ray, ])
-
-        # Create the main plot
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-
-        # Pre-set the colorbar levels
-        levels = np.arange(5, 95 + 10, 10)
 
         def update_plot(t_plt: float):
             """
@@ -553,12 +485,52 @@ class PropagationModel:
                     ax.scatter(-x, y, -z, color='k', marker='8')
                     ax.plot((-x, -x_0), (y, y_0), (-z, -z_0), color='0.8', )
 
-        # Adjust the main plot to make room for the sliders
+        def colorbar():
+            """
+            Create the colorbar for the energy levels
+            """
+            # Set the ticks and create an axis on the figure for the colorbar
+            ticks = np.arange(0, 100 + 10, 10)
+            ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
+
+            norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
+            plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
+                         cax=ax_cbar,
+                         extend='both',
+                         orientation='vertical',
+                         label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
+                         )
+
+        # Create the main plot
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
+        # Pre-set the colorbar levels and colormap
+        levels = np.arange(5, 95 + 10, 10)
+        cmap = mpl.colormaps['viridis'].resampled(10)
+
+        # Adjust the main plot to make room for the colorbar
+        fig.subplots_adjust(left=0., bottom=0.1, right=0.85, top=1.)
+        colorbar()
+
+        # Preset the valstep parameter for the Slider, and to determine the frames of the animation
+        valstep = list(sorted(rays.keys()))
+
+        # Create an animated GIF file if so desired
+        if gif_out is not None:
+            ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=valstep[1] - valstep[0])
+            ani.save(gif_out, writer='pillow')
+
+            # Create the figure again to avoid issues with the animation stuff
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
+            colorbar()
+
+        # Adjust the main plot to make room for the colorbar
         fig.subplots_adjust(left=0., bottom=0.2, right=0.85, top=1.)
 
         # Make a horizontal slider to control the time.
         ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
-        valstep = list(sorted(rays.keys()))
         slider = Slider(
             ax=ax_time,
             label='Time (s)',
@@ -567,27 +539,10 @@ class PropagationModel:
             valstep=valstep,
             valinit=valstep[0],
         )
-
-        # Create the colorbar for the energy levels
-        ticks = np.arange(0, 100 + 10, 10)
-        cmap = mpl.colormaps['viridis'].resampled(10)
-
-        ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
-        norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
-        plt.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm),
-                     cax=ax_cbar,
-                     extend='both',
-                     orientation='vertical',
-                     label='Received OSPL of Sound Ray (dB) (Binned per 10 dB)'
-                     )
-
         # Set the initial plot at the first available time step
         update_plot(valstep[0])
         # Set the slider update function
         slider.on_changed(update_plot)
 
-        # ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=valstep[1] - valstep[0])
-        # ani.save('rays.gif', writer='pillow')
-
-        # Plot the plot
+        # Show the plot
         plt.show()
