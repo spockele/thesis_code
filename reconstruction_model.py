@@ -57,7 +57,7 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     n_tiles = int(math.ceil(aur_reconstruction_dict['t_audio'] / rotation_time))
     n_required = int(math.ceil(aur_reconstruction_dict['t_audio'] * f_s_desired))
 
-    x_rotation = x[t >= t[-1] - rotation_time]
+    x_rotation = x[np.logical_and(t[-1] - 1.1 * rotation_time <= t, t <= t[-1] - 0.1 * rotation_time)]
     x_long = np.tile(x_rotation, n_tiles)
 
     norm = aur_reconstruction_dict['wav_norm']
