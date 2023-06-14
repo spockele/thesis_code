@@ -56,7 +56,6 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     relative_source_pos = (source_pos - receiver_pos).to_hr_spherical(receiver_pos, receiver.rotation)
 
     side_itd, itd = hf.woodworth_itd(relative_source_pos[1])
-    print(side_itd)
 
     spectrograms = {'left': receiver.spectrogram_left, 'right': receiver.spectrogram_right}
     for si, (side, spectrogram) in enumerate(spectrograms.items()):
