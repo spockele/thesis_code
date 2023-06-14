@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import scipy.fft as spfft
 import scipy.interpolate as spint
 
-from . import limit_angle, c
+from . import limit_angle, c, HeadRelatedSpherical
 
 
 """
@@ -21,14 +21,21 @@ __all__ = ["MITHrtf", "woodworth_itd", "plot_woodworth_itd"]
 head_radius = 87.5e-3  # (m)
 
 
-def woodworth_itd(angle: float):
+def woodworth_itd(angle: float) -> (str, float):
     """
+    Get the Inter-aural Time Delay at a given angle of incoming sound. Based on:
+     - Woodworth, R. S. (1938). Experimental psychology. Holt.
+     - Aaronson, N. L., & Hartmann, W. M. (2014). Testing, correcting, and extending the Woodworth model for interaural
+        time difference. The Journal of the Acoustical Society of America, 135(2), 817–823. doi: 10.1121/1.4861243
 
-    :param angle:
-    :return:
+    :param angle: azimuth angle of the incoming sound direction (radians)
+    :return: the side of the head and the ITD
     """
+    # Determine the side of the head the sound is coming at first
     side = {-1.: 'left', 0.: 'centre', 1.: 'right'}[np.sign(limit_angle(angle))]
+    # Take the absolute value of the angle, as WoodWorth is defined for one side only
     angle = abs(limit_angle(angle))
+    # Return the correct ITD
     if angle <= np.pi/2:
         return side, (head_radius / c) * (angle + np.sin(angle))
 
@@ -39,10 +46,9 @@ def woodworth_itd(angle: float):
         raise ValueError(f'Given angle invalid.')
 
 
-def plot_woodworth_itd():
+def plot_woodworth_itd() -> None:
     """
-
-    :return:
+    Make a plot of the above woodworth inter-aural time delay function
     """
     plt.figure(1, figsize=(4.8, 4.8))
     ax = plt.subplot(projection='polar')
@@ -99,13 +105,14 @@ class MITHrtf:
 
         self.points = np.vstack((self.azimuth, self.polar)).T
 
-    def get_hrtf(self, azimuth: float, polar: float):
+    def get_hrtf(self, direction: HeadRelatedSpherical) -> (np.array, np.array):
         """
-        TODO: MITHrtf.get_hrtf > write the function to get the HRTF
-        :return:
+        Returns the HRTF functions closest to the given azimuth and polar angle
+        :param direction: HeadRelatedSpherical containing the direction where the sound is coming from
+        :return: numpy arrays containing the HRTF for the left and right ear
         """
-        hrtf_l = spint.griddata(self.points, self.hrtf_l, (limit_angle(azimuth), limit_angle(polar)), method='nearest')
-        hrtf_r = spint.griddata(self.points, self.hrtf_r, (limit_angle(azimuth), limit_angle(polar)), method='nearest')
+        hrtf_l = spint.griddata(self.points, self.hrtf_l, (direction[1], direction[2]), method='nearest')
+        hrtf_r = spint.griddata(self.points, self.hrtf_r, (direction[1], direction[2]), method='nearest')
 
         return hrtf_l, hrtf_r
 

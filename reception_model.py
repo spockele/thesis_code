@@ -45,7 +45,7 @@ class ReceivedSound:
         """
         Obtain and apply the Head-Related Transfer function to the spectrogram of this received sound
         """
-        hrtf_l, hrtf_r = hrtf.get_hrtf(self.relative_source_pos[1], self.relative_source_pos[2])
+        hrtf_l, hrtf_r = hrtf.get_hrtf(self.relative_source_pos)
 
         self.spectrum_binaural['al'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['a']) * np.abs(hrtf_l)
         self.spectrum_binaural['pl'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['p']) + np.angle(hrtf_l)
