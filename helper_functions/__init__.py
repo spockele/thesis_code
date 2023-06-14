@@ -10,4 +10,4 @@ from .geometry import *
 from .in_out import *
 from .data_structures import *
 from .isa import *
-from .hrtf import *
+from .binaural_rendering import *
