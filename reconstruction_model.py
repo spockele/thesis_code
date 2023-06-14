@@ -5,6 +5,7 @@ import scipy.io as spio
 import scipy.fft as spfft
 import scipy.signal as spsig
 
+import helper_functions as hf
 import reception_model as rm
 
 
@@ -41,31 +42,6 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
         # A hanning window when overlap is present
         window = spsig.windows.hann(n_perseg)
 
-    # Initialise the numpy array for the FFTs of each time segment
-    x_stft = 1j * np.zeros((receiver.spectrogram_left.columns.size, n_perseg // 2))
-    # Define the FFT frequencies for interpolation
-    f = spfft.fftfreq(n_perseg, 1 / f_s_desired)[:n_perseg // 2]
-    # Extract the spectrogram frequencies for interpolation
-    f_spectrogram = receiver.spectrogram_left.index.to_numpy().flatten()
-
-    # Loop over the time segments of the spectrogram
-    for ti, t in enumerate(receiver.spectrogram_left.columns):
-        # Extract the spectrogram at this time segment
-        x_spectrogram = receiver.spectrogram_left.loc[:, t].to_numpy()
-        # Interpolate the FFT to required frequency resolution
-        x_stft[ti] = np.interp(f, f_spectrogram, x_spectrogram)
-        # Correct FFT for window function
-        x_stft[ti] *= np.sqrt(np.sum(window))
-        # Add the random phase to the FFT
-        x_stft[ti] *= np.exp(1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
-
-    # Get the inverse Short-Time Fourier Transform of the created spectrogram
-    t, p = spsig.istft(x_stft.T, f_s_desired, nfft=n_perseg, nperseg=n_perseg, noverlap=n_perseg - n_base,
-                       window=window,)
-    # Correct the output signal for the amount of overlapping.
-    # Since integer overlap amounts are used, this is quite simple
-    p /= max(1, overlap / 2)
-
     # Set the rotation time, based on the nominal rotor RPM
     rotation_time = 60 / aur_conditions_dict['rotor_rpm']  # 60 (s/min) / RPM (1 / min)
     # Determine the number of rotations required to obtain the desired file duration
@@ -73,14 +49,57 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     # Determine the number of signal points required to obtain the desire file duration
     n_required = int(math.ceil(aur_reconstruction_dict['t_audio'] * f_s_desired))
 
-    # Select a single rotation from the generated signal. Leave some margin from the signal ramp down due to ray-tracing
-    p_rotation = p[np.logical_and(t[-1] - 1.1 * rotation_time <= t, t <= t[-1] - 0.1 * rotation_time)]
-    # Extract the normalisation factor
-    norm = aur_reconstruction_dict['wav_norm']
-    # Normalise, clip and scale the signal for the wav file. Use 16 bit integer formating (see scipy.io.wavfile docs)
-    p_norm = (np.clip(p_rotation / norm, -1, 1) * 32767).astype(np.int16)
-    # Extend the signal and make it the exact required length
-    p_long = np.tile(p_norm, n_tiles)[:n_required]
+    p_long = np.empty((n_required, 2), dtype=np.int16)
+
+    receiver_pos = receiver.cartesian
+    source_pos = aur_conditions_dict['hub_pos']
+    relative_source_pos = (source_pos - receiver_pos).to_hr_spherical(receiver_pos, receiver.rotation)
+
+    side_itd, itd = hf.woodworth_itd(relative_source_pos[1])
+    print(side_itd)
+
+    spectrograms = {'left': receiver.spectrogram_left, 'right': receiver.spectrogram_right}
+    for si, (side, spectrogram) in enumerate(spectrograms.items()):
+        # Initialise the numpy array for the FFTs of each time segment
+        x_stft = 1j * np.zeros((spectrogram.columns.size, n_perseg // 2))
+        # Define the FFT frequencies for interpolation
+        f = spfft.fftfreq(n_perseg, 1 / f_s_desired)[:n_perseg // 2]
+        # Extract the spectrogram frequencies for interpolation
+        f_spectrogram = spectrogram.index.to_numpy().flatten()
+
+        # Loop over the time segments of the spectrogram
+        for ti, t in enumerate(spectrogram.columns):
+            # Extract the spectrogram at this time segment
+            x_spectrogram = spectrogram.loc[:, t].to_numpy()
+            # Interpolate the FFT to required frequency resolution
+            x_stft[ti] = np.interp(f, f_spectrogram, x_spectrogram)
+            # Correct FFT for window function
+            x_stft[ti] *= np.sqrt(np.sum(window))
+            # Add the random phase to the FFT
+            x_stft[ti] *= np.exp(1j * np.random.default_rng().uniform(0, 2 * np.pi, f.size))
+
+        # Get the inverse Short-Time Fourier Transform of the created spectrogram
+        t, p = spsig.istft(x_stft.T, f_s_desired, nfft=n_perseg, nperseg=n_perseg, noverlap=n_perseg - n_base,
+                           window=window,)
+        # Correct the output signal for the amount of overlapping.
+        # Since integer overlap amounts are used, this is quite simple
+        p /= max(1, overlap / 2)
+
+        # Select a single rotation from the generated signal. Also apply the ITD if binaural rendering is required
+        # Leave some margin from the signal ramp down due to ray-tracing
+        if side_itd == side and receiver.mode == 'stereo':
+            t_start, t_stop = t[-1] - 1.1 * rotation_time - itd, t[-1] - 0.1 * rotation_time - itd
+        else:
+            t_start, t_stop = t[-1] - 1.1 * rotation_time, t[-1] - 0.1 * rotation_time
+
+        p_rotation = p[np.logical_and(t_start <= t, t <= t_stop)]
+        # Extract the normalisation factor
+        norm = aur_reconstruction_dict['wav_norm']
+        # Normalise, clip and scale the signal for the wav file. Use 16 bit integer (see scipy.io.wavfile docs)
+        p_norm = (np.clip(p_rotation / norm, -1, 1) * 32767).astype(np.int16)
+        # Extend the signal and make it the exact required length
+        p_long[:, si] = np.tile(p_norm, n_tiles)[:n_required]
+
     # Write the signal to WAV
     spio.wavfile.write(wav_path, f_s_desired, p_long)
 
