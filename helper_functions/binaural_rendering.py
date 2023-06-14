@@ -1,8 +1,8 @@
 import os
-import pysofaconventions as sofa
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.fft as spfft
+import matplotlib.pyplot as plt
+import pysofaconventions as sofa
 import scipy.interpolate as spint
 
 from . import limit_angle, c, HeadRelatedSpherical
