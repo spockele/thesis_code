@@ -92,8 +92,8 @@ class MITHrtf:
         self.polar = np.empty((pos_lst.shape[0], ))
         # Loop over the positions
         for pi, pos in enumerate(pos_lst):
-            # Store azimuth angle, which is opposite in my coordinate systems compared to the HRTF files
-            self.azimuth[pi] = -limit_angle(pos[0] * np.pi / 180)
+            # Store azimuth angle
+            self.azimuth[pi] = limit_angle(pos[0] * np.pi / 180)
             # Store polar angle
             self.polar[pi] = limit_angle(pos[1] * np.pi / 180)
 
