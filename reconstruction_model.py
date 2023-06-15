@@ -49,15 +49,19 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
     # Determine the number of signal points required to obtain the desire file duration
     n_required = int(math.ceil(aur_reconstruction_dict['t_audio'] * f_s_desired))
 
+    # Prepare the data array for the final stereo signal
     p_long = np.empty((n_required, 2), dtype=np.int16)
 
+    # Determine the direction between receiver and turbine rotor hub
     receiver_pos = receiver.cartesian
     source_pos = aur_conditions_dict['hub_pos']
     relative_source_pos = (source_pos - receiver_pos).to_hr_spherical(receiver_pos, receiver.rotation)
-
+    # Determine the ITD associated with this direction
     side_itd, itd = hf.woodworth_itd(relative_source_pos[1])
 
+    # Put the spectrograms in a dictionary
     spectrograms = {'left': receiver.spectrogram_left, 'right': receiver.spectrogram_right}
+    # Loop over this dictionary
     for si, (side, spectrogram) in enumerate(spectrograms.items()):
         # Initialise the numpy array for the FFTs of each time segment
         x_stft = 1j * np.zeros((spectrogram.columns.size, n_perseg // 2))
@@ -99,7 +103,7 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
         # Extend the signal and make it the exact required length
         p_long[:, si] = np.tile(p_norm, n_tiles)[:n_required]
 
-    # Write the signal to WAV
+    # Write the stereo signal to WAV
     spio.wavfile.write(wav_path, f_s_desired, p_long)
 
 
