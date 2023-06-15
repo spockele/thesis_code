@@ -61,7 +61,7 @@ class Project:
         Runs all cases in the project
         """
         for ci, case in enumerate(self.cases):
-            print(f'==================== Simulating case {ci + 1}/{len(self.cases)} ====================')
+            print(f'================= Simulating case {case.case_name} ({ci + 1}/{len(self.cases)}) =================')
             # case.run_hawc2()
             case.run()
             print()
