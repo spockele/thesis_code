@@ -435,13 +435,20 @@ class Case(CaseLoader):
         reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
         reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
+        pickle_base_path = os.path.join(self.project_path, f'pickle_{self.case_name}')
+        if (not os.path.isdir(pickle_base_path)) and self.propagation_dict['pickle']:
+            os.mkdir(pickle_base_path)
+
+        spectrogram_base_dir = os.path.join(self.project_path, f'spectrogram_{self.case_name}')
+        if (not os.path.isdir(spectrogram_base_dir)) and self.reception_dict['save_spectrogram']:
+            os.mkdir(spectrogram_base_dir)
+
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
-            pickle_path = os.path.join(self.project_path, f'pickle_{self.case_name}_rec{rec_idx}')
-            spectrogram_path_left = os.path.join(self.project_path, 'spectrograms',
-                                                 f'spectrogram_{self.case_name}_rec{rec_idx}_left.csv')
-            spectrogram_path_right = os.path.join(self.project_path, 'spectrograms',
-                                                  f'spectrogram_{self.case_name}_rec{rec_idx}_right.csv')
+            pickle_path = os.path.join(pickle_base_path, f'rec{rec_idx}')
+
+            spectrogram_path_left = os.path.join(spectrogram_base_dir, f'rec{rec_idx}_left.csv')
+            spectrogram_path_right = os.path.join(spectrogram_base_dir, f'rec{rec_idx}_right.csv')
             print()
 
             if not self.reception_dict['load_spectrogram']:
