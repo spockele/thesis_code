@@ -516,7 +516,7 @@ class HeadRelatedSpherical(NonCartesian):
         Convert self to a Cartesian coordinate.
         """
         r, az, po = self.vec
-        x = r * np.sin(az + self.rotation) * np.cos(po)
+        x = - r * np.sin(az + self.rotation) * np.cos(po)
         y = r * np.cos(az + self.rotation) * np.cos(po)
         z = - r * np.sin(po)
 
