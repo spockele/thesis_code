@@ -91,11 +91,19 @@ def random(receiver: rm.Receiver, aur_conditions_dict: dict, aur_reconstruction_
         # Select a single rotation from the generated signal. Also apply the ITD if binaural rendering is required
         # Leave some margin from the signal ramp down due to ray-tracing
         if side_itd == side and receiver.mode == 'stereo':
-            t_start, t_stop = t[-1] - 1.1 * rotation_time - itd, t[-1] - 0.1 * rotation_time - itd
+            t_start, t_stop = t[-1] - 1.2 * rotation_time - itd, t[-1] - 0.2 * rotation_time - itd
         else:
-            t_start, t_stop = t[-1] - 1.1 * rotation_time, t[-1] - 0.1 * rotation_time
+            t_start, t_stop = t[-1] - 1.2 * rotation_time, t[-1] - 0.2 * rotation_time
 
+        # Take signal corresponding to 1 rotation
         p_rotation = p[np.logical_and(t_start <= t, t <= t_stop)]
+        # Take a little part after that for overlap adding to avoid transition artefacts
+        p_overlap = p[t_stop <= t][:n_base]
+        # Make a hanning window specifically for overlap-add
+        hann = spsig.windows.hann(2 * n_base)
+        # Overlap add with half hanning window
+        p_rotation[:n_base] = p_rotation[:n_base] * hann[:n_base] + p_overlap * hann[n_base:]
+
         # Extract the normalisation factor
         norm = aur_reconstruction_dict['wav_norm']
         # Normalise, clip and scale the signal for the wav file. Use 16 bit integer (see scipy.io.wavfile docs)
