@@ -326,9 +326,6 @@ class PropagationModel:
         :param in_queue: queue.Queue instance containing non-propagated SoundRays
         :return: A queue.Queue instance containing all propagated SoundRays.
         """
-        # # Initialise the output queue.Queue()s
-        # out_queue = queue.Queue()
-
         # Set the time limit to limit compute time
         t_limit = 3 * receiver.dist(self.conditions_dict['hub_pos']) / hf.c
 

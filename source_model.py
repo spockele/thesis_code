@@ -167,7 +167,7 @@ class Source(hf.Cartesian):
         return f'<Source: {str(self)}, t = {self.t} s>'
 
     def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: list[pm.SoundRay],
-                      receiver: rm.Receiver, models: tuple) -> None:  #list[pm.SoundRay]:
+                      receiver: rm.Receiver, models: tuple) -> None:
         """
         Generate SoundRays that would come from this source and put them into the ray_queue.
         :param h2_sphere: the sphere of HAWC2 results to obtain sound from
@@ -205,8 +205,6 @@ class Source(hf.Cartesian):
 
                 ray_queue.append(pm.SoundRay(pos_0, vel_0, s_0, self._cartesian, beam_width, spectrum, models,
                                              t_0=self.t, label=self.blade))
-
-        # return ray_queue
 
 
 class SourceModel:
