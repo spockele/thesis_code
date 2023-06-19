@@ -146,7 +146,7 @@ begin reconstruction ;
     overlap -int- ;     Amount of overlap between istft time segments
     wav_norm -float- ;  Pressure to normalise the WAV files to (Pa) (Recomended 1 Pa)
     t_audio -float- ;   Time duration if the output audio file
-    model -str- ;       Select the signal reconstruction model ('Random', 'GLA', )
+    model -str- ;       Select the signal reconstruction model ('random', 'gla', )
 end reconstruction ;
 ``` 
 

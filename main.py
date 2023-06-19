@@ -44,6 +44,9 @@ class Project:
         # Obtain cases from the project folder
         cases = [aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
 
+        if len(cases) <= 0:
+            raise FileNotFoundError('No input files found in project folder.')
+
         p_thread = hf.ProgressThread(len(cases), 'Loading case files')
         p_thread.start()
 
@@ -52,9 +55,6 @@ class Project:
             self.cases.append(cm.Case(self.project_path, aur_file))
             p_thread.update()
         p_thread.stop()
-
-        if len(self.cases) <= 0:
-            raise FileNotFoundError('No input files found in project folder.')
 
     def run(self):
         """
