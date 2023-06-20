@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import compress_pickle as pickle
 
 from typing import Self
+from scipy.special import erfc
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 
@@ -21,6 +22,21 @@ from reception_model import Receiver
 ========================================================================================================================
 """
 __all__ = ['Ray', 'SoundRay', 'PropagationModel', ]
+np.seterr(invalid='ignore')
+
+
+def spherical_wave_correction(w: np.array):
+    res = 1 + 1j * w * np.sqrt(np.pi) * np.exp(-w ** 2) * erfc(-1j * w)
+    res[np.logical_or(np.isnan(res), np.isinf(res))] = 0.
+    return res
+
+
+def numerical_distance(f: np.array, r2: float, theta: float, z: np.array):
+    return np.sqrt(1j * (2 * np.pi * f / hf.c) * (r2 / 2) * ((np.sin(theta) + (1 / z)) ** 2) / (1 + (np.sin(theta) / z)))
+
+
+def ground_impedance(f: np.array, sigma_e: float):
+    return 1 + .0511 * (f / sigma_e) ** (-.75) + 0.0768j * (f / sigma_e) ** (-.73)
 
 
 class Ray:
@@ -42,6 +58,7 @@ class Ray:
         self.t = np.array([t_0, ])
         self.s = np.array([s_0])
         self.received = False
+        self.reflections = 0
 
         self.source_pos = source_pos
 
@@ -89,6 +106,8 @@ class Ray:
             pos_new[2] = -pos_new[2]
             vel[2] = -vel[2]
             direction[2] = -direction[2]
+
+            self.reflections += 1
 
         # Calculate ray path travel
         delta_s = (vel * delta_t).len()
@@ -220,6 +239,7 @@ class SoundRay(Ray):
         self.spectrum['gaussian'] = 1.
         self.spectrum['spherical'] = 1.
         self.spectrum['atmospheric'] = 1.
+        self.spectrum['reflection'] = 1.
 
     def copy(self) -> Self:
         """
@@ -285,6 +305,10 @@ class SoundRay(Ray):
 
         # Determine the filter and clip to between 0 and 1
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
+
+    def ground_effect(self, receiver: Receiver):
+        # TODO: implement ground effect into the sound reception
+        pass
 
     def receive(self, receiver: Receiver) -> (float, pd.DataFrame, hf.Cartesian):
         """
