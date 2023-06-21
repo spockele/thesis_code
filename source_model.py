@@ -167,7 +167,7 @@ class Source(hf.Cartesian):
         return f'<Source: {str(self)}, t = {self.t} s>'
 
     def generate_rays(self, h2_sphere: H2Sphere, atmosphere: hf.Atmosphere, ray_queue: list[pm.SoundRay],
-                      receiver: rm.Receiver, models: tuple) -> None:
+                      receiver: rm.Receiver, models: tuple, ground_type: str) -> None:
         """
         Generate SoundRays that would come from this source and put them into the ray_queue.
         :param h2_sphere: the sphere of HAWC2 results to obtain sound from
@@ -175,6 +175,7 @@ class Source(hf.Cartesian):
         :param ray_queue: queue.Queue to put generated SoundRays in
         :param receiver: instance of rm.Receiver to limit which SoundRays to keep
         :param models: the propagation effects models to be used in propagation
+        :param ground_type:
         :return: the ray_queue with more items
         """
         for point in self.sphere:
@@ -204,7 +205,7 @@ class Source(hf.Cartesian):
                 spectrum = np.sqrt(h2_sphere.interpolate_sound(pos_0, int(self.blade[-1]), self.t))
 
                 ray_queue.append(pm.SoundRay(pos_0, vel_0, s_0, self._cartesian, beam_width, spectrum, models,
-                                             t_0=self.t, label=self.blade))
+                                             ground_type=ground_type, t_0=self.t, label=self.blade))
 
 
 class SourceModel:
@@ -293,7 +294,7 @@ class SourceModel:
         # Loop over the source_queue without popping the Sources
         for source in self.source_queue:
             # Generate the rays for the current Source
-            source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models)
+            source.generate_rays(self.h2_sphere, self.atmosphere, ray_queue, receiver, models, self.conditions_dict['ground_type'])
             # Update the progress thread
             p_thread.update()
 

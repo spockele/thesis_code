@@ -24,6 +24,16 @@ from reception_model import Receiver
 __all__ = ['Ray', 'SoundRay', 'PropagationModel', ]
 np.seterr(invalid='ignore')
 
+sigma_e = {
+    'snow': 25.,
+    'forest': 50.,
+    'grass': 250.,
+    'dirt_roadside': 500.,
+    'dirt': 5e3,
+    'asphalt': 10e3,
+    'concrete': 50e3
+    }
+
 
 def spherical_wave_correction(w: np.array) -> np.array:
     """
@@ -304,7 +314,7 @@ class Ray:
 
 class SoundRay(Ray):
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, source_pos: hf.Cartesian,
-                 beam_width: float, amplitude_spectrum: pd.DataFrame, models: tuple,
+                 beam_width: float, amplitude_spectrum: pd.DataFrame, models: tuple, ground_type: str = 'grass',
                  t_0: float = 0., label: str = None) -> None:
         """
         ================================================================================================================
@@ -314,6 +324,7 @@ class SoundRay(Ray):
         :param vel_0: initial velocity in cartesian coordinates (m/s, m/s, m/s)
         :param s_0: initial beam length (m)
         :param beam_width: initial beam width angle (rad)
+        :param ground_type: type of ground surface
         :param t_0: the start time of the ray propagation (s)
         :param label: a string label for SoundRay
         """
@@ -322,6 +333,7 @@ class SoundRay(Ray):
         self.bw = beam_width
         self.label = label
         self.models = models
+        self.ground_type = ground_type
 
         # Initialise the sound spectrum
         self.spectrum = pd.DataFrame(amplitude_spectrum)
@@ -332,14 +344,14 @@ class SoundRay(Ray):
         self.spectrum['gaussian'] = 1.
         self.spectrum['spherical'] = 1.
         self.spectrum['atmospheric'] = 1.
-        self.spectrum['reflection'] = 1.
+        self.spectrum['ground'] = 1.
 
     def copy(self) -> Self:
         """
         Create a not-yet-propagated copy of this SoundRay.
         """
         return SoundRay(self.pos[0], self.vel[0], self.s[0], self.source_pos, self.bw, self.spectrum['a'],
-                        self.models, self.t[0], self.label)
+                        self.models, self.ground_type, self.t[0], self.label)
 
     def propagation_effects(self, atmosphere: hf.Atmosphere) -> None:
         """
@@ -385,8 +397,32 @@ class SoundRay(Ray):
         self.spectrum['gaussian'] = np.clip(np.exp(-n_sq / ((self.bw * s)**2 + 1/(np.pi * self.spectrum.index))), 0, 1)
 
     def ground_effect(self, receiver: Receiver):
-        # TODO: implement ground effect into the sound reception
-        pass
+        """
+
+        :param receiver:
+        """
+        if self.reflections == 1:
+            rng = np.sqrt((self.source_pos[0] - receiver[0]) ** 2 + (self.source_pos[1] - receiver[1]) ** 2)
+            h_s = -self.source_pos[2]
+            h_m = -receiver[2]
+
+            th = np.arctan2(h_s + h_m, rng)
+
+            f = self.spectrum.index.to_numpy()
+            z = ground_impedance(f, sigma_e[self.ground_type] * 1000)
+            rp = (z * np.sin(th) - 1) / (z * np.sin(th) + 1)
+            w = numerical_distance(f, self.s[-2], th, z)
+            fs = spherical_wave_correction(w)
+            q = rp + (1 - rp) * fs
+
+            self.spectrum['ground'] *= q
+
+        elif self.reflections == 0:
+            return
+
+        else:
+            raise NotImplementedError('Multiple reflections are not supported at this time. '
+                                      'Ground effect could not be determined.')
 
     def receive(self, receiver: Receiver) -> (float, pd.DataFrame, hf.Cartesian):
         """
@@ -395,10 +431,15 @@ class SoundRay(Ray):
         """
         # Determine the Gaussian beam attenuation spectrum
         self.gaussian_factor(receiver)
+
+        self.spectrum['p'] += self.s[-2] * 2 * np.pi * self.spectrum.index / hf.c
         # Take the amplitude and phase spectra
         spectrum = self.spectrum[['a', 'p']].copy()
         # Add the Gaussian beam attenuation
         spectrum['a'] *= self.spectrum['gaussian'] ** .5
+        # Calculate the ground effect
+        if 'ground' in self.models:
+            self.ground_effect(receiver)
         # Add attenuation from selected models
         for model in self.models:
             spectrum['a'] *= self.spectrum[model]

@@ -67,6 +67,8 @@ begin conditions ;
     groundtemp -float- ;    Ground level air temperature (celcius)
     groundpres -float- ;    Ground level air pressure (Pa)
     humidity -float- ;      Air relative humidity (%)
+    ground_type -str- ;     Type of ground surface to be used for reflections
+    ;                 ;     Can be 'snow', 'forest', 'grass', 'dirt_roadside', 'dirt', 'asphalt', 'concrete'
     ;
     delta_t -float- ; Defines the auralisation time step (s)
 end conditions ;
@@ -120,7 +122,7 @@ end source ;
 ;
 begin propagation ;
     n_threads -int- ;        Defines the number of compute threads used for propagating sound rays
-    models -str-,-str-,... ; Defines which propagation effect models to apply ('spherical', 'atmosphere', )
+    models -str-,-str-,... ; Defines which propagation effect models to apply ('spherical', 'atmosphere', 'ground', )
     pickle -int- ;           Save SoundRays to pickle files for later use (0 for no, or 1 for yes)
     unpickle -int- ;         Use saved SoundRays for reception and reconstruction model
 end propagation ;
