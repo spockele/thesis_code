@@ -23,7 +23,8 @@ head_radius = 87.5e-3  # (m)
 
 def woodworth_itd(angle: float) -> (str, float):
     """
-    Get the Inter-aural Time Delay at a given angle of incoming sound. Based on:
+    Get the Inter-aural Time Delay at a given angle of incoming sound. Based on Woodworth (1938) as described by
+    Aaronson and Hartman (2014).
      - Woodworth, R. S. (1938). Experimental psychology. Holt.
      - Aaronson, N. L., & Hartmann, W. M. (2014). Testing, correcting, and extending the Woodworth model for interaural
         time difference. The Journal of the Acoustical Society of America, 135(2), 817–823. doi: 10.1121/1.4861243
@@ -48,7 +49,7 @@ def woodworth_itd(angle: float) -> (str, float):
 
 def plot_woodworth_itd() -> None:
     """
-    Make a plot of the above woodworth inter-aural time delay function
+    Make a plot of the above woodworth inter-aural time delay function.
     """
     plt.figure(1, figsize=(4.8, 4.8))
     ax = plt.subplot(projection='polar')
@@ -66,7 +67,13 @@ def plot_woodworth_itd() -> None:
 class MITHrtf:
     def __init__(self, large=False):
         """
-        Class that reads and stores the MIT HRTF function from the sofa file
+        Class that reads the HRTF function by Gardner and Martin (1995) from the SOFA file.
+         - Gardner, W. G., & Martin, K. D. (1995). HRTF measurements of a KEMAR.
+            The Journal of the Acoustical Society of America, 97(6), 3907–3908. doi: 10.1121/1.412407
+         - Majdak, P., Noisternig, M., Wierstorf, H., Mihocic, M., Ziegelwanger, H., Carpentier, T., Parmentier, M.,
+            Hrauda, W., Olson, B., Yonge, M., Nicol, R., Roginska, A., Suzuki, Y., Watanabe, K., Iwaya, Y., &
+            Geronazzo, M. (2022). Main SOFA repository. Audio Engineering Society. http://sofacoustics.org/data/
+
         :param large: optional, give True for the large pinna data instead of the normal one
         """
         # Read the SOFA file with pysofaconventions
@@ -107,7 +114,7 @@ class MITHrtf:
 
     def get_hrtf(self, direction: HeadRelatedSpherical) -> (np.array, np.array):
         """
-        Returns the HRTF functions closest to the given azimuth and polar angle
+        Returns the HRTF functions closest to the given azimuth and polar angle.
         :param direction: HeadRelatedSpherical containing the direction where the sound is coming from
         :return: numpy arrays containing the HRTF for the left and right ear
         """
@@ -118,7 +125,7 @@ class MITHrtf:
 
     def plot_horizontal(self):
         """
-        Plot the HRTF for all azimuth angles in the horizontal plane in dB
+        Plot the HRTF for all azimuth angles in the horizontal plane in dB.
         """
         th_lst = self.azimuth[self.polar == 0.]
         th_sort = np.argsort(th_lst)
