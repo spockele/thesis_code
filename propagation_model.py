@@ -39,6 +39,77 @@ def ground_impedance(f: np.array, sigma_e: float):
     return 1 + .0511 * (f / sigma_e) ** (-.75) + 0.0768j * (f / sigma_e) ** (-.73)
 
 
+def oxygen_resonance_frequency(humidity_abs: float, pressure: float, p_0: float = 101325.) -> float:
+    """
+    Equation for the sound resonance frequency of oxygen atoms (Equation 4, Bass, 1995)
+     - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
+        Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
+        680–683. doi: 10.1121/1.412989
+    :param humidity_abs: Absolute humidity (%)
+    :param pressure: Air pressure (Pa)
+    :param p_0: Optional overwrite of the reference pressure defining 1 atmosphere (Pa)
+    """
+    return (pressure / p_0) * (24. + 4.04e4 * humidity_abs * (.02 + humidity_abs) / (.391 + humidity_abs))
+
+
+def nitrogen_resonance_frequency(humidity_abs: float, pressure: float, temperature: float,
+                                 p_0: float = 101325., t_0: float = 293.15) -> float:
+    """
+    Equation for the sound resonance frequency of nitrogen atoms (Equation 5, Bass, 1995)
+     - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
+        Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
+        680–683. doi: 10.1121/1.412989
+    :param humidity_abs: Absolute humidity (%)
+    :param pressure: Air pressure (Pa)
+    :param temperature: Air temperature (K)
+    :param p_0: Optional overwrite of the reference pressure defining 1 atmosphere (Pa)
+    :param t_0: Optional overwrite of the reference temperature (K)
+    """
+    f1 = (pressure / p_0) * ((t_0 / temperature) ** .5)
+    f2 = (9. + 280. * humidity_abs * np.exp(-4.17 * ((t_0 / temperature) ** (1 / 3) - 1)))
+    return f1 * f2
+
+
+def water_vapour_saturation_pressure(temperature: float, ) -> float:
+    """
+    Equation for the water vapour saturation pressure (Equation 4, Bass, 1995)
+     - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
+        Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
+        680–683. doi: 10.1121/1.412989
+    :param temperature: Air temperature (K)
+    """
+    return 101325 * 10 ** (-6.8346 * (273.16 / temperature) ** 1.261 + 4.6151)
+
+
+def atm_absorption_coefficient(f: np.array, humidity: float, pressure: float, temperature: float,
+                               p_0: float = 101325., t_0: float = 293.15) -> np.array:
+    """
+    Equation for the water vapour saturation pressure (Equation 3, Bass, 1995)
+     - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
+        Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
+        680–683. doi: 10.1121/1.412989
+    :param f: array of frequencies
+    :param humidity: Relative humidity (%)
+    :param pressure: Air pressure (Pa)
+    :param temperature: Air temperature (K)
+    :param p_0: Optional overwrite of the reference pressure defining 1 atmosphere (Pa)
+    :param t_0: Optional overwrite of the reference temperature (K)
+    """
+    # Determine saturation pressure
+    p_sat = water_vapour_saturation_pressure(temperature)
+    # Determine absolute humidity from relative
+    humidity_abs = humidity * p_sat / pressure
+    # Determine gas resonance frequencies
+    f_rn = nitrogen_resonance_frequency(humidity_abs, pressure, temperature, p_0, t_0)
+    f_ro = oxygen_resonance_frequency(humidity_abs, pressure, p_0)
+    # Determine the individual terms of the absorption coefficient
+    term_1 = 1.84e-11 / ((pressure / p_0) * (t_0 / temperature) ** .5)
+    term_2 = .1068 * np.exp(-3352 / temperature) * f_rn / (f ** 2 + f_rn ** 2)
+    term_3 = .01278 * np.exp(-2239.1 / temperature) * f_ro / (f ** 2 + f_ro ** 2)
+    # Return the absorption coefficient
+    return (term_1 + (term_2 + term_3) * (t_0 / temperature) ** 2.5) * f ** 2
+
+
 class Ray:
     def __init__(self, pos_0: hf.Cartesian, vel_0: hf.Cartesian, s_0: float, source_pos: hf.Cartesian,
                  t_0: float = 0.) -> None:
@@ -262,29 +333,14 @@ class SoundRay(Ray):
             self.spectrum['spherical'] /= (self.s[-1] / self.s[-2]) * np.sqrt(c_previous / c_current)
 
         if 'atmospheric' in self.models:
-            # Reference values
-            t_0, p_0 = 293.15, 101325
             # Extract frequencies from spectrum
             f = self.spectrum.index
-            # Determine saturation pressure
-            p_sat = 622.2 * np.exp(17.67 * (t_current - 273.15) / (t_current - 29.65))
-            # Determine absolute humidity from relative
-            humidity_abs = atmosphere.humidity * p_sat / p_current
-            # Determine gas resonance frequencies
-            f_rn = (p_current / p_0) * ((t_0 / t_current) ** .5) * (
-                    9. + 280. * humidity_abs * np.exp(-4.17 * ((t_0 / t_current) ** (1 / 3) - 1)))
-            f_ro = (p_current / p_0) * (24. + 4.04e4 * humidity_abs * (.02 + humidity_abs) / (.391 + humidity_abs))
-
-            # Determine the individual terms of the absorption coefficient
-            term_1 = 1.84e-11 / ((p_current / p_0) * (t_0 / t_current) ** .5)
-            term_2 = .1068 * np.exp(-3352 / t_current) * f_rn / (f ** 2 + f_rn ** 2)
-            term_3 = .01278 * np.exp(-2239.1 / t_current) * f_ro / (f ** 2 + f_ro ** 2)
-            # Determine the absorption coefficient
-            alpha = (term_1 + (term_2 + term_3) * (t_0 / t_current) ** 2.5) * f**2
-
+            # Determine the absorption coefficient spectrum
+            alpha = atm_absorption_coefficient(f, atmosphere.humidity, p_current, t_current, )
+            # Determine the travel distance of the last segment
             delta_s = self.s[-1] - self.s[-2] if self.t.size >= 2 else self.s[-1]
 
-            # More absorption :)
+            # Add absorption to the spectrum
             self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
 
     def gaussian_factor(self, receiver: Receiver) -> None:
