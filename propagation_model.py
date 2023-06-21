@@ -25,23 +25,45 @@ __all__ = ['Ray', 'SoundRay', 'PropagationModel', ]
 np.seterr(invalid='ignore')
 
 
-def spherical_wave_correction(w: np.array):
+def spherical_wave_correction(w: np.array) -> np.array:
+    """
+    Determines the spherical wave correction factor of ground reflection (Eq. 3.18, Arntzen, 2014)
+     - Arntzen, M. (2014). Aircraft noise calculation and synthesis in a non-standard atmosphere
+        [Doctoral thesis, Delft University of Technology]. doi: 10.4233/uuid:c56e213c-82db-423d-a5bd-503554653413
+    :param w: numerical distance as defined by Eq. 3.19 (Arntzen, 2014)
+    """
     res = 1 + 1j * w * np.sqrt(np.pi) * np.exp(-w ** 2) * erfc(-1j * w)
     res[np.logical_or(np.isnan(res), np.isinf(res))] = 0.
     return res
 
 
 def numerical_distance(f: np.array, r2: float, theta: float, z: np.array):
+    """
+    Determines the numerical distance for the spherical wave correction of ground reflection (Eq. 3.19, Arntzen, 2014)
+     - Arntzen, M. (2014). Aircraft noise calculation and synthesis in a non-standard atmosphere
+        [Doctoral thesis, Delft University of Technology]. doi: 10.4233/uuid:c56e213c-82db-423d-a5bd-503554653413
+    :param f: array of frequencies (Hz)
+    :param r2: travel path length of reflected sound ray (m)
+    :param theta: ground grazing angle of reflected sound ray (rad)
+    :param z: normalised acoustic surface impedance (-)
+    """
     return np.sqrt(1j * (2 * np.pi * f / hf.c) * (r2 / 2) * ((np.sin(theta) + (1 / z)) ** 2) / (1 + (np.sin(theta) / z)))
 
 
 def ground_impedance(f: np.array, sigma_e: float):
+    """
+    Determines the normalised acoustic surface impedance of ground reflection (Eq. 3.20, Arntzen, 2014)
+     - Arntzen, M. (2014). Aircraft noise calculation and synthesis in a non-standard atmosphere
+        [Doctoral thesis, Delft University of Technology]. doi: 10.4233/uuid:c56e213c-82db-423d-a5bd-503554653413
+    :param f: array of frequencies (Hz)
+    :param sigma_e: effective flow resitivity of surface (Pa / m2 / s)
+    """
     return 1 + .0511 * (f / sigma_e) ** (-.75) + 0.0768j * (f / sigma_e) ** (-.73)
 
 
 def oxygen_resonance_frequency(humidity_abs: float, pressure: float, p_0: float = 101325.) -> float:
     """
-    Equation for the sound resonance frequency of oxygen atoms (Equation 4, Bass, 1995)
+    Equation for the sound resonance frequency of oxygen atoms (Equation 4, Bass et al., 1995)
      - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
         Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
         680–683. doi: 10.1121/1.412989
@@ -55,7 +77,7 @@ def oxygen_resonance_frequency(humidity_abs: float, pressure: float, p_0: float 
 def nitrogen_resonance_frequency(humidity_abs: float, pressure: float, temperature: float,
                                  p_0: float = 101325., t_0: float = 293.15) -> float:
     """
-    Equation for the sound resonance frequency of nitrogen atoms (Equation 5, Bass, 1995)
+    Equation for the sound resonance frequency of nitrogen atoms (Equation 5, Bass et al., 1995)
      - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
         Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
         680–683. doi: 10.1121/1.412989
@@ -72,7 +94,7 @@ def nitrogen_resonance_frequency(humidity_abs: float, pressure: float, temperatu
 
 def water_vapour_saturation_pressure(temperature: float, ) -> float:
     """
-    Equation for the water vapour saturation pressure (Equation 4, Bass, 1995)
+    Equation for the water vapour saturation pressure (Equation 4, Bass et al., 1995)
      - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
         Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
         680–683. doi: 10.1121/1.412989
@@ -84,11 +106,11 @@ def water_vapour_saturation_pressure(temperature: float, ) -> float:
 def atm_absorption_coefficient(f: np.array, humidity: float, pressure: float, temperature: float,
                                p_0: float = 101325., t_0: float = 293.15) -> np.array:
     """
-    Equation for the water vapour saturation pressure (Equation 3, Bass, 1995)
+    Equation for the water vapour saturation pressure (Equation 3, Bass et al., 1995)
      - Bass, H. E., Sutherland, L. C., Zuckerwar, A. J., Blackstock, D. T., & Hester, D. M. (1995).
         Atmospheric absorption of sound: Further developments. The Journal of the Acoustical Society of America, 97(1),
         680–683. doi: 10.1121/1.412989
-    :param f: array of frequencies
+    :param f: array of frequencies (Hz)
     :param humidity: Relative humidity (%)
     :param pressure: Air pressure (Pa)
     :param temperature: Air temperature (K)
