@@ -13,7 +13,7 @@ import helper_functions as hf
 ===                                                                                                                  ===
 ========================================================================================================================
 """
-__all__ = ['ReceivedSound', 'Receiver', 'ReceptionModel']
+__all__ = ['hrtf', 'ReceivedSound', 'Receiver', 'ReceptionModel']
 
 
 hrtf = hf.MITHrtf()
@@ -39,7 +39,7 @@ class ReceivedSound:
         self.relative_source_pos = source_pos.to_hr_spherical(receiver_pos, self.head_rotation)
         self.receiver_pos = receiver_pos
         # Initialise the binaural spectrum
-        self.spectrum_binaural = pd.DataFrame(0., index=hrtf.f, columns=['al', 'pl', 'ar', 'pr'])
+        self.spectrum_binaural = pd.DataFrame(0., index=hrtf.f[hrtf.f > 0], columns=['al', 'pl', 'ar', 'pr'])
 
     def apply_hrtf(self) -> None:
         """
@@ -47,11 +47,11 @@ class ReceivedSound:
         """
         hrtf_l, hrtf_r = hrtf.get_hrtf(self.relative_source_pos)
 
-        self.spectrum_binaural['al'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['a']) * np.abs(hrtf_l)
-        self.spectrum_binaural['pl'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['p']) + np.angle(hrtf_l)
+        self.spectrum_binaural['al'] = self.spectrum['a'] * np.abs(hrtf_l)[hrtf.f > 0]
+        self.spectrum_binaural['pl'] = self.spectrum['p'] + np.angle(hrtf_l)[hrtf.f > 0]
 
-        self.spectrum_binaural['ar'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['a']) * np.abs(hrtf_r)
-        self.spectrum_binaural['pr'] = np.interp(hrtf.f, self.spectrum.index, self.spectrum['p']) + np.angle(hrtf_r)
+        self.spectrum_binaural['ar'] = self.spectrum['a'] * np.abs(hrtf_r)[hrtf.f > 0]
+        self.spectrum_binaural['pr'] = self.spectrum['p'] + np.angle(hrtf_r)[hrtf.f > 0]
 
 
 class Receiver(hf.Cartesian):

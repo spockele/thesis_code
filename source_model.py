@@ -46,28 +46,26 @@ class H2Observer(hf.Cartesian):
         self.psd[2].columns = self.time_series.index
         self.psd[3].columns = self.time_series.index
 
+        # Interpolation to hrtf frequency resolution for better ground effect (I Hope...)
+        for psd_idx in range(4):
+            new_psd = pd.DataFrame(0., columns=self.psd[psd_idx].columns, index=rm.hrtf.f[rm.hrtf.f > 0])
+            for t in self.psd[psd_idx].columns:
+                new_psd.loc[:, t] = np.interp(rm.hrtf.f[rm.hrtf.f > 0],
+                                              self.psd[psd_idx].index, self.psd[psd_idx].loc[:, t])
+
+            self.psd[psd_idx] = new_psd
+
         # Interpolation to simulation time step
         sim_time = np.round(np.arange(self.time_series.index[0], self.time_series.index[-1] + delta_t, delta_t), 10)
         #  of the time series
         self.time_series.index = np.round(self.time_series.index, 10)
         self.time_series = self.time_series.reindex(index=sim_time)
         self.time_series.interpolate(axis='index', inplace=True)
-        #  of the turbine psd
-        self.psd[0].columns = np.round(self.psd[0].columns, 10)
-        self.psd[0] = self.psd[0].reindex(columns=sim_time)
-        self.psd[0].interpolate(axis='columns', inplace=True)
-        #  of the blade_1 psd
-        self.psd[1].columns = np.round(self.psd[1].columns, 10)
-        self.psd[1] = self.psd[1].reindex(columns=sim_time)
-        self.psd[1].interpolate(axis='columns', inplace=True)
-        #  of the blade_2 psd
-        self.psd[2].columns = np.round(self.psd[2].columns, 10)
-        self.psd[2] = self.psd[2].reindex(columns=sim_time)
-        self.psd[2].interpolate(axis='columns', inplace=True)
-        #  of the blade_3 psd
-        self.psd[3].columns = np.round(self.psd[3].columns, 10)
-        self.psd[3] = self.psd[3].reindex(columns=sim_time)
-        self.psd[3].interpolate(axis='columns', inplace=True)
+        #  of the turbine and blades psd
+        for psd_idx in range(4):
+            self.psd[psd_idx].columns = np.round(self.psd[psd_idx].columns, 10)
+            self.psd[psd_idx] = self.psd[psd_idx].reindex(columns=sim_time)
+            self.psd[psd_idx].interpolate(axis='columns', inplace=True)
 
     def __repr__(self) -> str:
         return f'<HAWC2 Observer: {str(self)}>'
