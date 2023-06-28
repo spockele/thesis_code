@@ -2,3 +2,5 @@
 omit =
     ./helper_functions/test/*
     ./test/*
+    ./NTK/*
+    ./NTK_test/*

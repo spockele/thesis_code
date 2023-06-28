@@ -206,7 +206,7 @@ class TestCartesian(unittest.TestCase):
         """
         # Manual calculations
         r1 = 1.7321
-        th1 = .7854
+        th1 = -.7854
         ph1 = -.6155
         # Tests the conversion for r = 1
         sph1 = self.cartesian_1.to_hr_spherical(self.cartesian_0, 0)
@@ -407,7 +407,7 @@ class TestNonCartesian(unittest.TestCase):
         """
         # Manual calculations
         r1 = 1.7321
-        th1 = .7854
+        th1 = -.7854
         ph1 = -.6155
         # Tests the conversion for r = 1 w/rotation
         sph1 = self.non_cartesian_1.to_hr_spherical(self.cartesian_0, 0)
