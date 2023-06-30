@@ -144,7 +144,7 @@ H2model/
 spectrograms/
 ray_cache/
 pickle*/
-NTK_*/
+NTK/
 htc/
 aur/
 # Exclude some python files

@@ -37,10 +37,6 @@ class Project:
         if not os.path.isdir(os.path.join(self.project_path, 'atm')):
             os.mkdir(os.path.join(self.project_path, 'atm'))
 
-        # Make spectrograms folder if that does not exist yet
-        if not os.path.isdir(os.path.join(self.project_path, 'spectrograms')):
-            os.mkdir(os.path.join(self.project_path, 'spectrograms'))
-
         # Obtain cases from the project folder
         cases = [aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
 
@@ -68,6 +64,6 @@ class Project:
 
 
 if __name__ == '__main__':
-    proj_path = os.path.abspath('NTK_test')
+    proj_path = os.path.abspath('NTK')
     proj = Project(proj_path)
     proj.run()
