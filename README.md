@@ -1,30 +1,29 @@
-# Auralisation of Modelled Wind Turbine Noise for Psychoacoustic Listening Experiments
-
+WinTAur (Wind Turbine Auralisation tool)
 ---
-### Code repository for the M.Sc. thesis by Josephine Siebert Pockelé.
+Code repository for the M.Sc. thesis project by Josephine S. Pockelé: \
+*``Auralisation of Modelled Wind Turbine Noise for Psychoacoustic Listening Experiments''*
 
 ---
 to obtain the degree of *Master of Science in Aerospace Engineering* at *Delft University of Technology*,\
-and *Master of Science in Engineering (European Wind Energy)* at *Technical University of Denmark*.  
-~~An electronic version of the report is available at <https://repository.tudelft.nl/>.~~
+and *Master of Science in Engineering (European Wind Energy)* at *Technical University of Denmark*.
 
 ### Supervisors
-[TU Delft, Aerospace Engineering](https://www.tudelft.nl/lr):
-- [Dr. R. Merino-Martinez](https://research.tudelft.nl/en/persons/r-merino-martinez) (Assistant Professor, [Department of Aircraft Noise and Climate Effects](https://www.tudelft.nl/lr/organisatie/afdelingen/control-and-operations/aircraft-noise-and-climate-effects-ance))
-- [Dr. D. Ragni](https://research.tudelft.nl/en/persons/d-ragni) (Associate Professor, [Department of Wind Energy](https://www.tudelft.nl/?id=4543))
+[TU Delft, Faculty of Aerospace Engineering](https://www.tudelft.nl/lr):
+- [Dr. R. Merino-Martinez](https://research.tudelft.nl/en/persons/r-merino-martinez) (Assistant Professor, [Aircraft Noise and Climate Effects Section](https://www.tudelft.nl/lr/organisatie/afdelingen/control-and-operations/aircraft-noise-and-climate-effects-ance))
+- [Dr. D. Ragni](https://research.tudelft.nl/en/persons/d-ragni) (Associate Professor, [Wind Energy Section](https://www.tudelft.nl/?id=4543))
 
-[DTU, Wind and Energy Systems](https://wind.dtu.dk), [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design):
-- [F. Bertagnolio](https://orbit.dtu.dk/en/persons/franck-bertagnolio) (Senior researcher, [Airfoil and Rotor Design](https://wind.dtu.dk/research/research-divisions/wind-turbine-design/airfoil-and-rotor-design))
-- [A.W. Fischer](https://orbit.dtu.dk/en/persons/andreas-wolfgang-fischer) (Senior researcher, [Airfoil and Rotor Design](https://wind.dtu.dk/research/research-divisions/wind-turbine-design/airfoil-and-rotor-design))
+[DTU, Wind and Energy Systems](https://wind.dtu.dk):
+- [F. Bertagnolio](https://orbit.dtu.dk/en/persons/franck-bertagnolio) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
+- [A.W. Fischer](https://orbit.dtu.dk/en/persons/andreas-wolfgang-fischer) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
 
 ---
 ### Requirements
-- [Ubuntu](https://ubuntu.com/) [22.04.2 LTS](https://releases.ubuntu.com/jammy/) or [Windows](https://www.microsoft.com/windows) [10 22H2](https://www.microsoft.com/software-download/windows10ISO)
 - [Python](https://www.python.org/) [3.11.3](https://www.python.org/downloads/release/python-3113/)
 - Required modules can be installed through:
 ```
 python -m pip install -r requirements
 ```
+Tested on [Ubuntu](https://ubuntu.com/) [22.04.2 LTS](https://releases.ubuntu.com/jammy/), and [Windows](https://www.microsoft.com/windows) [10 22H2](https://www.microsoft.com/software-download/windows10ISO)
 
 ---
 ## Tool input
@@ -35,18 +34,10 @@ python -m pip install -r requirements
   - The HAWC2 model directory containing everything needed for running the HAWC2 simulation
   - It is strongly recommended to test the HAWC2 model before running this tool,\
   as error handling may not be as nice as native HAWC2
-- *atm/*
-  - Directory containingg information about the atmosphere used to run cases. \
-  Will be automatically generated.
-- *spectrograms/*
-  - Directory containing csv files with generated spectrograms. \
-  Will be automatically generated.
-- *pickles/*
-  - Directory containing Python [compressed pickle](https://pypi.org/project/compress-pickle/) files. \
-  Will be automatically generated.
+- Other directories will be generated automatically.
 
-### Input file structure
-Below is the general structure of the input (*.aur*) files that should be used. \
+### Case file (*.aur*) structure
+Below is the general structure of the case input (*.aur*) files that should be used. \
 Input code blocks and the variables inside these blocks can be placed in any order.
 ```
 name -str- ; A name for the case defined in this file
@@ -157,6 +148,9 @@ end reconstruction ;
 - *main.py*  
   - Runs the auralisation tool.
 
+- *case_mgmt.py*
+  - Case management of the tool.
+
 - *source_model.py*
   - Module containing the source model.
 
@@ -189,9 +183,17 @@ end reconstruction ;
 > - *data/*  
 >   - Folder with all data files used by the helper functions.
 
-- *plots/*
-  - Plots generated from the helper functions for the report.
+- *test/*
+  - Directory containing the pytest unittest files.
 
+- *unittest/*
+  - Directory containing the pytest unittest results.
+
+- *plots/*
+  - Plots generated for the report.
+
+---
+To track HAWC2 progress on Windows Powershell:
 ```
 Get-Content NTK/H2model/log/aeroload_noise.log –Wait
 ```
