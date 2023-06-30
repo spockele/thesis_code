@@ -224,9 +224,9 @@ class ReconstructionModel:
         # Select a single rotation from the generated signal. Also apply the ITD if binaural rendering is required
         # Leave some margin from the signal ramp down due to ray-tracing
         if side_itd == side and receiver.mode == 'stereo':
-            t_start, t_stop = t[-1] - 1.2 * rotation_time - itd, t[-1] - 0.2 * rotation_time - itd
+            t_start, t_stop = t[-1] / 2 - .5 * rotation_time - itd, t[-1] / 2 + 0.5 * rotation_time - itd
         else:
-            t_start, t_stop = t[-1] - 1.2 * rotation_time, t[-1] - 0.2 * rotation_time
+            t_start, t_stop = t[-1] / 2 - .5 * rotation_time, t[-1] / 2 + 0.5 * rotation_time
         # Take signal corresponding to 1 rotation
         p_rotation = p[np.logical_and(t_start <= t, t <= t_stop)]
 
