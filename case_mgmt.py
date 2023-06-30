@@ -443,6 +443,10 @@ class Case(CaseLoader):
         if (not os.path.isdir(spectrogram_base_dir)) and self.reception_dict['save_spectrogram']:
             os.mkdir(spectrogram_base_dir)
 
+        wavfiles_base_dir = os.path.join(self.project_path, f'wavfiles')
+        if not os.path.isdir(wavfiles_base_dir):
+            os.mkdir(wavfiles_base_dir)
+
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
             pickle_path = os.path.join(pickle_base_path, f'rec{rec_idx}')
