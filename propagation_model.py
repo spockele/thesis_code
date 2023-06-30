@@ -340,7 +340,7 @@ class SoundRay(Ray):
         # Set the column name of the given spectrum to 'a' for amplitude
         self.spectrum.columns = ['a']
         # Initialise phase and the attenuation effects
-        self.spectrum['p'] = 0.
+        self.spectrum['p'] = np.random.uniform(-np.pi, np.pi, self.spectrum.index.size)
         self.spectrum['gaussian'] = 1.
         self.spectrum['spherical'] = 1.
         self.spectrum['atmospheric'] = 1.
@@ -442,7 +442,8 @@ class SoundRay(Ray):
             self.ground_effect(receiver)
         # Add attenuation from selected models
         for model in self.models:
-            spectrum['a'] *= self.spectrum[model]
+            spectrum['a'] *= np.real(self.spectrum[model])
+            spectrum['p'] += np.angle(self.spectrum[model])
 
         # Return what is needed to create a ReceivedSound instance
         return self.t[-1], spectrum, self.source_pos
@@ -605,7 +606,7 @@ class PropagationModel:
                 # Get the sound spectrum
                 _, spectrum, source_pos = ry.receive(receiver)
                 # Integrate to get the energy
-                energy = np.trapz(spectrum['a'], spectrum.index)
+                energy = np.trapz(spectrum['a']**2, spectrum.index)
                 # Check that energy is not zero before continuing
                 if energy > 0:
                     # dB that energy
@@ -613,7 +614,7 @@ class PropagationModel:
                     # Bin the energy
                     energy_bin = 10 * int(energy // 10) + 5
                     # Apply color to that energy
-                    cmap_lvl = float(np.argwhere(levels == np.clip(energy_bin, 5, 95))) / (levels.size - 1)
+                    cmap_lvl = float(np.argwhere(levels == np.clip(energy_bin, -45, 45))) / (levels.size - 1)
                     color = cmap(cmap_lvl)
 
                     # Plot the ray
@@ -630,7 +631,7 @@ class PropagationModel:
             Create the colorbar for the energy levels
             """
             # Set the ticks and create an axis on the figure for the colorbar
-            ticks = np.arange(0, 100 + 10, 10)
+            ticks = np.arange(-40, 40 + 10, 10)
             ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
 
             norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
@@ -646,7 +647,7 @@ class PropagationModel:
         ax = fig.add_subplot(projection='3d')
 
         # Pre-set the colorbar levels and colormap
-        levels = np.arange(5, 95 + 10, 10)
+        levels = np.arange(-45, 45 + 10, 10)
         cmap = mpl.colormaps['viridis'].resampled(10)
 
         # Adjust the main plot to make room for the colorbar
