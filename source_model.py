@@ -183,7 +183,9 @@ class Source(hf.Cartesian):
             dir_ray = ((point - self) / (point - self).len()).to_spherical(hf.Cartesian(0, 0, 0))
             dir_rec = ((receiver - self) / (receiver - self).len()).to_spherical(hf.Cartesian(0, 0, 0))
 
-            if abs(dir_ray[1] - dir_rec[1]) <= 5 * beam_width and abs(dir_ray[2] - dir_rec[2]) <= 5 * beam_width:
+            if abs(hf.limit_angle(dir_ray[1] - dir_rec[1])) <= 5 * beam_width and abs(
+                    hf.limit_angle(dir_ray[2] - dir_rec[2])) <= 5 * beam_width:
+
                 # determinant of line-sphere intersection
                 nabla = np.sum(((point - self) * (self - h2_sphere.origin)).vec)**2 - (
                         h2_sphere.origin.dist(self)**2 - h2_sphere.radius**2)
