@@ -556,13 +556,20 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, gif_out: str = None) -> None:
+    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, reference: str = None, gif_out: str = None) -> None:
         """
         Makes an interactive plot of the SoundRays in a queue.Queue.
         :param ray_queue: queue.Queue containing SoundRays
         :param receiver: instance of rm.Receiver with which the SoundRays where propagated
+        :param reference: string indicating time reference frame, either 'source' or 'reception'
         :param gif_out: A path to output a gif animation to
         """
+        if reference is None or reference == 'source':
+            idx = 0
+        elif reference == 'reception':
+            idx = -1
+        else:
+            raise ValueError(f'Invalid time reference frame given: reference={reference}')
         # Create an empty ray dictionary
         rays = dict[float: list]()
         # Loop over the ray_queue without removing the SoundRays
@@ -570,7 +577,7 @@ class PropagationModel:
             # Add any received rays to the dictionary
             if ray.received:
                 # Just stupid sh!te to avoid floating point errors...
-                t = round(ray.t[0], 10)
+                t = round(ray.t[idx], 10)
                 # Fill into the dictionary
                 if t in rays.keys():
                     rays[t].append(ray)
