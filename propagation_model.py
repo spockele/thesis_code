@@ -205,6 +205,8 @@ class Ray:
         # Determine new position with forward euler stepping
         pos_new = self.pos[-1] + vel * delta_t
         # Check for reflections and if so: invert z-coordinate and z-velocity and z-direction
+        # TODO: if the ground effect is not selected, no reflection should happen at all.
+        #  Only direct sound should then be considered.
         if pos_new[2] >= 0:
             pos_new[2] = -pos_new[2]
             vel[2] = -vel[2]
