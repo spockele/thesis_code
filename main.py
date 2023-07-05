@@ -58,12 +58,13 @@ class Project:
         """
         for ci, case in enumerate(self.cases):
             print(f'================= Simulating case {case.case_name} ({ci + 1}/{len(self.cases)}) =================')
-            # case.run_hawc2()
-            case.run()
+            case.run_hawc2()
+            # case.run()
             print()
 
 
 if __name__ == '__main__':
-    proj_path = os.path.abspath('NTK')
+    proj_name = input('Enter your project name: ')
+    proj_path = os.path.abspath(proj_name)
     proj = Project(proj_path)
     proj.run()
