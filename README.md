@@ -112,7 +112,6 @@ begin source ;
 end source ;
 ;
 begin propagation ;
-    n_threads -int- ;        Defines the number of compute threads used for propagating sound rays
     models -str-,-str-,... ; Defines which propagation effect models to apply ('spherical', 'atmosphere', 'ground', )
     pickle -int- ;           Save SoundRays to pickle files for later use (0 for no, or 1 for yes)
     unpickle -int- ;         Use saved SoundRays for reception and reconstruction model
