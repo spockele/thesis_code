@@ -1,4 +1,5 @@
 import os
+import shutil as sh
 
 import case_mgmt as cm
 import helper_functions as hf
@@ -60,6 +61,12 @@ class Project:
             print(f'================= Simulating case {case.case_name} ({ci + 1}/{len(self.cases)}) =================')
             case.run_hawc2()
             case.run()
+            for wavfile in os.listdir(os.path.join(self.project_path, 'wavfiles')):
+                wavpath = os.path.join(self.project_path, 'wavfiles', wavfile)
+                newpath = os.path.join('wavfiles', case.case_file.strip(self.project_path).strip(".aur"))
+                if not os.path.isdir(newpath):
+                    os.mkdir(newpath)
+                sh.move(wavpath, newpath)
             print()
 
 
