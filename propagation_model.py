@@ -439,9 +439,14 @@ class SoundRay(Ray):
         spectrum = self.spectrum[['a', 'p']].copy()
         # Add the Gaussian beam attenuation
         spectrum['a'] *= self.spectrum['gaussian'] ** .5
-        # Calculate the ground effect
+
+        # Calculate the ground effect if ground reflections are to be included
         if 'ground' in self.models:
             self.ground_effect(receiver)
+        # If ground reflections are not to be included, set spectrum to 0 if the ray has been reflected
+        elif self.reflections > 0:
+            spectrum['a'] *= 0.
+
         # Add attenuation from selected models
         for model in self.models:
             spectrum['a'] *= np.real(self.spectrum[model])
