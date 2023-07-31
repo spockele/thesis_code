@@ -363,21 +363,20 @@ class SoundRay(Ray):
         # Get current temperature, pressure and speed of sound from the atmosphere
         t_current, p_current, _, c_current, _ = atmosphere.get_conditions(-self.pos[-1][2])
 
-        if 'spherical' in self.models and self.t.size >= 2:
+        if self.t.size >= 2:
             c_previous = atmosphere.get_speed_of_sound(-self.pos[-2][2])
             # Spherical spreading factor
             self.spectrum['spherical'] /= (self.s[-1] / self.s[-2]) * np.sqrt(c_previous / c_current)
 
-        if 'atmospheric' in self.models:
-            # Extract frequencies from spectrum
-            f = self.spectrum.index
-            # Determine the absorption coefficient spectrum
-            alpha = atm_absorption_coefficient(f, atmosphere.humidity, p_current, t_current, )
-            # Determine the travel distance of the last segment
-            delta_s = self.s[-1] - self.s[-2] if self.t.size >= 2 else self.s[-1]
+        # Extract frequencies from spectrum
+        f = self.spectrum.index
+        # Determine the absorption coefficient spectrum
+        alpha = atm_absorption_coefficient(f, atmosphere.humidity, p_current, t_current, )
+        # Determine the travel distance of the last segment
+        delta_s = self.s[-1] - self.s[-2] if self.t.size >= 2 else self.s[-1]
 
-            # Add absorption to the spectrum
-            self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
+        # Add absorption to the spectrum
+        self.spectrum['atmospheric'] *= np.exp(-alpha * delta_s / 2)
 
     def gaussian_factor(self, receiver: Receiver) -> None:
         """
@@ -426,10 +425,11 @@ class SoundRay(Ray):
             raise NotImplementedError('Multiple reflections are not supported at this time. '
                                       'Ground effect could not be determined.')
 
-    def receive(self, receiver: Receiver) -> (float, pd.DataFrame, hf.Cartesian):
+    def receive(self, receiver: Receiver, models: tuple) -> (float, pd.DataFrame, hf.Cartesian):
         """
         Function that adds the SoundRay to the receiver.
         :param receiver: instance of Receiver
+        :param models:
         """
         # Determine the Gaussian beam attenuation spectrum
         self.gaussian_factor(receiver)
@@ -441,14 +441,14 @@ class SoundRay(Ray):
         spectrum['a'] *= self.spectrum['gaussian'] ** .5
 
         # Calculate the ground effect if ground reflections are to be included
-        if 'ground' in self.models:
+        if 'ground' in models:
             self.ground_effect(receiver)
         # If ground reflections are not to be included, set spectrum to 0 if the ray has been reflected
         elif self.reflections > 0:
             spectrum['a'] *= 0.
 
         # Add attenuation from selected models
-        for model in self.models:
+        for model in models:
             spectrum['a'] *= np.real(self.spectrum[model])
             spectrum['p'] += np.angle(self.spectrum[model])
 

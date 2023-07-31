@@ -238,11 +238,12 @@ class ReceptionModel:
         self.conditions_dict = aur_conditions_dict
         self.params = aur_reception_dict
 
-    def run(self, receiver: Receiver, in_queue: list) -> None:
+    def run(self, receiver: Receiver, in_queue: list, models: tuple) -> None:
         """
         Run the reception model.
         :param receiver: instance of rm.Receiver
         :param in_queue: queue of SoundRays to receive
+        :param models:
         """
         # Start a ProgressThread
         p_thread = hf.ProgressThread(len(in_queue), 'Receiving sound rays')
@@ -253,7 +254,7 @@ class ReceptionModel:
             # Check if ray is received at the Receiver
             if ray.received:
                 # Create the ReceivedSound from the ray at the Receiver
-                t_received, spectrum, source_pos = ray.receive(receiver)
+                t_received, spectrum, source_pos = ray.receive(receiver, models)
                 sound = ReceivedSound(t_received, spectrum, source_pos, receiver.cartesian, receiver.rotation)
                 # Receive the sound with the Receiver
                 receiver.receive(sound)
