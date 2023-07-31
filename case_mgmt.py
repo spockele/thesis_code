@@ -39,6 +39,7 @@ class CaseLoader:
         self.h2model_path = os.path.join(project_path, 'H2model')
 
         self.case_file = os.path.join(project_path, case_file)
+        self.file_name = case_file.replace('.aur', '')
         # Check that the input file actually exists.
         if not os.path.isfile(self.case_file):
             raise FileNotFoundError('Given input file name does not exist.')
@@ -67,6 +68,7 @@ class CaseLoader:
         self.htc = HTCFile()
         # Parameters from the hawc2 input block
         self.n_obs = 0
+        self.run_hawc = False
 
         # Parse the input file lines
         self._parse_input_file(lines)
@@ -167,6 +169,10 @@ class CaseLoader:
         """
         # Get the blocks from the HAWC2 block
         blocks = self._get_blocks(lines[1:-1])
+        try:
+            self.run_hawc = bool(int(blocks['run_hawc2']))
+        except KeyError:
+            self.run_hawc = False
 
         # Get the name and path of the base .htc file to work with
         self.htc_base_name = blocks['htc_name']
@@ -431,22 +437,29 @@ class Case(CaseLoader):
         dummy = self.reception_dict['load_spectrogram'] or self.propagation_dict['unpickle']
         source_model = sm.SourceModel(self.conditions_dict, self.source_dict, self.h2result_path, self.atmosphere,
                                       dummy=dummy)
+
         propagation_model = pm.PropagationModel(self.conditions_dict, self.propagation_dict, self.atmosphere)
         reception_model = rm.ReceptionModel(self.conditions_dict, self.reception_dict)
         reconstruction_model = cm.ReconstructionModel(self.conditions_dict, self.reconstruction_dict)
 
-        pickle_base_path = os.path.join(self.project_path, f'pickle_{self.case_name}')
+        # ----------------------------------------------------------------------------------------------------------
+        # Folder setup
+        # ----------------------------------------------------------------------------------------------------------
+        pickle_base_path = os.path.join(self.project_path, 'pickles', self.case_name)
         if (not os.path.isdir(pickle_base_path)) and self.propagation_dict['pickle']:
             os.mkdir(pickle_base_path)
 
-        spectrogram_base_dir = os.path.join(self.project_path, f'spectrogram_{self.case_name}')
+        spectrogram_base_dir = os.path.join(self.project_path, 'spectrograms', self.file_name)
         if (not os.path.isdir(spectrogram_base_dir)) and self.reception_dict['save_spectrogram']:
             os.mkdir(spectrogram_base_dir)
 
-        wavfiles_base_dir = os.path.join(self.project_path, f'wavfiles')
+        wavfiles_base_dir = os.path.join(self.project_path, 'wavfiles', self.file_name)
         if not os.path.isdir(wavfiles_base_dir):
             os.mkdir(wavfiles_base_dir)
 
+        # ----------------------------------------------------------------------------------------------------------
+        # Receivers loop
+        # ----------------------------------------------------------------------------------------------------------
         receiver: rm.Receiver
         for rec_idx, receiver in self.receiver_dict.items():
             pickle_path = os.path.join(pickle_base_path, f'rec{rec_idx}')
@@ -456,6 +469,9 @@ class Case(CaseLoader):
             print()
 
             if not self.reception_dict['load_spectrogram']:
+                # --------------------------------------------------------------------------------------------------
+                # Propagation
+                # --------------------------------------------------------------------------------------------------
                 if not self.propagation_dict['unpickle']:
                     print(f' -- Running Propagation Model for receiver {rec_idx}')
                     ray_queue: list[pm.SoundRay] = source_model.run(receiver, self.propagation_dict['models'])
@@ -468,8 +484,11 @@ class Case(CaseLoader):
                 else:
                     ray_queue = propagation_model.unpickle_ray_queue(pickle_path)
 
+                # --------------------------------------------------------------------------------------------------
+                # Reception
+                # --------------------------------------------------------------------------------------------------
                 print(f' -- Running Reception Model for receiver {rec_idx}')
-                reception_model.run(receiver, ray_queue)
+                reception_model.run(receiver, ray_queue, self.propagation_dict['models'])
 
                 del ray_queue
 
@@ -481,9 +500,9 @@ class Case(CaseLoader):
                 receiver.spectrogram_from_csv(spectrogram_path_left, spectrogram_path_right)
 
             # ----------------------------------------------------------------------------------------------------------
-            # Sound reconstruction
+            # Reconstruction
             # ----------------------------------------------------------------------------------------------------------
             print(f' -- Running Reconstruction Model for receiver {rec_idx}')
-            reconstruction_model.run(receiver, f'{self.project_path}/wavfiles/{self.case_name}_rec{rec_idx}.wav')
+            reconstruction_model.run(receiver, os.path.join(wavfiles_base_dir, f'rec{rec_idx}.wav'))
 
             del receiver

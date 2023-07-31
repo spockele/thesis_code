@@ -65,6 +65,7 @@ begin conditions ;
 end conditions ;
 ;
 begin HAWC2;
+    run_hawc2 -int- ; Indicate whether a HAWC2 simulation is to be run. 0 or 1.
     ; ----------------------------------------------------------------------------------
     ; Define operating parameters for HAWC2 model, as would normally 
     ; be defined in .htc files. The .htc file(s) of the model should only contain the 

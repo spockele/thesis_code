@@ -38,6 +38,18 @@ class Project:
         if not os.path.isdir(os.path.join(self.project_path, 'atm')):
             os.mkdir(os.path.join(self.project_path, 'atm'))
 
+        # Make wavfile folder if that does not exist yet
+        if not os.path.isdir(os.path.join(self.project_path, 'wavfiles')):
+            os.mkdir(os.path.join(self.project_path, 'wavfiles'))
+
+        # Make spectrograms folder if that does not exist yet
+        if not os.path.isdir(os.path.join(self.project_path, 'spectrograms')):
+            os.mkdir(os.path.join(self.project_path, 'spectrograms'))
+
+        # Make wavfile folder if that does not exist yet
+        if not os.path.isdir(os.path.join(self.project_path, 'pickles')):
+            os.mkdir(os.path.join(self.project_path, 'pickles'))
+
         # Obtain cases from the project folder
         cases = [aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
 
@@ -59,14 +71,9 @@ class Project:
         """
         for ci, case in enumerate(self.cases):
             print(f'================= Simulating case {case.case_name} ({ci + 1}/{len(self.cases)}) =================')
-            case.run_hawc2()
+            if case.run_hawc:
+                case.run_hawc2()
             case.run()
-            for wavfile in os.listdir(os.path.join(self.project_path, 'wavfiles')):
-                wavpath = os.path.join(self.project_path, 'wavfiles', wavfile)
-                newpath = os.path.join('wavfiles', case.case_file.strip(self.project_path).strip(".aur"))
-                if not os.path.isdir(newpath):
-                    os.mkdir(newpath)
-                sh.move(wavpath, newpath)
             print()
 
 
