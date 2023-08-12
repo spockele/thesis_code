@@ -325,7 +325,7 @@ class SourceModel:
                 sources[t] = list[Source]([source, ])
 
         # create the main plot
-        fig = plt.figure()
+        fig = plt.figure(figsize=(5, 5))
         ax = fig.add_subplot(projection='3d')
 
         x_h, y_h, z_h = self.conditions_dict['hub_pos'].vec
@@ -389,34 +389,33 @@ class SourceModel:
                 ax.scatter(-x, y + offset, -z, s=5, color=color)
                 ax.plot((-x, -x_h), (y + offset, y_h + offset), (-z, -z_h), color=color)
 
+            plt.tight_layout()
+
         valstep = list(sorted(sources.keys()))
 
         # Create an animated GIF file if so desired
         if gif_out is not None:
             ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=(valstep[1] - valstep[0]) * 1000)
-            ani.save(gif_out, writer='pillow')
+            ani.save(gif_out, writer='pillow', dpi=600)
 
-            # Create the figure again to avoid issues with the animation stuff
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
+        else:
+            # adjust the main plot to make room for the sliders
+            fig.subplots_adjust(left=0., bottom=0.2, right=1., top=1.)
 
-        # adjust the main plot to make room for the sliders
-        fig.subplots_adjust(left=0., bottom=0.2, right=1., top=1.)
+            # Make a horizontal slider to control the time.
+            ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
+            slider = Slider(
+                ax=ax_time,
+                label='Time (s)',
+                valmin=valstep[0],
+                valmax=valstep[-1],
+                valstep=valstep,
+                valinit=valstep[0],
+            )
 
-        # Make a horizontal slider to control the time.
-        ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
-        slider = Slider(
-            ax=ax_time,
-            label='Time (s)',
-            valmin=valstep[0],
-            valmax=valstep[-1],
-            valstep=valstep,
-            valinit=valstep[0],
-        )
-
-        # Set the initial plot at the first available time step
-        update_plot(valstep[0])
-        # Set the slider update function
-        slider.on_changed(update_plot)
-        # Plot the plot
-        plt.show()
+            # Set the initial plot at the first available time step
+            update_plot(valstep[0])
+            # Set the slider update function
+            slider.on_changed(update_plot)
+            # Plot the plot
+            plt.show()
