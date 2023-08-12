@@ -51,7 +51,7 @@ class Project:
             os.mkdir(os.path.join(self.project_path, 'pickles'))
 
         # Obtain cases from the project folder
-        cases = [aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')]
+        cases = sorted([aur_file for aur_file in os.listdir(self.project_path) if aur_file.endswith('.aur')])
 
         if len(cases) <= 0:
             raise FileNotFoundError('No input files found in project folder.')

@@ -73,6 +73,11 @@ class CaseLoader:
         # Parse the input file lines
         self._parse_input_file(lines)
 
+        ''' Preparations for HAWC2 '''
+        # Set the variables to store the properties of the HAWC2 sphere
+        self.h2result_sphere = None
+        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
+
     @staticmethod
     def _get_blocks(lines: list):
         """
@@ -318,11 +323,6 @@ class Case(CaseLoader):
         """
         # Call the CaseLoader
         super().__init__(project_path, case_file)
-
-        ''' Preparations for HAWC2 '''
-        # Set the variables to store the properties of the HAWC2 sphere
-        self.h2result_sphere = None
-        self.h2result_path = os.path.join(self.h2model_path, 'res', self.case_name)
 
         ''' Setup of the models '''
         # Set the path for the atmosphere cache file

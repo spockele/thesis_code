@@ -1,9 +1,11 @@
 import os
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from matplotlib.widgets import Slider
+from matplotlib.animation import FuncAnimation
 
 import helper_functions as hf
 import propagation_model as pm
@@ -91,7 +93,7 @@ class H2Sphere(list[H2Observer]):
         self.h2_result_path = h2_result_path
         self.scope = aur_source_dict['scope']
         # Set the radius and origin point of the sphere
-        self.radius = aur_conditions_dict['rotor_radius']
+        self.radius = aur_conditions_dict['rotor_radius'] * aur_source_dict['radius_factor']
         self.origin = aur_conditions_dict['hub_pos']
 
         # Obtain all the filenames of the HAWC2 noise output
@@ -305,9 +307,10 @@ class SourceModel:
 
         return ray_queue
 
-    def interactive_source_plot(self):
+    def interactive_source_plot(self, gif_out: str = None):
         """
         A beautiful interactive plot of the Source locations.
+        :param gif_out: A path to output a gif animation to
         """
         # Create empty dictionary to store Sources per time step
         sources = dict[float: list]()
@@ -325,36 +328,83 @@ class SourceModel:
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
 
+        x_h, y_h, z_h = self.conditions_dict['hub_pos'].vec
+        offset = 50
+
+        u = np.linspace(0, 2 * np.pi, 100)
+        v = np.linspace(0, np.pi, 100)
+        x_h2s = self.h2_sphere.radius * np.outer(np.cos(u), np.sin(v)) + self.h2_sphere.origin[0]
+        y_h2s = self.h2_sphere.radius * np.outer(np.sin(u), np.sin(v)) + self.h2_sphere.origin[1]
+        z_h2s = self.h2_sphere.radius * np.outer(np.ones(np.size(u)), np.cos(v)) + self.h2_sphere.origin[2]
+
+        points = []
+        for xi, _ in enumerate(x_h2s):
+            points.append([])
+            for xj, _ in enumerate(x_h2s[xi]):
+                points[xi].append(hf.Cartesian(x_h2s[xi, xj], y_h2s[xi, xj], z_h2s[xi, xj]))
+
+        c_h2s = np.zeros(x_h2s.shape)
+
+        cmap = mpl.colormaps['viridis']
+        norm = mpl.colors.Normalize(-5, 35)
+        mappable = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
+
         def update_plot(t_plt: float):
             """
             Internal function to update the interactive plot with the Slider.
             :param t_plt: time input (s)
             """
+            print(t_plt)
             # Clear the plot
             ax.clear()
             # Re-set the axis limits and aspect ratio
             ax.set_aspect('equal')
-            ax.set_xlim(-75, 75)
-            ax.set_ylim(-75, 75)
-            ax.set_zlim(0, 150)
+            ax.set_xlim(-50, 50)
+            ax.set_ylim(-50, 50)
+            ax.set_zlim(0, 100)
             # Re-set the labels
             ax.set_xlabel('-x (m)')
             ax.set_ylabel('y (m)')
             ax.set_zlabel('-z (m)')
 
+            for xi, _ in enumerate(x_h2s):
+                for xj, _ in enumerate(x_h2s[xi]):
+                    pt: hf.Cartesian = points[xi][xj]
+                    psd = self.h2_sphere.interpolate_sound(pt, 1, t_plt)
+                    c_h2s[xi, xj] = 10 * np.log10(psd.iloc[11] / hf.p_ref ** 2)
+            # print(np.min(c_h2s), np.max(c_h2s))
+
+            ax.plot_surface(-x_h2s, y_h2s, -z_h2s, facecolors=mappable.to_rgba(c_h2s))
+
             # Get the Sources at input time
             source_lst = list[Source](sources[t_plt])
             # Plot the source points
             for src in source_lst:
+                if src.blade == 'blade_1':
+                    color = 'r'
+                else:
+                    color = 'k'
+
                 x, y, z = src.vec
-                ax.scatter(-x, y, -z, s=5, color='k', marker='8')
+                ax.scatter(-x, y + offset, -z, s=5, color=color)
+                ax.plot((-x, -x_h), (y + offset, y_h + offset), (-z, -z_h), color=color)
+
+        valstep = list(sorted(sources.keys()))
+
+        # Create an animated GIF file if so desired
+        if gif_out is not None:
+            ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=(valstep[1] - valstep[0]) * 1000)
+            ani.save(gif_out, writer='pillow')
+
+            # Create the figure again to avoid issues with the animation stuff
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
 
         # adjust the main plot to make room for the sliders
         fig.subplots_adjust(left=0., bottom=0.2, right=1., top=1.)
 
         # Make a horizontal slider to control the time.
         ax_time = fig.add_axes([0.11, 0.1, 0.65, 0.05])
-        valstep = list(sorted(sources.keys()))
         slider = Slider(
             ax=ax_time,
             label='Time (s)',

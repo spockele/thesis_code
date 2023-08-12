@@ -24,7 +24,7 @@ from reception_model import Receiver
 __all__ = ['Ray', 'SoundRay', 'PropagationModel', ]
 np.seterr(invalid='ignore')
 
-sigma_e = {
+sigma_e_dict = {
     'snow': 25.,
     'forest': 50.,
     'grass': 250.,
@@ -410,7 +410,7 @@ class SoundRay(Ray):
             th = np.arctan2(h_s + h_m, rng)
 
             f = self.spectrum.index.to_numpy()
-            z = ground_impedance(f, sigma_e[self.ground_type] * 1000)
+            z = ground_impedance(f, sigma_e_dict[self.ground_type] * 1000)
             rp = (z * np.sin(th) - 1) / (z * np.sin(th) + 1)
             w = numerical_distance(f, self.s[-2], th, z)
             fs = spherical_wave_correction(w)
@@ -563,11 +563,12 @@ class PropagationModel:
         return ray_queue
 
     @staticmethod
-    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, reference: str = None, gif_out: str = None) -> None:
+    def interactive_ray_plot(ray_queue: list[SoundRay], receiver: Receiver, hub: hf.Cartesian = None, reference: str = None, gif_out: str = None) -> None:
         """
         Makes an interactive plot of the SoundRays in a queue.Queue.
         :param ray_queue: queue.Queue containing SoundRays
         :param receiver: instance of rm.Receiver with which the SoundRays where propagated
+        :param hub:
         :param reference: string indicating time reference frame, either 'source' or 'reception'
         :param gif_out: A path to output a gif animation to
         """
@@ -591,6 +592,9 @@ class PropagationModel:
                 else:
                     rays[t] = list[SoundRay]([ray, ])
 
+        if hub is not None:
+            x_h, y_h, z_h = hub.vec
+
         def update_plot(t_plt: float):
             """
             Internal function to update the interactive plot with the Slider.
@@ -600,15 +604,16 @@ class PropagationModel:
             ax.clear()
             # Re-set the axis limits and aspect ratio
             ax.set_aspect('equal')
-            ax.set_xlim(-75, 75)
-            ax.set_ylim(-75, 75)
-            ax.set_zlim(0, 150)
+            ax.set_xlim(-50, 50)
+            ax.set_ylim(-50, 50)
+            ax.set_zlim(0, 100)
             # Re-set the labels
             ax.set_xlabel('-x (m)')
             ax.set_ylabel('y (m)')
             ax.set_zlabel('-z (m)')
             # Put the receiver point in there
-            ax.scatter(-receiver[0], receiver[1], -receiver[2])
+            ax.scatter(-receiver[0], receiver[1], -receiver[2], s=50, color='k')
+
 
             # Get the rays at input time
             ray_lst = list[SoundRay](rays[t_plt])
@@ -618,7 +623,7 @@ class PropagationModel:
                 pos_array = ry.pos_array()
 
                 # Get the sound spectrum
-                _, spectrum, source_pos = ry.receive(receiver)
+                _, spectrum, source_pos = ry.receive(receiver, ('spherical', 'atmospheric', 'ground'))
                 # Integrate to get the energy
                 energy = np.trapz(spectrum['a']**2, spectrum.index)
                 # Check that energy is not zero before continuing
@@ -626,26 +631,28 @@ class PropagationModel:
                     # dB that energy
                     energy = 10 * np.log10(energy / hf.p_ref ** 2)
                     # Bin the energy
-                    energy_bin = 10 * int(energy // 10) + 5
+                    energy_bin = 5 * int(energy // 5) + 2.5
                     # Apply color to that energy
-                    cmap_lvl = float(np.argwhere(levels == np.clip(energy_bin, -45, 45))) / (levels.size - 1)
+                    cmap_lvl = float(np.argwhere(levels == np.clip(energy_bin, 12.5, 62.5))) / (levels.size - 1)
                     color = cmap(cmap_lvl)
-
-                    # Plot the ray
-                    ax.plot(-pos_array[0], pos_array[1], -pos_array[2], color=color)
 
                     x, y, z = source_pos.vec
                     x_0, y_0, z_0 = ry.pos[0].vec
 
+                    # Plot the ray
+                    ax.plot(-pos_array[0], pos_array[1], -pos_array[2], color=color)
+                    ax.plot((-x, -x_0), (y, y_0), (-z, -z_0), color=color, )
+
                     ax.scatter(-x, y, -z, color='k', marker='8')
-                    ax.plot((-x, -x_0), (y, y_0), (-z, -z_0), color='0.8', )
+                    if hub is not None:
+                        ax.plot((-x, -x_h), (y, y_h), (-z, -z_h), color='k', )
 
         def colorbar():
             """
             Create the colorbar for the energy levels
             """
             # Set the ticks and create an axis on the figure for the colorbar
-            ticks = np.arange(-40, 40 + 10, 10)
+            ticks = np.arange(10, 60 + 5, 5)
             ax_cbar = fig.add_axes([.85, 0.1, 0.05, 0.8])
 
             norm = mpl.colors.BoundaryNorm(ticks, cmap.N)
@@ -661,7 +668,7 @@ class PropagationModel:
         ax = fig.add_subplot(projection='3d')
 
         # Pre-set the colorbar levels and colormap
-        levels = np.arange(-45, 45 + 10, 10)
+        levels = np.arange(12.5, 62.5 + 5, 5)
         cmap = mpl.colormaps['viridis'].resampled(10)
 
         # Adjust the main plot to make room for the colorbar
@@ -673,7 +680,7 @@ class PropagationModel:
 
         # Create an animated GIF file if so desired
         if gif_out is not None:
-            ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=valstep[1] - valstep[0])
+            ani = FuncAnimation(fig=fig, func=update_plot, frames=valstep, interval=(valstep[1] - valstep[0]) * 1000)
             ani.save(gif_out, writer='pillow')
 
             # Create the figure again to avoid issues with the animation stuff

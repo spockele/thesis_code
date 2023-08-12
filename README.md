@@ -7,6 +7,11 @@ Code repository for the M.Sc. thesis project by Josephine S. Pockelé: \
 to obtain the degree of *Master of Science in Aerospace Engineering* at *Delft University of Technology*,\
 and *Master of Science in Engineering (European Wind Energy)* at *Technical University of Denmark*.
 
+### Contact:
+- E: [fien@pockele.com](mailto:fien@pockele.com)
+- E: [j.s.pockele@student.tudelft.nl](mailto:j.s.pockele@student.tudelft.nl)
+- E: [s213779@student.dtu.dk](mailto:s213779@student.dtu.dk)
+
 ### Supervisors
 [TU Delft, Faculty of Aerospace Engineering](https://www.tudelft.nl/lr):
 - [Dr. R. Merino-Martinez](https://research.tudelft.nl/en/persons/r-merino-martinez) (Assistant Professor, [Aircraft Noise and Climate Effects Section](https://www.tudelft.nl/lr/organisatie/afdelingen/control-and-operations/aircraft-noise-and-climate-effects-ance))
