@@ -379,7 +379,7 @@ class Case(CaseLoader):
             print('Generating observer sphere: Done!')
 
         # Set the aero_noise simulation mode to 2, meaning to run and store the needed parameters
-        self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ), comments='Mode: Store')
+        self.htc.aero.aero_noise.add_line(name='noise_mode', values=('2', ))
         self.htc.save(self.htc_path)
 
         ''' Running HAWC2 '''
@@ -393,7 +393,7 @@ class Case(CaseLoader):
         # Set 1 to 2 in the progress thread
         p_thread.update()
         # Prepare for noise simulation by setting the noise mode to calculate
-        self.htc.aero.aero_noise.add_line(name='noise_mode', values=('3', ), comments='Mode: Calculate')
+        self.htc.aero.aero_noise.noise_mode = 3
         self.htc.save(self.htc_path)
 
         # Run the noise simulation
