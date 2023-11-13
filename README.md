@@ -3,23 +3,29 @@ WinTAur (Wind Turbine Auralisation tool)
 Code repository for the M.Sc. thesis project by Josephine S. Pockelé: \
 *``Auralisation of Modelled Wind Turbine Noise for Psychoacoustic Listening Experiments''*
 
+to obtain the degree of *Master of Science in Aerospace Engineering* at *Delft University of Technology*, and *Master of Science in Engineering (European Wind Energy)* at *Technical University of Denmark*.
+
+The full report of the thesis is available on the [TU Delft Repository](http://resolver.tudelft.nl/uuid:cc9e67b4-6bde-4114-97c0-43b11b4a48ef).
+
 ---
-to obtain the degree of *Master of Science in Aerospace Engineering* at *Delft University of Technology*,\
-and *Master of Science in Engineering (European Wind Energy)* at *Technical University of Denmark*.
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
+---
 
 ### Contact:
-- E: [fien@pockele.com](mailto:fien@pockele.com)
-- E: [j.s.pockele@student.tudelft.nl](mailto:j.s.pockele@student.tudelft.nl)
-- E: [s213779@student.dtu.dk](mailto:s213779@student.dtu.dk)
+- ir. Josephine Pockelé (Graduate, [European Wind Energy Master (EWEM)](https://www.tudelft.nl/ewem))
+  - E: [fien@pockele.com](mailto:fien@pockele.com)
+  - P: [+32 470 93 21 32](tel:0032470932132)
 
-### Supervisors
-[TU Delft, Faculty of Aerospace Engineering](https://www.tudelft.nl/lr):
-- [Dr. R. Merino-Martinez](https://research.tudelft.nl/en/persons/r-merino-martinez) (Assistant Professor, [Aircraft Noise and Climate Effects Section](https://www.tudelft.nl/lr/organisatie/afdelingen/control-and-operations/aircraft-noise-and-climate-effects-ance))
-- [Dr. D. Ragni](https://research.tudelft.nl/en/persons/d-ragni) (Associate Professor, [Wind Energy Section](https://www.tudelft.nl/?id=4543))
+### Supervisors:
+- [TU Delft, Faculty of Aerospace Engineering](https://www.tudelft.nl/lr):
+  - [dr. R. Merino-Martinez](https://research.tudelft.nl/en/persons/r-merino-martinez) (Assistant Professor, [Aircraft Noise and Climate Effects Section](https://www.tudelft.nl/lr/organisatie/afdelingen/control-and-operations/aircraft-noise-and-climate-effects-ance))
+  - [dr. D. Ragni](https://research.tudelft.nl/en/persons/d-ragni) (Associate Professor, [Wind Energy Section](https://www.tudelft.nl/?id=4543))
 
-[DTU, Wind and Energy Systems](https://wind.dtu.dk):
-- [F. Bertagnolio](https://orbit.dtu.dk/en/persons/franck-bertagnolio) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
-- [A.W. Fischer](https://orbit.dtu.dk/en/persons/andreas-wolfgang-fischer) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
+- [DTU, Wind and Energy Systems](https://wind.dtu.dk):
+  - [dr. F. Bertagnolio](https://orbit.dtu.dk/en/persons/franck-bertagnolio) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
+  - [dr. A.W. Fischer](https://orbit.dtu.dk/en/persons/andreas-wolfgang-fischer) (Senior researcher, [Wind Turbine Design Division](https://wind.dtu.dk/research/research-divisions/wind-turbine-design))
 
 ---
 ### Requirements
@@ -37,8 +43,7 @@ Tested on [Ubuntu](https://ubuntu.com/) [22.04.2 LTS](https://releases.ubuntu.co
   - Input file for the auralisation (Can be multiple files. Tool will autodetect.)
 - *H2model/*
   - The HAWC2 model directory containing everything needed for running the HAWC2 simulation
-  - It is strongly recommended to test the HAWC2 model before running this tool,\
-  as error handling may not be as nice as native HAWC2
+  - It is strongly recommended to test the HAWC2 model before running this tool, as error handling may not be as nice as native HAWC2
 - Other directories will be generated automatically.
 
 ### Case file (*.aur*) structure
@@ -156,6 +161,7 @@ end reconstruction ;
 - *case_mgmt.py*
   - Case management of the tool.
 
+
 - *source_model.py*
   - Module containing the source model.
 
@@ -167,6 +173,7 @@ end reconstruction ;
 
 - *reconstruction_model.py*
   - Module containing the reconstruction model.
+
 
 - *helper_functions/*  
   - Package containing all functions required by the main code, but not directly related to the main code:
@@ -188,17 +195,18 @@ end reconstruction ;
 > - *data/*  
 >   - Folder with all data files used by the helper functions.
 
+
 - *test/*
   - Directory containing the pytest unittest files.
 
 - *unittest/*
   - Directory containing the pytest unittest results.
 
-- *plots/*
-  - Plots generated for the report.
+- *plots.py*
+  - Python file containing the code to generate most of the plots in the report.
 
 ---
 To track HAWC2 progress on Windows Powershell:
 ```
-Get-Content NTK/H2model/log/aeroload_noise.log –Wait
+Get-Content [project directory]/H2model/log/aeroload_noise.log –Wait
 ```
