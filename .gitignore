@@ -147,3 +147,5 @@ pickle*/
 NTK/
 htc/
 aur/
+
+*.sh
