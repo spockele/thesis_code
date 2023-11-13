@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Pockelé"
+  given-names: "Josephine Siebert"
+title: "WinTAur - Wind Turbine Auralisation tool"
+version: 1.0.0
+date-released: 2023-11-13
+url: "https://github.com/spockele/thesis_code"
