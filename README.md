@@ -202,8 +202,19 @@ end reconstruction ;
 - *unittest/*
   - Directory containing the pytest unittest results.
 
+
 - *plots.py*
   - Python file containing the code to generate most of the plots in the report.
+
+
+- *validation/*
+  - Project directory with the validation cases from the [thesis report](http://resolver.tudelft.nl/uuid:cc9e67b4-6bde-4114-97c0-43b11b4a48ef).
+
+- *validation_no_effects/*
+  - Project directory with the validation cases (with propagation effects deactivated) from the [thesis report](http://resolver.tudelft.nl/uuid:cc9e67b4-6bde-4114-97c0-43b11b4a48ef).
+
+- *listening-experiment/*
+  - Project directory with the cases for the listening experiment from the [thesis report](http://resolver.tudelft.nl/uuid:cc9e67b4-6bde-4114-97c0-43b11b4a48ef).
 
 ---
 To track HAWC2 progress on Windows Powershell:
