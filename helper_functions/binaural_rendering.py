@@ -160,7 +160,5 @@ class MITHrtf:
         cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)).astype(int))
         cbar.set_ticks(np.arange(vmin, np.max(x_r_lst), 1), minor=True)
 
-        plt.savefig('./plots/HRTF.png')
-
         plt.show()
 

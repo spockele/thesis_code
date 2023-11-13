@@ -175,10 +175,9 @@ class Atmosphere:
 
         return temperature, pressure, density, speed_of_sound, wind_speed
 
-    def plot(self, to_file=True):
+    def plot(self):
         """
         Create plots of all atmospheric parameters
-        :param to_file: Boolean to set outputting the plots to pdf files
         """
         plt.figure(1)
         plt.plot(self.temperature, self.alt / 1e3, color='k', label="ISA")
@@ -224,17 +223,5 @@ class Atmosphere:
         plt.ylim(0, 11)
         plt.grid()
         plt.tight_layout()
-
-        if to_file:
-            plt.figure(1)
-            plt.savefig('./plots/isa_temperature.pdf')
-            plt.figure(2)
-            plt.savefig('./plots/isa_pressure.pdf')
-            plt.figure(3)
-            plt.savefig('./plots/isa_density.pdf')
-            plt.figure(4)
-            plt.savefig('./plots/isa_speed_of_sound.pdf')
-            plt.figure(5)
-            plt.savefig('./plots/isa_wind_speed.pdf')
 
         plt.show()
