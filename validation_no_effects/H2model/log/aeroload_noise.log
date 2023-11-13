@@ -1,0 +1,481 @@
+ ******************************************
+ *** INITIALIZE AERODYNAMIC NOISE MODEL ***
+ ******************************************
+ 
+ * NOISE_MODE:           3   -> Post-processing stored data at all time-steps
+ * TI_MODEL_TYPE:           2
+ * TE_MODEL_TYPE:           5
+ * ST_MODEL_TYPE:           1
+ * TP_MODEL_TYPE:           0
+ * LT_MODEL_TYPE:           0
+ 
+ * HAWC2 INPUT DATA:
+   Number of blades           =           3
+   Number of averaging sectors=          16  (Used only if averaging)
+   -> Number used currently   =           3
+   Number of sections per blade=          40          40          40
+   Total time of HAWC2 simulation [s]=   60.0000000000000     
+   Time step of HAWC2 simulation  [s]=  2.000000000000000E-002
+   Starting time for noise calculation [s]=   50.0000000000000     
+   Ending   time for noise calculation [s]=   54.4580000000000     
+   User-defined time-step for noise calculation [s]=  4.000000000000000E-002
+ * Input BL look-up table data for trailing-edge/stall noise...
+ * Input BL data for trailing-edge/stall noise read successfully!
+ **************************************************
+ *** AERODYNAMIC NOISE INITIALIZATION COMPLETED ***
+ **************************************************
+ 
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0000000E+01 * dT:  1.000E+99
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0040000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0080000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0120000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0160000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0200000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0240000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0280000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0320000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0360000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0400000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0440000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0480000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0520000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0560000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0600000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0640000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0680000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0720000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0760000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0800000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0840000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0880000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0920000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.0960000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1000000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1040000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1080000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1120000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1160000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1200000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1240000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1280000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1320000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1360000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1400000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1440000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1480000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1520000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1560000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1600000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1640000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1680000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1720000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1760000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1800000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1840000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1880000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1920000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.1960000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2000000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2040000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2080000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2120000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2160000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2200000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2240000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2280000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2320000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2360000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2400000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2440000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2480000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2520000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2560000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2600000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2640000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2680000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2720000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2760000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2800000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2840000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2880000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2920000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.2960000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3000000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3040000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3080000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3120000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3160000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3200000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3240000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3280000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3320000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3360000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3400000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3440000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3480000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3520000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3560000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3600000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3640000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3680000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3720000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3760000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3800000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3840000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3880000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3920000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.3960000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4000000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4040000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4080000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4120000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4160000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4200000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4240000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4280000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4320000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4360000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4400000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+* Noise calculation POST-PROCESSING at actual HAWC2 global time:  5.4440000E+01 * dT:  4.000E-02
+* Noise calculation - Blade(or Azimuth sector) no.=    1
+* Noise calculation - Blade(or Azimuth sector) no.=    2
+* Noise calculation - Blade(or Azimuth sector) no.=    3
+ ***********************************************
+ * AERODYNAMIC NOISE POST-PROCESSING COMPLETED *
+ ***********************************************
+# **********************************************
+# *** AERODYNAMIC NOISE MODELLING TERMINATED ***
+# **********************************************

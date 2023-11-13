@@ -1,0 +1,325 @@
+begin Simulation;
+    time_stop 60.0 ;
+    solvertype 1 ;
+    on_no_convergence continue ;
+    ; logfile ./logfiles/ntk.log ;
+    ; animation ./animation/ntk.dat ;
+    ;
+    begin newmark;
+        deltat 0.02;
+    end newmark;
+end simulation;
+;
+;
+begin new_htc_structure ;
+    ;
+    begin main_body ;
+        name tower ;
+        type timoschenko ;
+        nbodies 1 ;
+        node_distribution c2_def ;
+        damping_posdef 4.0e-4 4.0e-4 8.0e-4 3.0e-4 3.0e-4 8.0e-4 ;
+        concentrated_mass 9 0.0 0.51 0.06 13975.6 15045.0 336.0 14709.0 ;
+        begin timoschenko_input ;
+            filename ./data/hawc2_st_mhh.rozn ;
+            set 4 1 ; set subset   1=flexible, 2=stiff
+        end timoschenko_input ;
+        begin c2_def ; Definition of centerline (main_body coordinates)
+            nsec 9 ;
+            sec 1  0.0 0.0   0.00  0.0 ;  x,y,z,twist
+            sec 2  0.0 0.0  -0.60  0.0 ;
+            sec 3  0.0 0.0  -4.47  0.0 ;
+            sec 4  0.0 0.0  -8.27  0.0 ;
+            sec 5  0.0 0.0 -15.92  0.0 ;
+            sec 6  0.0 0.0 -23.57  0.0 ;
+            sec 7  0.0 0.0 -29.27  0.0 ;
+            sec 8  0.0 0.0 -34.40  0.0 ; Tower top flange
+            sec 9  0.0 0.0 -35.50  0.0 ;
+        end c2_def ;
+    end main_body ;
+    ;
+    begin main_body ;
+        name shaft ;
+        type timoschenko ;
+        nbodies 1 ;
+        node_distribution c2_def ;
+        damping_posdef 2.0e-4 2.0e-4 4.0e-4 2.0e-4 2.0e-4 8.0e-4 ;
+        concentrated_mass 1 0.0 0.0 0.0 0.0 0.0 0.0 52081.6 ;
+        begin timoschenko_input ;
+            filename ./data/hawc2_st.mhh ;
+            set 3 1 ; set subset   1=flexible,2=stiff
+        end timoschenko_input ;
+        begin c2_def ; Definition of centerline (main_body coordinates)
+            nsec 7 ;
+            sec 1 0.000 0.000 0.000 0.0 ; Tower top
+            sec 2 0.000 0.000 1.033 0.0 ; Gearbox position
+            sec 3 0.000 0.000 1.957 0.0 ; Main bearing
+            sec 4 0.000 0.000 2.138 0.0 ; SG
+            sec 5 0.000 0.000 2.298 0.0 ; Shaft flange
+            sec 6 0.000 0.000 2.398 0.0 ; Hub flange
+            sec 7 0.000 0.000 2.900 0.0 ; Rotor centre
+        end c2_def ;
+    end main_body ;
+    ;
+    begin main_body ;
+        name hub1 ;
+        type timoschenko ;
+        nbodies 1 ;
+        node_distribution c2_def ;
+        damping_posdef 1.0e-4 1.0e-4 1.0e-4 1.0e-4 1.0e-4 1.0e-4 ;
+        begin timoschenko_input ;
+            filename ./data/hawc2_st.mhh ;
+            set 2 1 ;
+        end timoschenko_input ;
+        begin c2_def ; Definition of centerline  (main_body  coordinates)
+        nsec 3;
+            sec 1 0.00 0.00 0.00 0.0 ; x,y,z,twist
+            sec 2 0.00 0.00 1.00 0.0 ;
+            sec 3 0.00 0.00 1.50 0.0 ;
+        end c2_def ;
+    end main_body ;
+    ;
+    begin main_body ;
+        name hub2 ;
+        copy_main_body hub1;
+    end main_body;
+    ;
+    begin main_body ;
+        name hub3  ;
+        copy_main_body hub1;
+    end main_body ;
+    ;
+    begin main_body ;
+        name blade1 ;
+        type timoschenko ;
+        nbodies 1 ;
+        node_distribution c2_def ;
+        damping_posdef 1.5e-4 2.4e-4 2.0e-4 1.5e-4 2.2e-4 1.2e-4 ;
+        begin timoschenko_input;
+        filename ./data/hawc2_st.mhh ;
+        set 1 1 ; set subset
+        end timoschenko_input;
+        begin c2_def ; Definition of centerline (main_body coordinates)
+        nsec 22 ;
+        sec  1  0.000 0.000  0.000  -9.00 ;
+        sec  2  0.000 0.000  0.580  -9.00 ;
+        sec  3  0.000 0.000  0.800  -9.00 ;
+        sec  4 -0.130 0.035  2.000 -15.00 ;
+        sec  5 -0.233 0.085  3.000 -20.00 ;
+        sec  6 -0.230 0.067  4.000 -16.30 ;
+        sec  7 -0.225 0.052  5.000 -13.00 ;
+        sec  8 -0.219 0.039  6.000 -10.05 ;
+        sec  9 -0.211 0.028  7.000  -7.45 ;
+        sec 10 -0.203 0.021  8.000  -5.85 ;
+        sec 11 -0.193 0.016  9.000  -4.85 ;
+        sec 12 -0.184 0.013 10.000  -4.00 ;
+        sec 13 -0.174 0.010 11.000  -3.15 ;
+        sec 14 -0.164 0.007 12.000  -2.60 ;
+        sec 15 -0.154 0.005 13.000  -2.02 ;
+        sec 16 -0.143 0.003 14.000  -1.38 ;
+        sec 17 -0.132 0.002 15.000  -0.77 ;
+        sec 18 -0.121 0.001 16.000  -0.33 ;
+        sec 19 -0.106 0.000 17.000  -0.14 ;
+        sec 20 -0.082 0.000 18.000  -0.05 ;
+        sec 21 -0.063 0.000 18.500  -0.02 ;
+        sec 22  0.000 0.000 19.040  -5.90 ;
+        end c2_def ;
+    end main_body ;
+    ;
+    begin main_body ;
+        name blade2 ;
+        copy_main_body blade1 ;
+    end main_body ;
+    ;
+    begin main_body ;
+        name blade3 ;
+        copy_main_body blade1 ;
+    end main_body ;
+    ;-----------------------------------------------------------------
+    begin orientation ;
+        begin base ;
+            body tower ;
+            inipos 0.0 0.0 0.0 ; initial position of node 1
+            body_eulerang 0.0 0.0 0.0 ;
+        end base ;
+        ;
+        begin relative ;
+            body1 tower last ;
+            body2 shaft 1 ;
+            body2_eulerang 90.0 0.0 0.0 ;
+            body2_eulerang 4.0 0.0 0.0 ; 4 deg tilt
+            body2_ini_rotvec_d1 0.0 0.0 -1.0 3.0 ; body initial rotation velocity x,y,z,angle velocity[rad/s]  (body 2 coordinates)
+        end relative;
+        ;
+        begin relative ;
+            body1 shaft last ;
+            body2 hub1 1 ;
+            body2_eulerang -90.0 0.0 0.0 ;
+        end relative;
+        ;
+        begin relative ;
+            body1 shaft last ;
+            body2 hub2 1 ;
+            body2_eulerang -90.0 0.0 0.0 ;
+            body2_eulerang 0.0 -120.0 0.0 ;
+        end relative ;
+        ;
+        begin relative ;
+            body1 shaft last ;
+            body2 hub3 1 ;
+            body2_eulerang -90.0 0.0 0.0 ;
+            body2_eulerang 0.0 120.0 0.0 ;
+        end relative ;
+        ;
+        begin relative ;
+            body1 hub1 last ;
+            body2 blade1 1 ;
+            body2_eulerang 0.0 0.0 0.45 ;
+        end relative ;
+        ;
+        begin relative ;
+            body1 hub2 last ;
+            body2 blade2 1 ;
+            body2_eulerang 0.0 0.0 0.45 ;
+        end relative ;
+        ;
+        begin relative ;
+            body1 hub3 last ;
+            body2 blade3 1 ;
+            body2_eulerang 0.0 0.0 0.45 ;
+        end relative ;
+    end orientation ;
+    ;-----------------------------------------------------------------
+    begin constraint ;
+        begin fix0 ; fixed to ground in translation and rotation of node 1
+            body tower ;
+        end fix0 ;
+        ;
+        begin bearing1 ; free bearing
+            name shaft_rot ;
+            body1 tower last ;
+            body2 shaft 1;
+            bearing_vector 2 0.0 0.0 -1.0 ; x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+        end bearing1;
+        ;
+        begin fix1 ;
+            body1 shaft last ;
+            body2 hub1 1 ;
+        end fix1 ;
+        ;
+        begin fix1 ;
+            body1 shaft last ;
+            body2 hub2 1 ;
+        end fix1 ;
+        ;
+        begin fix1 ;
+            body1 shaft last ;
+            body2 hub3 1 ;
+        end fix1 ;
+        ;
+        begin bearing2 ; forced bearing
+            name pitch1 ;
+            body1 hub1 last ;
+            body2 blade1 1 ;
+            bearing_vector 2 0.0 0.0 -1.0 ; x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+        end bearing2 ;
+        ;
+        begin bearing2 ; forced bearing
+            name pitch2 ;
+            body1 hub2 last ;
+            body2 blade2 1 ;
+            bearing_vector 2 0.0 0.0 -1.0 ; x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+        end bearing2 ;
+        ;
+        begin bearing2 ; forced bearing
+            name pitch3 ;
+            body1 hub3 last ;
+            body2 blade3 1 ;
+            bearing_vector 2 0.0 0.0 -1.0 ; x=coo (0=global,1=body1,2=body2) vector in body2 coordinates where the free rotation is present
+        end bearing2 ;
+    end constraint ;
+    ;
+end new_htc_structure ;
+;
+;
+begin aero ;
+    nblades  3 ;
+    hub_vec shaft -3 ;
+    link 1 mbdy_c2_def blade1 ;
+    link 2 mbdy_c2_def blade2 ;
+    link 3 mbdy_c2_def blade3 ;
+    ae_filename ./data/hawc2_ae.mhh ;
+    pc_filename ./data/hawc2_pc.mh1 ;
+    induction_method 1 ;
+    aerocalc_method 1 ;
+    aero_distribution ae_file 2 ;
+    ae_sets 2 2 2 ;
+    tiploss_method 1 ;
+    dynstall_method 2 ;
+end aero ;
+;
+;
+begin dll;
+    begin hawc_dll ;
+        ;filename ./dll/generator_relative_loss.dll ;
+        filename ./dll/generator.dll ;
+        dll_subroutine generator_slip ;
+        arraysizes 15 2 ;
+        deltat 0.01 ; Time between calls to the DLL's should be the same as the solver sample frequency
+        begin output ;
+            general time ; simulated time
+            constraint bearing1 shaft_rot 1 ; rotation speed of generator [rad/s]
+            general step 9.0 0.0 1.0 ; 0=disconnected,1=connected or when s increase beyond zero
+            general constant 500 ; Nominal electrical power, input in [kW]
+            general constant 1500 ; Synchronous generator speed, input in [rpm]
+            general constant 1513 ; Nominal rotational speed, input in [rpm]
+            general constant 0.05 ;  Time constant for normal operation, input in [sec]
+            general constant 1.50 ; Time for softstarter to work at cutin, current hence torque limiter, input in
+            general constant 1.40 ; Torque ratio M/M_n limitation for softstarter at cut-in, input in [-]
+            general constant 2.00 ; Torque ratio M/M_n limitation at normal production. Pull-out torque [-]
+            general constant 0.07 ; Power loss/Pnom at slip/slip_n=0.0 [-]
+            general constant 0.07 ; Power loss/Pnom at slip/slip_n=0.5
+            general constant 0.07 ; Power loss/Pnom at slip/slip_n=1.0
+            general constant 55.35 ; Gearbox exchange ratio
+        end output ;
+        ;
+        begin actions ;
+            mbdy moment_int shaft 1 -3 shaft tower 9 ; Generator torque added on shaft node 1 and reaction at tower top
+        end actions ;
+    end hawc_dll ;
+end dll;
+;
+;
+begin output;
+    filename ./res/ntk_055ms ;
+    time 0 700 ;
+    data_format hawc_binary ;
+    buffer 1 ;
+    ;
+    general time ;
+    aero omega ;
+    aero torque ;
+    aero power ;
+    aero thrust ;
+    aero azimuth 1 ;
+    wind free_wind 1 0.0 0.0 -14.0 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos
+    wind free_wind 1 0.0 0.0 -17.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos
+    wind free_wind 1 0.0 0.0 -26.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos
+    wind free_wind 1 0.0 0.0 -35.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos
+    wind free_wind 1 0.0 0.0 -44.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos
+    wind free_wind 1 0.0 0.0 -53.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos z
+    wind free_wind 1 0.0 0.0 -56.5 ; local wind at fixed position: coo (1=global,2=non-rotation rotor coo.), pos x, pos y, pos z
+    mbdy momentvec tower 1 1 tower # tower base flange ;
+    mbdy momentvec tower 5 1 tower # tower middle flange (15.3m) ;
+    mbdy momentvec tower 8 1 tower # tower top flange; yaw bearing ;
+    mbdy forcevec  tower 8 1 tower # yaw bearing ;
+    mbdy momentvec shaft 4 1 shaft # SG ;
+    mbdy momentvec shaft 5 1 shaft # main bearing ;
+    mbdy momentvec blade1 1 1 blade1 # blade 1 root ;
+    mbdy forcevec  blade1 1 1 blade1 # blade 1 root ;
+    mbdy momentvec blade2 1 1 blade2 # blade 2 root ;
+    mbdy momentvec blade3 1 1 blade3 # blade 3 root ;
+    wind free_wind_hor 1 0.0 0.0 -35.5 ;
+end output ;
+;
+exit ;
