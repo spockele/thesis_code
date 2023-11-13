@@ -16,6 +16,9 @@ import reconstruction_model as cm
 === All the stuff to manage Auralisation cases                                                                       ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ['CaseLoader', 'Case']
 

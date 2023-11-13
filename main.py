@@ -11,6 +11,9 @@ import helper_functions as hf
 === Main run code of the Auralisation Tool                                                                           ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 
 

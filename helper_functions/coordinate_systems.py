@@ -13,6 +13,9 @@ from . import limit_angle
 === Definitions of the used coordinate systems                                                                       ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["Coordinates", "Cartesian", "NonCartesian", "Spherical", "Cylindrical", "HeadRelatedSpherical", ]
 

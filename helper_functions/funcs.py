@@ -10,6 +10,9 @@ import sys
 === Uncategorised functions needed for other modules in this package                                                 ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["c", "p_ref", "g", "r_air", "t_0", "gamma_air",
            "limit_angle", "a_weighting", "ProgressThread", "octave_band_fc", ]

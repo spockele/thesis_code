@@ -14,6 +14,9 @@ from . import limit_angle, c, HeadRelatedSpherical
 === Definition of the MIT measured HRTF function                                                                     ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["MITHrtf", "woodworth_itd", "plot_woodworth_itd"]
 

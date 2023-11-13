@@ -9,6 +9,9 @@ import warnings
 === Some functions and classes to handle geometry                                                                    ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["uniform_spherical_grid", "PerpendicularPlane3D", ]
 

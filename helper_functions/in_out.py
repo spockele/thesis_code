@@ -9,6 +9,9 @@ import scipy.io as spio
 === I/O functions for data files used in this code                                                                   ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["write_to_file", "read_from_file", "read_hawc2_aero_noise", "read_ntk_data", ]
 

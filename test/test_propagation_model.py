@@ -9,7 +9,12 @@ import pandas as pd
 import helper_functions as hf
 import propagation_model as pm
 import reception_model as rm
+"""
+Code unit tests for the propagation model.
 
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
+"""
 
 class TestRay(unittest.TestCase):
     def setUp(self) -> None:

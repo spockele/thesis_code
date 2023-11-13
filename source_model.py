@@ -18,6 +18,9 @@ import reception_model as rm
 === The source model for this auralisation tool                                                                      ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ['H2Observer', 'H2Sphere', 'Source', 'SourceModel']
 

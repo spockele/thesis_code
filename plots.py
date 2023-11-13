@@ -6,7 +6,11 @@ from matplotlib.colors import TABLEAU_COLORS
 from case_mgmt import CaseLoader
 import helper_functions as hf
 import propagation_model as pm
+"""
 
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
+"""
 
 colors = list(TABLEAU_COLORS.keys())
 

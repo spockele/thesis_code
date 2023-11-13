@@ -1,5 +1,8 @@
 """
 Package with functions used in the main programme
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 # ----------------------------------------------------------------------------------------------------------------------
 # Import the helper_functions modules

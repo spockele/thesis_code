@@ -16,6 +16,9 @@ import reception_model as rm
 === The reconstruction model for this auralisation tool                                                              ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ['ReconstructionModel', ]
 

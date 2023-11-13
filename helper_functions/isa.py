@@ -10,6 +10,9 @@ from . import t_0, r_air, g, gamma_air, write_to_file, read_from_file
 === Definition of the ISO standard atmosphere (*ISO 2533-1975*)                                                      ===
 ===                                                                                                                  ===
 ========================================================================================================================
+
+Copyright (c) 2023 Josephine Pockelé. Licensed under MIT license.
+
 """
 __all__ = ["Atmosphere", ]
 
