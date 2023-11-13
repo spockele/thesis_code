@@ -136,28 +136,31 @@ class MITHrtf:
 
         # Define the lowest value for the colorbar
         vmin = -40
+        plt.figure(1, figsize=(6.6, 3.0), dpi=300)
+        fig, (ax1, ax2) = plt.subplots(1, 2, num=1)
         # Plot for the left ear
-        plt.figure(1)
-        cmesh = plt.pcolor(f_lst, th_lst, x_l_lst, vmin=vmin, )
-        cbar = plt.colorbar(cmesh)
-        plt.xlabel('$f$ (Hz)')
-        plt.ylabel('Azimuth (degrees)')
-        cbar.set_label('(dB)')
-        plt.tight_layout()
-        cbar.set_ticks(np.append(np.arange(vmin, np.max(x_l_lst), 10), np.max(x_l_lst)))
-        # plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
-        plt.savefig('./plots/HRTF_left.png')
+        ax1.pcolor(f_lst, th_lst, x_l_lst, vmin=vmin, )
+        ax1.contour(f_lst, th_lst, x_l_lst, levels=[0, ], colors='k', linewidths=.5)
+        ax1.set_xlabel('$f$ (Hz)')
+        ax1.set_ylabel('$\\theta$ (degrees)')
+        ax1.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi], labels=[-180, -90, 0, 90, 180])
+        ax1.set_yticks(np.arange(-8, 8 + 1, 1) * np.pi / 8, minor=True)
         # Plot for the right ear
-        plt.figure(2)
-        cmesh = plt.pcolor(f_lst, th_lst, x_r_lst, vmin=vmin, )
-        cbar = plt.colorbar(cmesh)
-        plt.xlabel('$f$ (Hz)')
-        plt.ylabel('Azimuth (degrees)')
-        cbar.set_label('(dB)')
-        plt.tight_layout()
-        cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)))
-        # plt.yticks((-180, -120, -60, 0, 60, 120, 180, ))
-        plt.savefig('./plots/HRTF_right.png')
+        cmesh = ax2.pcolor(f_lst, th_lst, x_r_lst, vmin=vmin, )
+        ax2.contour(f_lst, th_lst, x_r_lst, levels=[0, ], colors='k', linewidths=.5)
+        ax2.set_xlabel('$f$ (Hz)')
+        ax2.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi], labels=[])
+        ax2.set_yticks(np.arange(-8, 8 + 1, 1) * np.pi / 8, minor=True)
+        plt.subplots_adjust(.1, .15, .85, .98, 0.05, .2)
+
+        ax3 = fig.add_axes((.86, .15, 0.04, .98 - .15))
+        cbar = plt.colorbar(cmesh, cax=ax3, )
+        cbar.ax.plot([0, 1], [0, 0], 'k', linewidth=.5)
+        cbar.set_label('$F$ (dB)')
+        cbar.set_ticks(np.append(np.arange(vmin, np.max(x_r_lst), 10), np.max(x_r_lst)).astype(int))
+        cbar.set_ticks(np.arange(vmin, np.max(x_r_lst), 1), minor=True)
+
+        plt.savefig('./plots/HRTF.png')
 
         plt.show()
 
