@@ -147,6 +147,3 @@ pickle*/
 NTK/
 htc/
 aur/
-# Exclude some python files
-ntk_data_processing.py
-stuff.py
